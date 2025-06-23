@@ -44,11 +44,15 @@ Component({
         // 确定性别标签
         const genderLabel = isFemale ? 'F' : 'M';
         
+        // 获取显示昵称（女性玩家会显示 (F)）
+        const displayName = this.getDisplayNickname(player);
+        
         // 返回带有附加属性的玩家对象
         return {
           ...player,
           className: className,
-          genderLabel: genderLabel
+          genderLabel: genderLabel,
+          displayName: displayName
         };
       });
       
@@ -63,7 +67,7 @@ Component({
         const selectedPlayer = players.find(p => p.id === selectedPlayerId);
         if (selectedPlayer) {
           this.setData({
-            selectedPlayerName: selectedPlayer.name,
+            selectedPlayerName: this.getDisplayNickname(selectedPlayer),
             selectedPlayerGender: selectedPlayer.gender || 'male'
           });
         }
@@ -83,11 +87,13 @@ Component({
         if (isFemale) className += ' female-player';
         
         const genderLabel = isFemale ? 'F' : 'M';
+        const displayName = this.getDisplayNickname(player);
         
         return {
           ...player,
           className: className,
-          genderLabel: genderLabel
+          genderLabel: genderLabel,
+          displayName: displayName
         };
       });
       
@@ -103,7 +109,7 @@ Component({
         );
         if (selectedPlayer) {
           this.setData({
-            selectedPlayerName: selectedPlayer.name,
+            selectedPlayerName: this.getDisplayNickname(selectedPlayer),
             selectedPlayerGender: selectedPlayer.gender || 'male'
           });
         }
@@ -120,9 +126,10 @@ Component({
 
     filterPlayersBySearch(players, searchText) {
       const value = searchText.toLowerCase();
-      return players.filter(player => 
-        player.name.toLowerCase().includes(value)
-      );
+      return players.filter(player => {
+        const displayName = this.getDisplayNickname(player);
+        return displayName.toLowerCase().includes(value);
+      });
     },
 
     search(e) {
@@ -144,7 +151,7 @@ Component({
       this.setData({
         isOpen: false,
         searchValue: '',
-        selectedPlayerName: selected.name,
+        selectedPlayerName: this.getDisplayNickname(selected),
         selectedPlayerGender: selected.gender || 'male'
       });
       
@@ -167,6 +174,17 @@ Component({
         playerName: '',
         playerIndex: -1
       });
+    },
+
+    getDisplayNickname(player) {
+      if (!player || !player.name) return 'Unknown';
+      
+      // Add "(F)" for female players
+      if (player.gender === 'female') {
+        return player.name + ' (F)';
+      }
+      
+      return player.name;
     }
   }
 })

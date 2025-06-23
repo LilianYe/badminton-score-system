@@ -2,30 +2,156 @@
   <view class="login-card">
     <view class="app-title">Badminton Score System</view>
     
-    <view class="welcome-text">Welcome! Please enter your name to continue.</view>
-    
-    <view class="form-group">
-      <text class="label">Your Name:</text>
-      <input 
-        class="input" 
-        placeholder="Enter your name" 
-        value="{{username}}" 
-        bindinput="onUsernameInput" 
-        focus="true"
-      />
+    <!-- Login Step -->
+    <view wx:if="{{!showNicknameConfig}}">
+      <view class="welcome-text">Welcome! Please login with WeChat to continue.</view>
+      
+      <view class="avatar-section" wx:if="{{userInfo}}">
+        <image class="avatar" src="{{userInfo.avatarUrl}}" mode="aspectFill"></image>
+        <text class="nickname">{{userInfo.nickName}}</text>
+      </view>
+      
+      <view class="login-section">
+        <!-- For newer WeChat versions -->
+        <button 
+          wx:if="{{canIUseGetUserProfile && !hasUserInfo}}"
+          bindtap="getUserProfile" 
+          class="wechat-login-btn" 
+          type="primary"
+          loading="{{isLoading}}"
+        >
+          <text class="wechat-icon">📱</text>
+          Login with WeChat
+        </button>
+        
+        <!-- For older WeChat versions -->
+        <button 
+          wx:if="{{!canIUseGetUserProfile && !hasUserInfo}}"
+          open-type="getUserInfo" 
+          bindgetuserinfo="getUserInfo" 
+          class="wechat-login-btn" 
+          type="primary"
+          loading="{{isLoading}}"
+        >
+          <text class="wechat-icon">📱</text>
+          Login with WeChat
+        </button>
+        
+        <!-- Continue button after getting user info -->
+        <button 
+          wx:if="{{hasUserInfo}}"
+          bindtap="handleWeChatLogin" 
+          class="wechat-login-btn" 
+          type="primary"
+          loading="{{isLoading}}"
+        >
+          Continue to App
+        </button>
+        
+        <!-- Test mode button for developer tools -->
+        <button 
+          wx:if="{{isDevTools && !hasUserInfo}}"
+          bindtap="testModeLogin" 
+          class="test-login-btn" 
+          type="default"
+          loading="{{isLoading}}"
+        >
+          🧪 Test Mode Login
+        </button>
+      </view>
+      
+      <view class="note">
+        <text>We'll use your WeChat profile to personalize your badminton experience.</text>
+        <text wx:if="{{isDevTools}}" class="dev-note">\n\n💡 Dev Tools Tip: Use "Simulate" → "User Info" to test authorization</text>
+      </view>
     </view>
     
-    <button 
-      bindtap="saveUsername" 
-      class="login-btn" 
-      type="primary" 
-      loading="{{isLoading}}"
-    >
-      Let's Play
-    </button>
-    
-    <view class="note">
-      <text>Your name will be used to personalize your experience.</text>
+    <!-- Nickname Configuration Step -->
+    <view wx:else class="nickname-config">
+      <view class="welcome-text">Choose Your Nickname</view>
+      <view class="subtitle">How would you like to be called in the app?</view>
+      
+      <view class="avatar-section" wx:if="{{userInfo}}">
+        <image class="avatar" src="{{userInfo.avatarUrl}}" mode="aspectFill"></image>
+      </view>
+      
+      <view class="nickname-options">
+        <!-- Option 1: Use WeChat name -->
+        <view class="option-card" bindtap="toggleNameOption">
+          <view class="option-header">
+            <view class="radio-btn {{useWeChatName ? 'selected' : ''}}">
+              <view wx:if="{{useWeChatName}}" class="radio-inner"></view>
+            </view>
+            <text class="option-title">Use WeChat Name</text>
+          </view>
+          <text class="option-value">{{userInfo ? userInfo.nickName : 'Player'}}</text>
+        </view>
+        
+        <!-- Option 2: Custom nickname -->
+        <view class="option-card" bindtap="toggleNameOption">
+          <view class="option-header">
+            <view class="radio-btn {{!useWeChatName ? 'selected' : ''}}">
+              <view wx:if="{{!useWeChatName}}" class="radio-inner"></view>
+            </view>
+            <text class="option-title">Custom Nickname</text>
+          </view>
+          <input 
+            wx:if="{{!useWeChatName}}"
+            class="custom-nickname-input" 
+            value="{{nickname}}" 
+            bindinput="onNicknameInput"
+            placeholder="Enter your nickname"
+            maxlength="20"
+            focus="true"
+          />
+          <text wx:else class="option-value">{{nickname}}</text>
+          
+          <!-- Availability indicator -->
+          <view wx:if="{{!useWeChatName && nickname}}" class="availability-indicator">
+            <view wx:if="{{checkingAvailability}}" class="checking">
+              <text class="checking-text">Checking availability...</text>
+            </view>
+            <view wx:elif="{{nicknameAvailable === true}}" class="available">
+              <text class="available-text">✓ Available</text>
+            </view>
+            <view wx:elif="{{nicknameAvailable === false}}" class="unavailable">
+              <text class="unavailable-text">✗ Already taken</text>
+            </view>
+          </view>
+        </view>
+      </view>
+      
+      <!-- Gender Selection -->
+      <view class="gender-section">
+        <text class="gender-title">Gender</text>
+        <view class="gender-selector">
+          <picker 
+            bindchange="onGenderChange" 
+            value="{{genderIndex}}" 
+            range="{{['Male', 'Female']}}"
+          >
+            <view class="gender-picker">
+              <text class="gender-text">{{gender === 'male' ? 'Male' : 'Female'}}</text>
+              <view class="picker-arrow"></view>
+            </view>
+          </picker>
+        </view>
+      </view>
+      
+      <view class="config-actions">
+        <button 
+          bindtap="saveNicknameAndContinue" 
+          class="continue-btn" 
+          type="primary"
+          loading="{{isLoading}}"
+        >
+          Continue to App
+        </button>
+      </view>
+      
+      <view class="note">
+        <text>You can change your nickname anytime in your profile settings.</text>
+      </view>
     </view>
   </view>
 </view>

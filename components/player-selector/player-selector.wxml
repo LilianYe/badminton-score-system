@@ -4,12 +4,6 @@
     <block wx:if="{{selectedPlayerId}}">
       <view class="selected-name">
         {{selectedPlayerName}}
-        <block wx:if="{{selectedPlayerGender === 'female'}}">
-          <text class="gender-indicator"> F</text>
-        </block>
-        <block wx:else>
-          <text class="gender-indicator"> M</text>
-        </block>
       </view>
       <view class="clear-btn" catchtap="clearSelection">×</view>
     </block>
@@ -50,8 +44,7 @@
         bindtap="selectPlayer"
       >
         <view class="player-name">
-          {{item.name}} 
-          <text class="gender-indicator">{{item.genderLabel}}</text>
+          {{item.displayName}}
         </view>
         <view class="player-rating">{{item.rating}}</view>
       </view>

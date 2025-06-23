@@ -19,9 +19,9 @@ Page({
 
   onLoad: function() {
     const userInfo = wx.getStorageSync('userInfo');
-    if (userInfo && userInfo.username) {
+    if (userInfo && userInfo.nickname) {
       this.setData({
-        username: userInfo.username
+        username: userInfo.nickname
       });
     }
     this.loadPlayers();
@@ -300,6 +300,12 @@ Page({
   navigateToAddPlayer: function() {
     wx.navigateTo({
       url: '/pages/add-player/add-player'
+    });
+  },
+  
+  navigateToProfile: function() {
+    wx.navigateTo({
+      url: '/pages/user-profile/user-profile'
     });
   }
 });

@@ -27,7 +27,7 @@ Page({
       return {
         ...player,
         // Add displayName property with gender indicator
-        displayName: player.name + (player.gender === 'female' ? ' F' : ' M'),
+        displayName: app.getDisplayNickname(player),
         className: player.gender === 'female' ? 'player-item female-player' : 'player-item',
         statsDisplay: statsDisplay  // 新添加的预处理胜负统计
       };
