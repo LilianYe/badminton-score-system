@@ -1,0 +1,262 @@
+.container {
+  padding: 20px;
+  min-height: 100vh;
+  background-color: #f6f6f6;
+  box-sizing: border-box;
+}
+
+.profile-card {
+  background-color: #fff;
+  border-radius: 12px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+  overflow: hidden;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px 20px;
+  border-bottom: 1px solid #eee;
+  background-color: #f8f9fa;
+}
+
+.back-btn {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background-color: #fff;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.back-icon {
+  font-size: 18px;
+  color: #333;
+}
+
+.page-title {
+  font-size: 18px;
+  font-weight: bold;
+  color: #333;
+}
+
+.placeholder {
+  width: 40px;
+}
+
+.avatar-section {
+  display: flex;
+  justify-content: center;
+  padding: 30px 20px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.avatar {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  border: 4px solid #fff;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+}
+
+.profile-info {
+  padding: 20px;
+}
+
+.info-section {
+  margin-bottom: 30px;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.section-title {
+  font-size: 16px;
+  font-weight: bold;
+  color: #333;
+}
+
+.edit-btn {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background-color: #f0f0f0;
+  transition: background-color 0.2s;
+}
+
+.edit-btn:active {
+  background-color: #e0e0e0;
+}
+
+.edit-icon {
+  font-size: 14px;
+}
+
+.info-display {
+  padding: 12px 16px;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  border: 1px solid #e9ecef;
+}
+
+.nickname-text {
+  font-size: 16px;
+  color: #333;
+  font-weight: 500;
+}
+
+.edit-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.nickname-input {
+  padding: 12px 16px;
+  border: 2px solid #007AFF;
+  border-radius: 8px;
+  font-size: 16px;
+  background-color: #fff;
+}
+
+.nickname-input:focus {
+  border-color: #0056b3;
+  outline: none;
+}
+
+.edit-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.cancel-btn {
+  background-color: #f8f9fa !important;
+  border-color: #dee2e6 !important;
+  color: #6c757d !important;
+}
+
+.save-btn {
+  background-color: #007AFF !important;
+  border-color: #007AFF !important;
+}
+
+.info-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.info-item:last-child {
+  border-bottom: none;
+}
+
+.info-label {
+  font-size: 14px;
+  color: #666;
+  font-weight: 500;
+}
+
+.info-value {
+  font-size: 14px;
+  color: #333;
+  font-family: monospace;
+  background-color: #f8f9fa;
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
+.actions-section {
+  margin-top: 40px;
+  padding-top: 20px;
+  border-top: 1px solid #eee;
+}
+
+.logout-btn {
+  width: 100%;
+  height: 44px;
+  background-color: #dc3545 !important;
+  border-color: #dc3545 !important;
+  color: #fff !important;
+  font-size: 16px;
+  font-weight: 500;
+  border-radius: 8px;
+}
+
+.logout-btn::after {
+  border: none;
+}
+
+.availability-indicator {
+  margin-top: 8px;
+  font-size: 12px;
+}
+
+.checking {
+  color: #666;
+}
+
+.checking-text {
+  font-style: italic;
+}
+
+.available {
+  color: #28a745;
+}
+
+.available-text {
+  font-weight: 500;
+}
+
+.unavailable {
+  color: #dc3545;
+}
+
+.unavailable-text {
+  font-weight: 500;
+}
+
+.gender-selector {
+  width: 100%;
+}
+
+.gender-picker {
+  height: 44px;
+  border: 2px solid #007AFF;
+  border-radius: 8px;
+  padding: 0 12px;
+  background-color: #fff;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: border-color 0.2s;
+}
+
+.gender-picker:focus-within {
+  border-color: #0056b3;
+}
+
+.gender-text {
+  font-size: 16px;
+  color: #333;
+}
+
+.picker-arrow {
+  width: 0;
+  height: 0;
+  border-left: 6px solid transparent;
+  border-right: 6px solid transparent;
+  border-top: 6px solid #666;
+} 

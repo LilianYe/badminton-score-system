@@ -46,7 +46,7 @@
   },
   "appid": "wx96be3c8055236315",
   "projectname": "badminton-score-system",
-  "libVersion": "2.28.1",
+  "libVersion": "3.8.7",
   "cloudfunctionTemplateRoot": "cloudfunctionTemplate/",
   "condition": {
     "search": {

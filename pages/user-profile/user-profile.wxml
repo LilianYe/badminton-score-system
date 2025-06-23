@@ -1,0 +1,159 @@
+<view class="container">
+  <view class="profile-card">
+    <view class="header">
+      <view class="back-btn" bindtap="goBack">
+        <text class="back-icon">←</text>
+      </view>
+      <text class="page-title">Profile</text>
+      <view class="placeholder"></view>
+    </view>
+    
+    <view class="avatar-section">
+      <image 
+        class="avatar" 
+        src="{{userInfo.avatarUrl || '/assets/icons/default-avatar.png'}}" 
+        mode="aspectFill"
+      ></image>
+    </view>
+    
+    <view class="profile-info">
+      <!-- Nickname Section -->
+      <view class="info-section">
+        <view class="section-header">
+          <text class="section-title">Nickname</text>
+          <view wx:if="{{!isEditing}}" class="edit-btn" bindtap="startEdit">
+            <text class="edit-icon">✏️</text>
+          </view>
+        </view>
+        
+        <view wx:if="{{!isEditing}}" class="info-display">
+          <text class="nickname-text">{{nickname}}</text>
+        </view>
+        
+        <view wx:else class="edit-form">
+          <input 
+            class="nickname-input" 
+            value="{{nickname}}" 
+            bindinput="onNicknameInput"
+            placeholder="Enter your nickname"
+            maxlength="20"
+            focus="true"
+          />
+          
+          <!-- Availability indicator -->
+          <view wx:if="{{nickname}}" class="availability-indicator">
+            <view wx:if="{{checkingAvailability}}" class="checking">
+              <text class="checking-text">Checking availability...</text>
+            </view>
+            <view wx:elif="{{nicknameAvailable === true}}" class="available">
+              <text class="available-text">✓ Available</text>
+            </view>
+            <view wx:elif="{{nicknameAvailable === false}}" class="unavailable">
+              <text class="unavailable-text">✗ Already taken</text>
+            </view>
+          </view>
+          
+          <view class="edit-actions">
+            <button 
+              class="cancel-btn" 
+              bindtap="cancelEdit"
+              size="mini"
+            >
+              Cancel
+            </button>
+            <button 
+              class="save-btn" 
+              bindtap="saveNickname"
+              type="primary"
+              size="mini"
+              loading="{{isLoading}}"
+              disabled="{{nicknameAvailable === false}}"
+            >
+              Save
+            </button>
+          </view>
+        </view>
+      </view>
+      
+      <!-- Gender Section -->
+      <view class="info-section">
+        <view class="section-header">
+          <text class="section-title">Gender</text>
+          <view wx:if="{{!isEditingGender}}" class="edit-btn" bindtap="startEditGender">
+            <text class="edit-icon">✏️</text>
+          </view>
+        </view>
+        
+        <view wx:if="{{!isEditingGender}}" class="info-display">
+          <text class="gender-text">{{gender === 'male' ? 'Male' : 'Female'}}</text>
+        </view>
+        
+        <view wx:else class="edit-form">
+          <view class="gender-selector">
+            <picker 
+              bindchange="onGenderChange" 
+              value="{{genderIndex}}" 
+              range="{{['Male', 'Female']}}"
+            >
+              <view class="gender-picker">
+                <text class="gender-text">{{gender === 'male' ? 'Male' : 'Female'}}</text>
+                <view class="picker-arrow"></view>
+              </view>
+            </picker>
+          </view>
+          
+          <view class="edit-actions">
+            <button 
+              class="cancel-btn" 
+              bindtap="cancelEditGender"
+              size="mini"
+            >
+              Cancel
+            </button>
+            <button 
+              class="save-btn" 
+              bindtap="saveGender"
+              type="primary"
+              size="mini"
+              loading="{{isLoading}}"
+            >
+              Save
+            </button>
+          </view>
+        </view>
+      </view>
+      
+      <!-- User Info Section -->
+      <view class="info-section">
+        <text class="section-title">Account Info</text>
+        <view class="info-item">
+          <text class="info-label">WeChat ID:</text>
+          <text class="info-value">{{userInfo.openid || 'N/A'}}</text>
+        </view>
+        <view class="info-item">
+          <text class="info-label">Member Since:</text>
+          <text class="info-value">{{userInfo.createdAt ? userInfo.createdAt.split('T')[0] : 'N/A'}}</text>
+        </view>
+        <view class="info-item">
+          <text class="info-label">Last Login:</text>
+          <text class="info-value">{{userInfo.lastLoginAt ? userInfo.lastLoginAt.split('T')[0] : 'N/A'}}</text>
+        </view>
+        <view wx:if="{{userInfo.updatedAt}}" class="info-item">
+          <text class="info-label">Last Updated:</text>
+          <text class="info-value">{{userInfo.updatedAt.split('T')[0]}}</text>
+        </view>
+      </view>
+      
+      <!-- Actions Section -->
+      <view class="actions-section">
+        <button 
+          class="logout-btn" 
+          bindtap="logout"
+          type="warn"
+        >
+          Logout
+        </button>
+      </view>
+    </view>
+  </view>
+</view> 

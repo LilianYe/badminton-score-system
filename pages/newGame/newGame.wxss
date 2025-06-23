@@ -19,14 +19,40 @@
   padding: 20px;
 }
 
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #eee;
+}
+
 .card-title {
   font-size: 18px;
   font-weight: bold;
-  text-align: center;
-  margin-bottom: 20px;
   color: #333;
-  border-bottom: 1px solid #eee;
-  padding-bottom: 10px;
+}
+
+.profile-btn {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background-color: #f8f9fa;
+  border: 1px solid #e9ecef;
+  transition: all 0.2s;
+}
+
+.profile-btn:active {
+  background-color: #e9ecef;
+  transform: scale(0.95);
+}
+
+.profile-icon {
+  font-size: 18px;
 }
 
 .warning-box {

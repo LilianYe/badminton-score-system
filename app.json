@@ -5,7 +5,8 @@
     "pages/history/history",
     "pages/players/players",
     "pages/add-player/add-player",
-    "pages/player-detail/player-detail"
+    "pages/player-detail/player-detail",
+    "pages/user-profile/user-profile"
   ],
   "window": {
     "navigationBarTitleText": "Badminton Score System",

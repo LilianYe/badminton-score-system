@@ -132,22 +132,22 @@ Page({
     if (game.teamA.player1.id === playerId || game.teamA.player2.id === playerId) {
       // Player is in team A
       if (game.teamA.player1.id === playerId) {
-        playerTeam = "with " + game.teamA.player2.name;
+        playerTeam = "with " + app.getDisplayNickname(game.teamA.player2);
       } else {
-        playerTeam = "with " + game.teamA.player1.name;
+        playerTeam = "with " + app.getDisplayNickname(game.teamA.player1);
       }
 
-      opponentTeam = [game.teamB.player1.name, game.teamB.player2.name].join(" & ");
+      opponentTeam = [app.getDisplayNickname(game.teamB.player1), app.getDisplayNickname(game.teamB.player2)].join(" & ");
 
     } else {
       // Player is in team B
       if (game.teamB.player1.id === playerId) {
-        playerTeam = "with " + game.teamB.player2.name;
+        playerTeam = "with " + app.getDisplayNickname(game.teamB.player2);
       } else {
-        playerTeam = "with " + game.teamB.player1.name;
+        playerTeam = "with " + app.getDisplayNickname(game.teamB.player1);
       }
       
-      opponentTeam =  [game.teamA.player1.name, game.teamA.player2.name].join(" & ");
+      opponentTeam =  [app.getDisplayNickname(game.teamA.player1), app.getDisplayNickname(game.teamA.player2)].join(" & ");
     }
     
     return playerTeam + " vs " + opponentTeam;
@@ -166,13 +166,13 @@ Page({
   getSinglesOpponent: function(game, playerId) {
     if (game.winnerId === playerId) {
       if (game.loser) {
-        return game.loser.name;
+        return app.getDisplayNickname(game.loser);
       } else {
         return "Unknown";
       }
     } else {
       if (game.winner) {
-        return game.winner.name;
+        return app.getDisplayNickname(game.winner);
       } else {
         return "Unknown";
       }
@@ -226,7 +226,7 @@ Page({
     // Show confirmation dialog
     wx.showModal({
       title: 'Delete Player',
-      content: `Are you sure you want to delete ${player.name}? This action cannot be undone.`,
+      content: `Are you sure you want to delete ${app.getDisplayNickname(player)}? This action cannot be undone.`,
       confirmText: 'Delete',
       confirmColor: '#dc3545',
       cancelText: 'Cancel',
