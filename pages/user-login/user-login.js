@@ -88,7 +88,7 @@ Page({
     console.log('Attempting getUserProfile...');
     
     wx.getUserProfile({
-      desc: 'Used for personalizing your badminton score experience',
+      desc: 'Used for personalization',
       success: (res) => {
         console.log('getUserProfile success:', res);
         this.setData({
