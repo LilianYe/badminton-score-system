@@ -1,0 +1,51 @@
+{
+  "pages": [
+    "pages/user-login/user-login",
+    "pages/newGame/newGame",
+    "pages/history/history",
+    "pages/players/players",
+    "pages/add-player/add-player",
+    "pages/player-detail/player-detail"
+  ],
+  "window": {
+    "navigationBarTitleText": "Badminton Score System",
+    "navigationBarBackgroundColor": "#ffffff",
+    "navigationBarTextStyle": "black"
+  },
+  "tabBar": {
+    "color": "#999999",
+    "selectedColor": "#007AFF",
+    "backgroundColor": "#ffffff",
+    "borderStyle": "black",
+    "list": [
+      {
+        "pagePath": "pages/newGame/newGame",
+        "text": "New Game",
+        "iconPath": "assets/icons/game.png",
+        "selectedIconPath": "assets/icons/game-active.png"
+      },
+      {
+        "pagePath": "pages/players/players",
+        "text": "Rankings",
+        "iconPath": "assets/icons/ranking.png",
+        "selectedIconPath": "assets/icons/ranking-active.png"
+      },
+      {
+        "pagePath": "pages/history/history",
+        "text": "History",
+        "iconPath": "assets/icons/history.png",
+        "selectedIconPath": "assets/icons/history-active.png"
+      }
+    ]
+  },
+  "networkTimeout": {
+    "request": 60000,
+    "connectSocket": 60000,
+    "uploadFile": 60000,
+    "downloadFile": 60000
+  },
+  "debug": true,
+  "usingComponents": {
+    "player-selector": "/components/player-selector/player-selector"
+  }
+}

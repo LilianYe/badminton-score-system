@@ -1,0 +1,39 @@
+<view class="container">
+  <view class="header">
+    <text class="title">Player Rankings</text>
+    <button bindtap="addPlayer" type="primary" size="mini">Add Player</button>
+  </view>
+
+  <view class="player-list">
+    <view class="list-header">
+      <text class="rank">Rank</text>
+      <text class="name">Name</text>
+      <text class="stats">W/L</text>
+      <text class="rating">ELO</text>
+    </view>
+
+    <block wx:if="{{players.length > 0}}">
+      <view 
+        wx:for="{{players}}" 
+        wx:for-item="item" 
+        wx:for-index="index" 
+        wx:key="id" 
+        class="{{item.className}}" 
+        bindtap="onPlayerTap"
+        data-id="{{item.id}}"
+      >
+        <text class="rank">{{index + 1}}</text>
+        <text class="name">{{item.displayName}}</text>
+        <text class="stats">{{item.statsDisplay}}</text>
+        <text class="rating">{{item.rating}}</text>
+      </view>
+    </block>
+
+    <block wx:else>
+      <view class="empty-state">
+        <text>No players added yet.</text>
+        <button bindtap="addPlayer" type="primary" size="mini" class="empty-action">Add First Player</button>
+      </view>
+    </block>
+  </view>
+</view>

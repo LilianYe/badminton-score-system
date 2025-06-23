@@ -1,0 +1,63 @@
+<view class="player-selector">
+  <!-- Selected player display or placeholder -->
+  <view class="selected-player" bindtap="toggleDropdown">
+    <block wx:if="{{selectedPlayerId}}">
+      <view class="selected-name">
+        {{selectedPlayerName}}
+        <block wx:if="{{selectedPlayerGender === 'female'}}">
+          <text class="gender-indicator"> F</text>
+        </block>
+        <block wx:else>
+          <text class="gender-indicator"> M</text>
+        </block>
+      </view>
+      <view class="clear-btn" catchtap="clearSelection">×</view>
+    </block>
+    <view wx:else class="placeholder">{{placeholder}}</view>
+    
+    <block wx:if="{{isOpen}}">
+      <view class="dropdown-arrow up"></view>
+    </block>
+    <block wx:else>
+      <view class="dropdown-arrow down"></view>
+    </block>
+  </view>
+  
+  <!-- Dropdown content -->
+  <view wx:if="{{isOpen}}" class="dropdown-container open">
+    <!-- Search box -->
+    <view class="search-box">
+      <input 
+        class="search-input" 
+        placeholder="Search players..." 
+        bindinput="search" 
+        value="{{searchValue}}"
+        focus="{{isOpen}}"
+      />
+    </view>
+    
+    <!-- Players list - 使用预处理的类名和性别标签 -->
+    <scroll-view class="players-list" scroll-y>
+      <view wx:if="{{processedPlayers.length === 0}}" class="no-results">
+        No players found
+      </view>
+      
+      <view 
+        wx:for="{{processedPlayers}}" 
+        wx:key="id"
+        class="{{item.className}}"
+        data-id="{{item.id}}"
+        bindtap="selectPlayer"
+      >
+        <view class="player-name">
+          {{item.name}} 
+          <text class="gender-indicator">{{item.genderLabel}}</text>
+        </view>
+        <view class="player-rating">{{item.rating}}</view>
+      </view>
+    </scroll-view>
+  </view>
+  <view wx:else class="dropdown-container">
+    <!-- Empty container when closed -->
+  </view>
+</view>

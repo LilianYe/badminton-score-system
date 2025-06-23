@@ -1,0 +1,31 @@
+<view class="container">
+  <view class="login-card">
+    <view class="app-title">Badminton Score System</view>
+    
+    <view class="welcome-text">Welcome! Please enter your name to continue.</view>
+    
+    <view class="form-group">
+      <text class="label">Your Name:</text>
+      <input 
+        class="input" 
+        placeholder="Enter your name" 
+        value="{{username}}" 
+        bindinput="onUsernameInput" 
+        focus="true"
+      />
+    </view>
+    
+    <button 
+      bindtap="saveUsername" 
+      class="login-btn" 
+      type="primary" 
+      loading="{{isLoading}}"
+    >
+      Let's Play
+    </button>
+    
+    <view class="note">
+      <text>Your name will be used to personalize your experience.</text>
+    </view>
+  </view>
+</view>

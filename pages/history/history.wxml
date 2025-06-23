@@ -1,0 +1,86 @@
+<view class="container">
+  <view class="header">
+    <text class="title">Game History</text>
+  </view>
+  
+  <!-- Date filter -->
+  <view class="date-filter">
+    <picker mode="date" value="{{selectedDate}}" bindchange="onDateSelect">
+      <view class="date-picker">
+        <text>{{selectedDate ? 'Date: ' + selectedDate : 'Filter by date'}}</text>
+        <view class="picker-arrow"></view>
+      </view>
+    </picker>
+    <view wx:if="{{selectedDate}}" class="clear-filter" bindtap="clearDateFilter">
+      <text>Clear filter</text>
+    </view>
+  </view>
+  
+  <!-- Loading indicator -->
+  <view wx:if="{{isLoading}}" class="loading">
+    <text>Loading match history...</text>
+  </view>
+  
+  <!-- Empty state -->
+  <view wx:elif="{{isEmpty}}" class="empty-state">
+    <text class="empty-text">No matches found</text>
+    <text class="empty-hint" wx:if="{{selectedDate}}">No matches on {{selectedDate}}</text>
+    <text class="empty-hint" wx:elif="{{currentPlayer}}">No match history for {{currentPlayer}}</text>
+    <text class="empty-hint" wx:else>Please login to view your match history</text>
+  </view>
+  
+  <!-- Game history list -->
+  <view wx:else class="history-list">
+    <block wx:for="{{games}}" wx:key="id">
+      <view class="game-item" bindtap="viewGameDetails" data-id="{{item.id}}" hover-class="game-item-hover">
+        <view class="game-date">{{item.displayDate}}</view>
+        
+        <!-- Display for doubles games -->
+        <block wx:if="{{item.gameType === 'doubles'}}">
+          <block wx:if="{{item.winningTeam === 'teamA'}}">
+            <view class="team winner">
+              <text class="player-names">{{item.teamA.player1.name}}, {{item.teamA.player2.name}}</text>
+              <text class="score">{{item.teamA.score}}</text>
+            </view>
+          </block>
+          <block wx:else>
+            <view class="team">
+              <text class="player-names">{{item.teamA.player1.name}}, {{item.teamA.player2.name}}</text>
+              <text class="score">{{item.teamA.score}}</text>
+            </view>
+          </block>
+          
+          <view class="vs">VS</view>
+          
+          <block wx:if="{{item.winningTeam === 'teamB'}}">
+            <view class="team winner">
+              <text class="player-names">{{item.teamB.player1.name}}, {{item.teamB.player2.name}}</text>
+              <text class="score">{{item.teamB.score}}</text>
+            </view>
+          </block>
+          <block wx:else>
+            <view class="team">
+              <text class="player-names">{{item.teamB.player1.name}}, {{item.teamB.player2.name}}</text>
+              <text class="score">{{item.teamB.score}}</text>
+            </view>
+          </block>
+        </block>
+        
+        <!-- Display for singles games -->
+        <block wx:else>
+          <view class="team winner">
+            <text class="player-names">{{item.winner.name}}</text>
+            <text class="score">{{item.winner.score}}</text>
+          </view>
+          
+          <view class="vs">VS</view>
+          
+          <view class="team">
+            <text class="player-names">{{item.loser.name}}</text>
+            <text class="score">{{item.loser.score}}</text>
+          </view>
+        </block>
+      </view>
+    </block>
+  </view>
+</view>

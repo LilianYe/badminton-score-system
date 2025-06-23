@@ -1,0 +1,115 @@
+<view class="container">
+  <view wx:if="{{isLoading}}" class="loading">
+    <text>Loading player data...</text>
+  </view>
+  
+  <block wx:elif="{{player}}">
+    <view class="player-header">
+      <view class="player-info">
+        <view class="player-name">{{player.name}}</view>
+        <block wx:if="{{player.gender === 'female'}}">
+          <view class="player-gender female-gender">
+            <text>F Female</text>
+          </view>
+        </block>
+        <block wx:else>
+          <view class="player-gender male-gender">
+            <text>M Male</text>
+          </view>
+        </block>
+      </view>
+      <view class="player-rating">{{player.rating}} ELO</view>
+    </view>
+    
+    <view class="stats-card">
+      <view class="stat-item">
+        <text class="stat-label">Games</text>
+        <text class="stat-value">{{totalGames}}</text>
+      </view>
+      <view class="stat-item">
+        <text class="stat-label">Wins</text>
+        <text class="stat-value">{{player.wins || 0}}</text>
+      </view>
+      <view class="stat-item">
+        <text class="stat-label">Losses</text>
+        <text class="stat-value">{{player.losses || 0}}</text>
+      </view>
+      <view class="stat-item">
+        <text class="stat-label">Win Rate</text>
+        <text class="stat-value">{{winRate}}%</text>
+      </view>
+    </view>
+    
+    <view class="section-title">Game History</view>
+    
+    <view wx:if="{{processedGames.length === 0}}" class="empty-state">
+      <text>No games played yet</text>
+    </view>
+    
+    <view wx:else class="game-history">
+      <view class="game-list-header">
+        <text class="date-col">Date</text>
+        <text class="result-col">Result</text>
+        <text class="teams-col">Teams</text>
+        <text class="score-col">Score</text>
+      </view>
+      
+      <block wx:for="{{processedGames}}" wx:key="id">
+        <block wx:if="{{item.isWin}}">
+          <view class="game-item win">
+            <text class="date-col">{{item.displayDate}}</text>
+            <text class="result-col">{{item.resultText}}</text>
+            
+            <!-- For doubles games -->
+            <block wx:if="{{item.gameType === 'doubles'}}">
+              <view class="teams-col">
+                <text>{{item.teamDisplay}}</text>
+              </view>
+              <text class="score-col">{{item.scoreDisplay}}</text>
+            </block>
+            
+            <!-- For singles games -->
+            <block wx:else>
+              <view class="teams-col">
+                <text>vs. {{item.opponentName}}</text>
+              </view>
+              <text class="score-col">{{item.scoreDisplay}}</text>
+            </block>
+          </view>
+        </block>
+        <block wx:else>
+          <view class="game-item loss">
+            <text class="date-col">{{item.displayDate}}</text>
+            <text class="result-col">{{item.resultText}}</text>
+            
+            <!-- For doubles games -->
+            <block wx:if="{{item.gameType === 'doubles'}}">
+              <view class="teams-col">
+                <text>{{item.teamDisplay}}</text>
+              </view>
+              <text class="score-col">{{item.scoreDisplay}}</text>
+            </block>
+            
+            <!-- For singles games -->
+            <block wx:else>
+              <view class="teams-col">
+                <text>vs. {{item.opponentName}}</text>
+              </view>
+              <text class="score-col">{{item.scoreDisplay}}</text>
+            </block>
+          </view>
+        </block>
+      </block>
+    </view>
+    
+    <!-- Danger zone section -->
+    <view class="danger-zone">
+      <view class="danger-title">Danger Zone</view>
+      <button class="delete-btn" bindtap="deletePlayer">Delete Player</button>
+    </view>
+  </block>
+  
+  <view wx:else class="error-state">
+    <text>Player not found</text>
+  </view>
+</view>
