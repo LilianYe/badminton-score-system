@@ -18,12 +18,7 @@ Page({
   },
 
   onLoad: function() {
-    const userInfo = wx.getStorageSync('userInfo');
-    if (userInfo && userInfo.nickname) {
-      this.setData({
-        username: userInfo.nickname
-      });
-    }
+    this.loadCurrentUser();
     this.loadPlayers();
   },
   
@@ -42,6 +37,20 @@ Page({
       teamBPlayer1Index: players.length > 2 ? 2 : -1,
       teamBPlayer2Index: players.length > 3 ? 3 : -1
     });
+  },
+  
+  // Load current user from cloud database
+  async loadCurrentUser() {
+    try {
+      const currentUser = await app.getCurrentUser();
+      if (currentUser && currentUser.nickname) {
+        this.setData({
+          username: currentUser.nickname
+        });
+      }
+    } catch (error) {
+      console.error('Error loading current user:', error);
+    }
   },
   
   // Player selection handlers

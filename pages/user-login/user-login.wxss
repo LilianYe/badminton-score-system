@@ -136,6 +136,21 @@
   border: none;
 }
 
+.test-scenarios-btn {
+  width: 100%;
+  height: 36px;
+  margin-top: 8px;
+  background-color: #5856D6 !important;
+  border-color: #5856D6 !important;
+  color: #fff !important;
+  font-size: 12px;
+  border-radius: 6px;
+}
+
+.test-scenarios-btn::after {
+  border: none;
+}
+
 .dev-note {
   display: block;
   margin-top: 10px;
@@ -333,4 +348,33 @@
   border-left: 6px solid transparent;
   border-right: 6px solid transparent;
   border-top: 6px solid #666;
+}
+
+.nickname-section {
+  margin-bottom: 30px;
+}
+
+.nickname-label {
+  font-size: 16px;
+  font-weight: 500;
+  color: #333;
+  margin-bottom: 12px;
+  display: block;
+}
+
+.nickname-input {
+  width: 100%;
+  height: 44px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  padding: 0 12px;
+  font-size: 16px;
+  background-color: #fff;
+  box-sizing: border-box;
+  transition: border-color 0.2s;
+}
+
+.nickname-input:focus {
+  border-color: #007AFF;
+  outline: none;
 }
