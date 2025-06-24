@@ -5,6 +5,7 @@
 
 let db = null;
 let userCollection = null;
+let gameCollection = null;
 
 class CloudDBService {
   
@@ -18,14 +19,16 @@ class CloudDBService {
         env: "elo-system-8g6jq2r4a931945e",
         traceUser: true
       });
-      
-      // Initialize database connection
+        // Initialize database connection
       db = wx.cloud.database();
       userCollection = db.collection('UserProfile');
+      gameCollection = db.collection('Session');
       
       console.log('Cloud database initialized successfully');
       console.log('Database instance:', db);
       console.log('User collection:', userCollection);
+      console.log('Game collection:', gameCollection);
+      console.log('Game collection:', gameCollection);
       return true;
     } catch (error) {
       console.error('Failed to initialize cloud database:', error);
@@ -37,7 +40,7 @@ class CloudDBService {
    * Ensure database is initialized
    */
   static ensureInit() {
-    if (!db || !userCollection) {
+    if (!db || !userCollection || !gameCollection) {
       console.log('Database not initialized, initializing now...');
       this.init();
     }
@@ -52,10 +55,20 @@ class CloudDBService {
     this.ensureInit();
     
     try {
-      console.log('Looking for user with _openid:', openid);
-      const result = await userCollection.where({
+      console.log('Looking for user with openid:', openid);
+      
+      // Try to find by _openid (automatically set by WeChat cloud)
+      let result = await userCollection.where({
         _openid: openid
       }).get();
+      
+      // If not found, try to find by WechatId field (manually set)
+      if (!result.data || result.data.length === 0) {
+        console.log('Not found by _openid, trying WechatId field');
+        result = await userCollection.where({
+          WechatId: openid
+        }).get();
+      }
       
       console.log('Database query result:', result);
       
@@ -64,7 +77,7 @@ class CloudDBService {
         return this.mapToUserSchema(result.data[0]);
       }
       
-      console.log('User not found in cloud database for _openid:', openid);
+      console.log('User not found in cloud database for openid:', openid);
       return null;
     } catch (error) {
       console.error('Error getting user from cloud database:', error);
@@ -76,17 +89,28 @@ class CloudDBService {
    * Create new user profile in cloud database
    * @param {Object} userData - User profile data
    * @returns {Promise<Object>} Created user profile
-   */
-  static async createUser(userData) {
+   */  static async createUser(userData) {
     this.ensureInit();
     
     try {
       console.log('Creating user with data:', userData);
       
+      // Ensure we have a valid openid/WechatId
+      if (!userData.openid) {
+        console.error('Cannot create user: missing openid');
+        throw new Error('无效的用户ID，请重新登录');
+      }
+      
       const userToCreate = this.mapToCloudSchema(userData);
+      
+      // Make sure WechatId is set properly
+      userToCreate.WechatId = userData.openid;
+      
+      // Add additional required fields
       userToCreate.createdAt = new Date().toISOString();
       userToCreate.lastLoginAt = new Date().toISOString();
       userToCreate.updatedAt = new Date().toISOString();
+      userToCreate.elo = userData.elo || 1500;
 
       console.log('Mapped user data for cloud:', userToCreate);
 
@@ -219,18 +243,32 @@ class CloudDBService {
    * Check if user exists by _openid
    * @param {string} openid - WeChat _openid (automatically provided by WeChat Cloud Database)
    * @returns {Promise<boolean>} True if user exists
-   */
-  static async userExists(openid) {
+   */  static async userExists(openid) {
     this.ensureInit();
     
+    if (!openid) {
+      console.error('Invalid openid provided (null/undefined)');
+      return false;
+    }
+    
     try {
-      console.log('Checking if user exists with _openid:', openid);
-      const result = await userCollection.where({
+      console.log('Checking if user exists with openid:', openid);
+      
+      // Try to find by _openid (automatically set by WeChat cloud)
+      let result = await userCollection.where({
         _openid: openid
       }).get();
       
+      // If not found, try to find by WechatId field (manually set)
+      if (!result.data || result.data.length === 0) {
+        console.log('Not found by _openid, trying WechatId field');
+        result = await userCollection.where({
+          WechatId: openid
+        }).get();
+      }
+      
       const exists = result.data && result.data.length > 0;
-      console.log(`User with _openid ${openid} ${exists ? 'exists' : 'does not exist'}`);
+      console.log(`User with openid ${openid} ${exists ? 'exists' : 'does not exist'}`);
       return exists;
     } catch (error) {
       console.error('Error checking if user exists:', error);
@@ -500,17 +538,28 @@ class CloudDBService {
    * Map user data to cloud database schema
    * @param {Object} userData - User data in app format
    * @returns {Object} User data in cloud database format
-   */
-  static mapToCloudSchema(userData) {
+   */  static mapToCloudSchema(userData) {
     console.log('Mapping user data to cloud schema:', userData);
     
     const mapped = {
+      // Critical field for user identification
+      WechatId: userData.openid || userData.WechatId,
+      
+      // User profile fields
       Name: userData.nickname || userData.Name,
+      nickname: userData.nickname || userData.Name, // For compatibility
       Avatar: userData.avatarUrl || userData.Avatar || '',
+      avatarUrl: userData.avatarUrl || userData.Avatar || '', // For compatibility
       Gender: userData.gender || userData.Gender || 'male',
-      createdAt: userData.createdAt,
-      lastLoginAt: userData.lastLoginAt,
-      updatedAt: userData.updatedAt
+      gender: userData.gender || userData.Gender || 'male', // For compatibility
+      
+      // Timestamps
+      createdAt: userData.createdAt || new Date().toISOString(),
+      lastLoginAt: userData.lastLoginAt || new Date().toISOString(),
+      updatedAt: userData.updatedAt || new Date().toISOString(),
+      
+      // Game-related fields
+      elo: userData.elo || 1500
     };
     
     console.log('Mapped to cloud schema:', mapped);
@@ -521,25 +570,431 @@ class CloudDBService {
    * Map cloud database data to app schema
    * @param {Object} cloudData - User data from cloud database
    * @returns {Object} User data in app format
-   */
-  static mapToUserSchema(cloudData) {
+   */  static mapToUserSchema(cloudData) {
     console.log('Mapping cloud data to user schema:', cloudData);
     
     const mapped = {
-      openid: cloudData._openid,
-      nickname: cloudData.Name,
-      Name: cloudData.Name,
-      avatarUrl: cloudData.Avatar,
-      Avatar: cloudData.Avatar,
-      gender: cloudData.Gender,
-      Gender: cloudData.Gender,
+      // Use WechatId as openid if _openid doesn't exist (manual creation)
+      openid: cloudData._openid || cloudData.WechatId,
+      WechatId: cloudData.WechatId || cloudData._openid,
+      
+      // User profile fields
+      nickname: cloudData.nickname || cloudData.Name,
+      Name: cloudData.Name || cloudData.nickname,
+      avatarUrl: cloudData.avatarUrl || cloudData.Avatar || '',
+      Avatar: cloudData.Avatar || cloudData.avatarUrl || '',
+      gender: cloudData.gender || cloudData.Gender || 'male',
+      Gender: cloudData.Gender || cloudData.gender || 'male',
+      
+      // Timestamps
       createdAt: cloudData.createdAt,
       lastLoginAt: cloudData.lastLoginAt,
       updatedAt: cloudData.updatedAt,
+      
+      // Game-related fields
+      elo: cloudData.elo || 1500,
+      
+      // Database identifier
       _id: cloudData._id
     };
     
     console.log('Mapped to user schema:', mapped);
+    return mapped;
+  }
+  
+  /**************************************************************************
+   * GAME MANAGEMENT METHODS
+   **************************************************************************/
+
+  /**
+   * Get all available games from cloud database
+   * @returns {Promise<Array>} Array of game objects
+   */
+  static async getAllGames() {
+    this.ensureInit();
+    
+    try {
+      console.log('Getting all games from cloud database...');
+      
+      // Get all games, ordered by date (newest first)
+      const result = await gameCollection
+        .orderBy('date', 'desc')  // Most recent games first
+        .get();
+      
+      if (result.data && result.data.length > 0) {
+        console.log(`Found ${result.data.length} games in cloud database`);
+        return result.data.map(game => this.mapToGameSchema(game));
+      }
+      
+      console.log('No games found in cloud database');
+      return [];
+    } catch (error) {
+      console.error('Error getting games from cloud database:', error);
+      throw error;
+    }
+  }
+  
+  /**
+   * Get a game by its ID from cloud database
+   * @param {string} gameId - The ID of the game
+   * @returns {Promise<Object|null>} Game object or null if not found
+   */
+  static async getGameById(gameId) {
+    this.ensureInit();
+    
+    try {
+      console.log('Getting game by ID:', gameId);
+      
+      // If gameId is a cloud ID (_id), we can use doc() directly
+      if (gameId.length === 24 || gameId.length === 32) {
+        try {
+          const result = await gameCollection.doc(gameId).get();
+          if (result.data) {
+            return this.mapToGameSchema(result.data);
+          }
+        } catch (docError) {
+          console.log('Not a valid document ID, will try where clause');
+        }
+      }
+      
+      // Otherwise, use 'id' field to find the game
+      const result = await gameCollection.where({
+        id: gameId
+      }).get();
+      
+      if (result.data && result.data.length > 0) {
+        console.log('Game found in cloud database:', result.data[0]);
+        return this.mapToGameSchema(result.data[0]);
+      }
+      
+      console.log('Game not found in cloud database for ID:', gameId);
+      return null;
+    } catch (error) {
+      console.error('Error getting game from cloud database:', error);
+      throw error;
+    }
+  }
+  
+  /**
+   * Create a new game in cloud database
+   * @param {Object} gameData - Game data
+   * @returns {Promise<Object>} Created game
+   */
+  static async createGame(gameData) {
+    this.ensureInit();
+    
+    try {
+      console.log('Creating game with data:', gameData);
+      
+      // Ensure we have required fields
+      if (!gameData.id || !gameData.title || !gameData.owner || !gameData.owner.openid) {
+        console.error('Cannot create game: missing required fields');
+        throw new Error('游戏信息不完整，请提供必要的信息');
+      }
+      
+      const gameToCreate = this.mapToCloudGameSchema(gameData);
+      
+      // Add timestamps
+      gameToCreate.createdAt = new Date().toISOString();
+      gameToCreate.updatedAt = new Date().toISOString();
+
+      console.log('Mapped game data for cloud:', gameToCreate);
+
+      const result = await gameCollection.add({
+        data: gameToCreate
+      });
+
+      console.log('Game created in cloud database:', result);
+      
+      // Get the created game with _id
+      const createdGame = await this.getGameById(gameData.id);
+      return createdGame;
+    } catch (error) {
+      console.error('Error creating game in cloud database:', error);
+      throw error;
+    }
+  }
+  
+  /**
+   * Update an existing game in cloud database
+   * @param {string} gameId - The ID of the game
+   * @param {Object} updateData - Data to update
+   * @returns {Promise<Object>} Updated game
+   */
+  static async updateGame(gameId, updateData) {
+    this.ensureInit();
+    
+    try {
+      console.log('Updating game with ID:', gameId);
+      console.log('Update data:', updateData);
+      
+      // Find the game by ID first
+      const game = await this.getGameById(gameId);
+      
+      if (!game) {
+        console.error('Game not found for ID:', gameId);
+        throw new Error('游戏不存在');
+      }
+      
+      // Use cloud _id for update if available
+      const docId = game._id;
+      
+      if (!docId) {
+        console.error('Game has no document ID');
+        throw new Error('游戏文档ID不存在');
+      }
+      
+      const updateToApply = this.mapToCloudGameSchema(updateData);
+      updateToApply.updatedAt = new Date().toISOString();
+      
+      console.log('Updating game document with ID:', docId);
+      console.log('Update to apply:', updateToApply);
+      
+      const result = await gameCollection.doc(docId).update({
+        data: updateToApply
+      });
+      
+      console.log('Game updated in cloud database:', result);
+      
+      // Get the updated game
+      const updatedGame = await this.getGameById(gameId);
+      return updatedGame;
+    } catch (error) {
+      console.error('Error updating game in cloud database:', error);
+      throw error;
+    }
+  }
+  
+  /**
+   * Delete a game from cloud database
+   * @param {string} gameId - The ID of the game
+   * @returns {Promise<boolean>} True if successful
+   */
+  static async deleteGame(gameId) {
+    this.ensureInit();
+    
+    try {
+      console.log('Deleting game with ID:', gameId);
+      
+      // Find the game by ID first
+      const game = await this.getGameById(gameId);
+      
+      if (!game) {
+        console.error('Game not found for ID:', gameId);
+        throw new Error('游戏不存在');
+      }
+      
+      // Use cloud _id for deletion if available
+      const docId = game._id;
+      
+      if (!docId) {
+        console.error('Game has no document ID');
+        throw new Error('游戏文档ID不存在');
+      }
+      
+      const result = await gameCollection.doc(docId).remove();
+      
+      console.log('Game deleted from cloud database:', result);
+      return result.stats.removed === 1;
+    } catch (error) {
+      console.error('Error deleting game from cloud database:', error);
+      throw error;
+    }
+  }
+  
+  /**
+   * Add a player to a game
+   * @param {string} gameId - The ID of the game
+   * @param {Object} playerData - Player data to add
+   * @returns {Promise<Object>} Updated game
+   */
+  static async addPlayerToGame(gameId, playerData) {
+    this.ensureInit();
+    
+    try {
+      console.log('Adding player to game with ID:', gameId);
+      console.log('Player data:', playerData);
+      
+      // Find the game by ID first
+      const game = await this.getGameById(gameId);
+      
+      if (!game) {
+        console.error('Game not found for ID:', gameId);
+        throw new Error('游戏不存在');
+      }
+      
+      // Use cloud _id for update if available
+      const docId = game._id;
+      
+      if (!docId) {
+        console.error('Game has no document ID');
+        throw new Error('游戏文档ID不存在');
+      }
+      
+      // Check if player is already in the game
+      const isAlreadySignedUp = game.players.some(player => 
+        player.openid === playerData.openid
+      );
+      
+      if (isAlreadySignedUp) {
+        console.log('Player already in game:', playerData.openid);
+        throw new Error('您已经报名参加了这个活动');
+      }
+      
+      // Add player to the game
+      const updatedPlayers = game.players.concat(playerData);
+      
+      const result = await gameCollection.doc(docId).update({
+        data: {
+          players: updatedPlayers,
+          updatedAt: new Date().toISOString()
+        }
+      });
+      
+      console.log('Player added to game in cloud database:', result);
+      
+      // Get the updated game
+      const updatedGame = await this.getGameById(gameId);
+      return updatedGame;
+    } catch (error) {
+      console.error('Error adding player to game in cloud database:', error);
+      throw error;
+    }
+  }
+  
+  /**
+   * Remove a player from a game
+   * @param {string} gameId - The ID of the game
+   * @param {number} playerIndex - Index of the player in the players array
+   * @returns {Promise<Object>} Updated game
+   */
+  static async removePlayerFromGame(gameId, playerIndex) {
+    this.ensureInit();
+    
+    try {
+      console.log('Removing player from game with ID:', gameId);
+      console.log('Player index:', playerIndex);
+      
+      // Find the game by ID first
+      const game = await this.getGameById(gameId);
+      
+      if (!game) {
+        console.error('Game not found for ID:', gameId);
+        throw new Error('游戏不存在');
+      }
+      
+      // Use cloud _id for update if available
+      const docId = game._id;
+      
+      if (!docId) {
+        console.error('Game has no document ID');
+        throw new Error('游戏文档ID不存在');
+      }
+      
+      // Check if player index is valid
+      if (playerIndex < 0 || playerIndex >= game.players.length) {
+        console.error('Invalid player index:', playerIndex);
+        throw new Error('无效的球员索引');
+      }
+      
+      // Remove player from the game
+      const updatedPlayers = game.players.slice();
+      updatedPlayers.splice(playerIndex, 1);
+      
+      const result = await gameCollection.doc(docId).update({
+        data: {
+          players: updatedPlayers,
+          updatedAt: new Date().toISOString()
+        }
+      });
+      
+      console.log('Player removed from game in cloud database:', result);
+      
+      // Get the updated game
+      const updatedGame = await this.getGameById(gameId);
+      return updatedGame;
+    } catch (error) {
+      console.error('Error removing player from game in cloud database:', error);
+      throw error;
+    }
+  }
+  
+  /**
+   * Map app game schema to cloud database schema
+   * @param {Object} gameData - Game data in app format
+   * @returns {Object} Game data in cloud format
+   */
+  static mapToCloudGameSchema(gameData) {
+    console.log('Mapping game data to cloud schema:', gameData);
+    
+    const mapped = {
+      // Game identification
+      id: gameData.id,
+      
+      // Game details
+      title: gameData.title,
+      date: gameData.date,
+      time: gameData.time,
+      location: gameData.location,
+      rules: gameData.rules,
+      matchupMethod: gameData.matchupMethod,
+      maxPlayers: gameData.maxPlayers || 10,
+      courtCount: gameData.courtCount || 2,
+      status: gameData.status || '招募中',
+      
+      // Owner info
+      owner: gameData.owner,
+      
+      // Players list
+      players: gameData.players || [],
+      
+      // Timestamps
+      createdAt: gameData.createdAt || new Date().toISOString(),
+      updatedAt: gameData.updatedAt || new Date().toISOString()
+    };
+    
+    console.log('Mapped to cloud game schema:', mapped);
+    return mapped;
+  }
+  
+  /**
+   * Map cloud database game data to app schema
+   * @param {Object} cloudData - Game data from cloud database
+   * @returns {Object} Game data in app format
+   */
+  static mapToGameSchema(cloudData) {
+    console.log('Mapping cloud data to game schema:', cloudData);
+    
+    const mapped = {
+      // Preserve cloud ID for future operations
+      _id: cloudData._id,
+      
+      // Game identification
+      id: cloudData.id,
+      
+      // Game details
+      title: cloudData.title,
+      date: cloudData.date,
+      time: cloudData.time,
+      location: cloudData.location,
+      rules: cloudData.rules,
+      matchupMethod: cloudData.matchupMethod,
+      maxPlayers: cloudData.maxPlayers || 10,
+      courtCount: cloudData.courtCount || 2,
+      status: cloudData.status || '招募中',
+      
+      // Owner info
+      owner: cloudData.owner,
+      
+      // Players list
+      players: cloudData.players || [],
+      
+      // Timestamps
+      createdAt: cloudData.createdAt,
+      updatedAt: cloudData.updatedAt
+    };
+    
+    console.log('Mapped to app game schema:', mapped);
     return mapped;
   }
 }
@@ -553,4 +1008,4 @@ if (typeof module !== 'undefined' && module.exports) {
 } else {
   // For browser/WeChat environment
   window.CloudDBService = CloudDBService;
-} 
+}

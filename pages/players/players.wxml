@@ -23,7 +23,7 @@
         data-id="{{item.id}}"
       >
         <text class="rank">{{index + 1}}</text>
-        <text class="name">{{item.displayName}}</text>
+        <text class="name">{{item.name}}</text>
         <text class="stats">{{item.statsDisplay}}</text>
         <text class="rating">{{item.rating}}</text>
       </view>

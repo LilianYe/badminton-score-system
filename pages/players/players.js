@@ -22,12 +22,10 @@ Page({
       // 处理胜负统计数据
       const wins = player.wins || 0;
       const losses = player.losses || 0;
-      const statsDisplay = `${wins}/${losses}`;
-      // Create a new object with all existing properties
+      const statsDisplay = `${wins}/${losses}`;      // Create a new object with all existing properties
       return {
         ...player,
-        // Add displayName property with gender indicator
-        displayName: app.getDisplayNickname(player),
+        // Use name directly (no need for displayName with gender indicator)
         className: player.gender === 'female' ? 'player-item female-player' : 'player-item',
         statsDisplay: statsDisplay  // 新添加的预处理胜负统计
       };

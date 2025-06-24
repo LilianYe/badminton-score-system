@@ -32,29 +32,26 @@ Page({
       // Get players from global data
       const app = getApp();
       if (app.globalData && app.globalData.signupPlayers && app.globalData.signupPlayers.length > 0) {
-        const playerList = app.globalData.signupPlayers.join('\n');
-        
-        // Set up the female player set from signup data
+        const playerList = app.globalData.signupPlayers.join('\n');        // Set up the female player set from player gender property
         let femaleSet = new Set();
-        if (app.globalData.femalePlayerSet && app.globalData.femalePlayerSet.length > 0) {
-          femaleSet = new Set(app.globalData.femalePlayerSet);
+        if (app.globalData.signupPlayerData && app.globalData.signupPlayerData.length > 0) {
+          // Create femaleSet from players with gender='female'
+          const femalePlayers = app.globalData.signupPlayerData
+            .filter(player => player.gender === 'female')
+            .map(player => player.name);
+          femaleSet = new Set(femalePlayers);
           console.log('Loaded female players:', Array.from(femaleSet));
-        } else {
-          // Fall back to detecting female players by name
-          app.globalData.signupPlayers.forEach(name => {
-            if (name.includes('(F)')) {
-              femaleSet.add(name);
-            }
-          });
         }
         
         // Get ELO ratings if available
         const playerElos = {};
         if (app.globalData.signupPlayerData && app.globalData.signupPlayerData.length > 0) {
           app.globalData.signupPlayerData.forEach(player => {
-            playerElos[player.displayName] = player.elo || app.globalData.defaultElo || 1500;
+            playerElos[player.name] = player.elo || app.globalData.defaultElo || 1500;
           });
-        }        this.setData({ 
+        }
+        
+        this.setData({
           playersInput: playerList,
           femaleSet: femaleSet,
           playerElos: playerElos,
@@ -66,40 +63,18 @@ Page({
         }, () => {
           this.processPlayersInput();
         });
+          console.log('Loaded players from signup:', playerList);
         
-        console.log('Loaded players from signup:', playerList);
-        
-        // Auto-generate if we have at least 4 players
-        if (app.globalData.signupPlayers.length >= 4) {
-          setTimeout(() => this.onGenerate(), 500);
-        }
-      } else {
-        // If no players found, load example players
-        this.loadExamplePlayers();
-      }
-    } else {
-      // Initialize with some example players for testing
-      this.loadExamplePlayers();
-    }
+        // No longer auto-generate - let the user review parameters first
+        wx.showToast({
+          title: '请设置参数后点击生成',
+          icon: 'none',
+          duration: 2000
+        });
+      } 
+    } 
   },
-    loadExamplePlayers() {
-    const examplePlayers = "敏敏子(F)\nAcaprice\nliyu\nMax(F)\n张晴川\n方文\n米兰的小铁匠\ngdc\nx1(F)\nx2(F)";
-    
-    // Set up female players set
-    const femaleSet = new Set();
-    examplePlayers.split('\n').forEach(name => {
-      if (name.includes('(F)')) {
-        femaleSet.add(name);
-      }
-    });
-    
-    this.setData({ 
-      playersInput: examplePlayers,
-      femaleSet: femaleSet 
-    }, () => {
-      this.processPlayersInput();
-    });
-  },
+
   
   toggleAdvanced() {
     this.setData({ showAdvanced: !this.data.showAdvanced });
@@ -116,13 +91,10 @@ Page({
     const index = e.currentTarget.dataset.index;
     const players = this.data.playersInput.split('\n');
     const removedPlayer = players[index];
-    
-    // Update femaleSet if needed
-    if (removedPlayer && removedPlayer.includes('(F)')) {
-      const femaleSet = this.data.femaleSet;
-      femaleSet.delete(removedPlayer);
-      this.setData({ femaleSet: femaleSet });
-    }
+      // Update femaleSet if needed
+    const femaleSet = this.data.femaleSet;
+    femaleSet.delete(removedPlayer);
+    this.setData({ femaleSet: femaleSet });
     
     // Remove player from list
     players.splice(index, 1);
@@ -134,19 +106,30 @@ Page({
   onShow() {
     console.log('Generate Match page shown');
   },
-    onPlayersInput(e) {
+  onPlayersInput(e) {
     this.setData({ playersInput: e.detail.value }, () => {
-      this.processPlayersInput();
-      
-      // Update female players set
+      // Update female players set based on player objects from app.globalData
+      const app = getApp();
       const femaleSet = new Set();
-      e.detail.value.split('\n').forEach(name => {
-        if (name.includes('(F)')) {
-          femaleSet.add(name);
-        }
-      });
       
-      this.setData({ femaleSet: femaleSet });
+      // If we have player data with gender information, use it
+      if (app.globalData && app.globalData.signupPlayerData) {
+        const playerMap = {};
+        app.globalData.signupPlayerData.forEach(player => {
+          playerMap[player.name] = player;
+        });
+        
+        e.detail.value.split('\n').forEach(name => {
+          const trimmedName = name.trim();
+          if (trimmedName && playerMap[trimmedName] && playerMap[trimmedName].gender === 'female') {
+            femaleSet.add(trimmedName);
+          }
+        });
+      }
+      
+      this.setData({ femaleSet: femaleSet }, () => {
+        this.processPlayersInput();
+      });
     });
   },
   
@@ -176,11 +159,12 @@ Page({
   regenerateMatches() {
     this.onGenerate();
   },
-  
-  // Process players from input string to array for rendering
+    // Process players from input string to array for rendering
   processPlayersInput() {
     // Split by newlines and filter empty lines
     const playerLines = this.data.playersInput.split('\n');
+    const femaleSet = this.data.femaleSet || new Set();
+
     const processedPlayers = playerLines
       .map(line => {
         const trimmedLine = line.trim();
@@ -188,7 +172,7 @@ Page({
         
         return {
           name: trimmedLine,
-          isFemale: trimmedLine.includes('(F)')
+          isFemale: femaleSet.has(trimmedLine) // Use femaleSet to determine gender
         };
       })
       .filter(player => player !== null); // Remove null entries
@@ -221,8 +205,7 @@ Page({
       this.setData({ result: '至少需要4名球员才能生成对阵表', loading: false });
       return;
     }
-    
-    // Set up player ELOs - use data from signup if available
+      // Set up player ELOs - use data from signup if available
     const playerElos = this.data.playerElos || {};
     players.forEach(p => {
       if (!playerElos[p]) {
@@ -230,19 +213,18 @@ Page({
       }
     });
     
-    // Update female players set (in case it wasn't set already)
-    const femaleSet = new Set();
-    players.forEach(name => {
-      if (name.includes('(F)')) {
-        femaleSet.add(name);
-      }
-    });
-    this.setData({ femaleSet: femaleSet });
+    // Use the existing femaleSet to create player objects
+    const femaleSet = this.data.femaleSet;
+    const playerObjects = players.map(name => ({
+      name: name,
+      gender: femaleSet.has(name) ? 'female' : 'male',
+      elo: playerElos[name] || 1500
+    }));
     
     // Use setTimeout to allow the UI to update before starting calculation
     setTimeout(() => {
       try {
-        const matchResult = util.tryGenerateRotationFull(players, courtCount, gamePerPlayer, eloThreshold, playerElos, teamEloDiff, 30);
+        const matchResult = util.tryGenerateRotationFull(playerObjects, courtCount, gamePerPlayer, eloThreshold, playerElos, teamEloDiff, 30);
         
         if (!matchResult) {
           this.setData({ 

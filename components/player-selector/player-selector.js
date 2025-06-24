@@ -43,20 +43,14 @@ Component({
         
         // 确定性别标签
         const genderLabel = isFemale ? 'F' : 'M';
-        
-        // 获取显示昵称（女性玩家会显示 (F)）
-        const displayName = this.getDisplayNickname(player);
-        
-        // 返回带有附加属性的玩家对象
+          // 返回带有附加属性的玩家对象
         return {
           ...player,
           className: className,
-          genderLabel: genderLabel,
-          displayName: displayName
+          genderLabel: genderLabel
         };
       });
-      
-      // 更新数据
+        // 更新数据
       this.setData({
         filteredPlayers: filteredList,
         processedPlayers: processedList
@@ -67,7 +61,7 @@ Component({
         const selectedPlayer = players.find(p => p.id === selectedPlayerId);
         if (selectedPlayer) {
           this.setData({
-            selectedPlayerName: this.getDisplayNickname(selectedPlayer),
+            selectedPlayerName: selectedPlayer.name,
             selectedPlayerGender: selectedPlayer.gender || 'male'
           });
         }
@@ -85,15 +79,12 @@ Component({
         let className = 'player-item';
         if (isSelected) className += ' selected';
         if (isFemale) className += ' female-player';
-        
-        const genderLabel = isFemale ? 'F' : 'M';
-        const displayName = this.getDisplayNickname(player);
+          const genderLabel = isFemale ? 'F' : 'M';
         
         return {
           ...player,
           className: className,
-          genderLabel: genderLabel,
-          displayName: displayName
+          genderLabel: genderLabel
         };
       });
       
@@ -107,9 +98,8 @@ Component({
         const selectedPlayer = this.properties.players.find(
           p => p.id === this.properties.selectedPlayerId
         );
-        if (selectedPlayer) {
-          this.setData({
-            selectedPlayerName: this.getDisplayNickname(selectedPlayer),
+        if (selectedPlayer) {          this.setData({
+            selectedPlayerName: selectedPlayer.name,
             selectedPlayerGender: selectedPlayer.gender || 'male'
           });
         }
@@ -122,13 +112,10 @@ Component({
       this.setData({
         isOpen: !this.data.isOpen
       });
-    },
-
-    filterPlayersBySearch(players, searchText) {
+    },    filterPlayersBySearch(players, searchText) {
       const value = searchText.toLowerCase();
       return players.filter(player => {
-        const displayName = this.getDisplayNickname(player);
-        return displayName.toLowerCase().includes(value);
+        return player.name.toLowerCase().includes(value);
       });
     },
 
@@ -147,11 +134,10 @@ Component({
       // 查找选中的玩家
       const selected = this.properties.players.find(p => p.id === selectedId);
       if (!selected) return;
-      
-      this.setData({
+        this.setData({
         isOpen: false,
         searchValue: '',
-        selectedPlayerName: this.getDisplayNickname(selected),
+        selectedPlayerName: selected.name,
         selectedPlayerGender: selected.gender || 'male'
       });
       
@@ -174,17 +160,6 @@ Component({
         playerName: '',
         playerIndex: -1
       });
-    },
-
-    getDisplayNickname(player) {
-      if (!player || !player.name) return 'Unknown';
-      
-      // Add "(F)" for female players
-      if (player.gender === 'female') {
-        return player.name + ' (F)';
-      }
-      
-      return player.name;
-    }
+    },    // Method removed since we no longer need displayName
   }
 })

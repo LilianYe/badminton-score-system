@@ -3,10 +3,8 @@
     <text>Loading player data...</text>
   </view>
   
-  <block wx:elif="{{player}}">
-    <view class="player-header">
-      <view class="player-info">
-        <view class="player-name">{{player.displayName || app.getDisplayNickname(player)}}</view>
+  <block wx:elif="{{player}}">    <view class="player-header">      <view class="player-info">
+        <view class="player-name">{{player.name}}</view>
         <block wx:if="{{player.gender === 'female'}}">
           <view class="player-gender female-gender">
             <text>F Female</text>

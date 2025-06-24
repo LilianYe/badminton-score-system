@@ -237,11 +237,5 @@ Page({
       console.error('Error syncing to cloud:', error);
     } finally {
       wx.hideLoading();
-    }
-  },
-
-  // Get display nickname with gender indicator
-  getDisplayNickname: function(user) {
-    return app.getDisplayNickname(user);
-  }
+    }  }
 }); 

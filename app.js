@@ -66,20 +66,7 @@ App({
     } catch (error) {
       console.error('Error checking nickname uniqueness in cloud database:', error);
       return false;
-    }
-  },
-  
-  // Get display nickname with gender indicator
-  getDisplayNickname: function(user) {
-    if (!user || !user.nickname) return 'Unknown';
-    
-    // Add "(F)" for female players
-    if (user.gender === 'female') {
-      return user.nickname + ' (F)';
-    }
-    
-    return user.nickname;
-  },
+    }  },
   
   // Get all users (now from cloud database only)
   async getAllUsers() {

@@ -124,30 +124,28 @@ Page({
       return "" + num;
     }
   },
-  
-  getTeamDisplay: function(game, playerId) {
+    getTeamDisplay: function(game, playerId) {
     let playerTeam = "";
     let opponentTeam = "";
     
     if (game.teamA.player1.id === playerId || game.teamA.player2.id === playerId) {
       // Player is in team A
       if (game.teamA.player1.id === playerId) {
-        playerTeam = "with " + app.getDisplayNickname(game.teamA.player2);
+        playerTeam = "with " + game.teamA.player2.name;
       } else {
-        playerTeam = "with " + app.getDisplayNickname(game.teamA.player1);
+        playerTeam = "with " + game.teamA.player1.name;
       }
 
-      opponentTeam = [app.getDisplayNickname(game.teamB.player1), app.getDisplayNickname(game.teamB.player2)].join(" & ");
-
+      opponentTeam = [game.teamB.player1.name, game.teamB.player2.name].join(" & ");
     } else {
       // Player is in team B
       if (game.teamB.player1.id === playerId) {
-        playerTeam = "with " + app.getDisplayNickname(game.teamB.player2);
+        playerTeam = "with " + game.teamB.player2.name;
       } else {
-        playerTeam = "with " + app.getDisplayNickname(game.teamB.player1);
+        playerTeam = "with " + game.teamB.player1.name;
       }
       
-      opponentTeam =  [app.getDisplayNickname(game.teamA.player1), app.getDisplayNickname(game.teamA.player2)].join(" & ");
+      opponentTeam = [game.teamA.player1.name, game.teamA.player2.name].join(" & ");
     }
     
     return playerTeam + " vs " + opponentTeam;
@@ -159,20 +157,19 @@ Page({
     if (playerInTeamA) {
       return game.teamA.score + "-" + game.teamB.score;
     } else {
-      return game.teamB.score + "-" + game.teamA.score;
-    }
+      return game.teamB.score + "-" + game.teamA.score;    }
   },
   
   getSinglesOpponent: function(game, playerId) {
     if (game.winnerId === playerId) {
       if (game.loser) {
-        return app.getDisplayNickname(game.loser);
+        return game.loser.name;
       } else {
         return "Unknown";
       }
     } else {
       if (game.winner) {
-        return app.getDisplayNickname(game.winner);
+        return game.winner.name;
       } else {
         return "Unknown";
       }
@@ -219,14 +216,13 @@ Page({
   
   /**
    * Delete the current player
-   */
-  deletePlayer: function() {
+   */  deletePlayer: function() {
     const { player } = this.data;
     
     // Show confirmation dialog
     wx.showModal({
       title: 'Delete Player',
-      content: `Are you sure you want to delete ${app.getDisplayNickname(player)}? This action cannot be undone.`,
+      content: `Are you sure you want to delete ${player.name}? This action cannot be undone.`,
       confirmText: 'Delete',
       confirmColor: '#dc3545',
       cancelText: 'Cancel',

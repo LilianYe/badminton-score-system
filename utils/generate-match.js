@@ -23,26 +23,25 @@ function backtrackRestScheduleVariable(players, restSchedule, restCounts, curren
   const roundsLeft = totalRounds - currentRound;
 
   // 1. Players who must rest due to consecutive actives
-  const mustRestConsecutive = players.filter(p => (playerConsecutiveActive[p] || 0) >= 6);
+  const mustRestConsecutive = players.filter(p => (playerConsecutiveActive[p.name] || 0) >= 6);
   // 2. Players who must rest to meet target rest count
   const restNeeded = {};
-  players.forEach(p => restNeeded[p] = targetRestCount - restCounts[p]);
-  const mustRestCount = players.filter(p => restNeeded[p] > 0 && restNeeded[p] > roundsLeft - 1);
+  players.forEach(p => restNeeded[p.name] = targetRestCount - restCounts[p.name]);
+  const mustRestCount = players.filter(p => restNeeded[p.name] > 0 && restNeeded[p.name] > roundsLeft - 1);
   const mustRest = Array.from(new Set([...mustRestConsecutive, ...mustRestCount]));
 
   if (mustRest.length > restCountNeeded) {
     console.log('  [FAIL] Too many must-rest players for available rest slots.');
     return false;
-  }
-  if (players.filter(p => restCounts[p] < targetRestCount).length < restCountNeeded) {
+  }    
+  if (players.filter(p => restCounts[p.name] < targetRestCount).length < restCountNeeded) {
     console.log('  [FAIL] Not enough players left who need rest.');
     return false;
   }
-
   // Candidates for resting
-  const validCandidates = players.filter(p => restCounts[p] < targetRestCount && !mustRest.includes(p));
-  const femaleCandidates = validCandidates.filter(p => femaleSet.has(p)).sort((a, b) => (playerConsecutiveActive[b] || 0) - (playerConsecutiveActive[a] || 0));
-  const maleCandidates = validCandidates.filter(p => !femaleSet.has(p)).sort((a, b) => (playerConsecutiveActive[b] || 0) - (playerConsecutiveActive[a] || 0));
+  const validCandidates = players.filter(p => restCounts[p.name] < targetRestCount && !mustRest.includes(p));
+  const femaleCandidates = validCandidates.filter(p => femaleSet.has(p.name)).sort((a, b) => (playerConsecutiveActive[b.name] || 0) - (playerConsecutiveActive[a.name] || 0));
+  const maleCandidates = validCandidates.filter(p => !femaleSet.has(p.name)).sort((a, b) => (playerConsecutiveActive[b.name] || 0) - (playerConsecutiveActive[a.name] || 0));
   const mustRestFemales = mustRest.filter(p => femaleSet.has(p));
 
   // Gender balance
@@ -103,20 +102,20 @@ function backtrackRestScheduleVariable(players, restSchedule, restCounts, curren
   }
 
   for (let comboIdx = 0; comboIdx < combinationsToTry.length; comboIdx++) {
-    let combo = combinationsToTry[comboIdx];
+    let combo = combinationsToTry[comboIdx];    
     // Copy consecutive active state
     let playerConsecutiveActiveCopy = { ...playerConsecutiveActive };
     // Add mustRest and combo to restSchedule
     let restThisRound = [...mustRest, ...combo];
     restThisRound.forEach(player => {
       restSchedule[currentRound].push(player);
-      restCounts[player]++;
-      playerConsecutiveActiveCopy[player] = 0;
+      restCounts[player.name]++;
+      playerConsecutiveActiveCopy[player.name] = 0;
     });
     // Update consecutive actives for others
     players.forEach(player => {
       if (!restThisRound.includes(player)) {
-        playerConsecutiveActiveCopy[player] = (playerConsecutiveActiveCopy[player] || 0) + 1;
+        playerConsecutiveActiveCopy[player.name] = (playerConsecutiveActiveCopy[player.name] || 0) + 1;
       }
     });
     // Recurse
@@ -126,7 +125,7 @@ function backtrackRestScheduleVariable(players, restSchedule, restCounts, curren
     // Backtrack
     restThisRound.forEach(player => {
       restSchedule[currentRound].pop();
-      restCounts[player]--;
+      restCounts[player.name]--;
     });
   }
   // If no valid combination found
@@ -141,14 +140,14 @@ function backtrackRestScheduleVariable(players, restSchedule, restCounts, curren
  * @param {number} courtCount
  * @param {number} gamePerPlayer
  * @param {number} eloThreshold
- * @param {Object} playerElos
  * @param {number} teamEloDiff
  * @returns {{restSchedule: string[][], roundsLineups: string[][][]}}
  */
-function generateRotationFull(players, courtCount, gamePerPlayer, eloThreshold, playerElos, teamEloDiff) {
+function generateRotationFull(players, courtCount, gamePerPlayer, eloThreshold, teamEloDiff) {  
   const COURT_SIZE = 4;
+  const minExpectedWins = 0;
   // Gender set
-  const femaleSet = new Set(players.filter(p => p.endsWith('(F)')));
+  const femaleSet = new Set(players.filter(p => p.gender === 'female').map(p => p.name));
   const totalPlayers = players.length;
   const totalPlayerGames = totalPlayers * gamePerPlayer;
   const playerSlotsPerRound = courtCount * COURT_SIZE;
@@ -163,24 +162,24 @@ function generateRotationFull(players, courtCount, gamePerPlayer, eloThreshold, 
   }
   // How many rest slots per round
   const courtsPerRound = Array(rounds - 1).fill(courtCount).concat([lastRoundCourts]);
-  const restPerRound = courtsPerRound.map(roundCourts => totalPlayers - roundCourts * COURT_SIZE);
+  const restPerRound = courtsPerRound.map(roundCourts => totalPlayers - roundCourts * COURT_SIZE);  
   // Rest schedule
   const restSchedule = Array.from({ length: rounds }, () => []);
   const restCounts = {};
-  players.forEach(p => restCounts[p] = 0);
+  players.forEach(p => restCounts[p.name] = 0);
   const targetRestCount = rounds - gamePerPlayer;
   const playerConsecutiveActive = {};
-  players.forEach(p => playerConsecutiveActive[p] = 0);
+  players.forEach(p => playerConsecutiveActive[p.name] = 0);
 
   console.log('--- generateRotationFull DEBUG ---');
   console.log('Players:', players);
   console.log('Female set:', Array.from(femaleSet));
   console.log('Total players:', totalPlayers);
-  console.log('Court count:', courtCount);
+  console.log('Court count:', courtCount);  
   console.log('Game per player:', gamePerPlayer);
   console.log('ELO threshold:', eloThreshold);
   console.log('Team ELO diff:', teamEloDiff);
-  console.log('Player ELOs:', playerElos);
+  console.log('Player ELOs:', players.map(p => `${p.name}: ${p.elo}`).join(', '));
   console.log('Total player games:', totalPlayerGames);
   console.log('Player slots per round:', playerSlotsPerRound);
   console.log('Rounds float:', roundsFloat);
@@ -213,20 +212,20 @@ function generateRotationFull(players, courtCount, gamePerPlayer, eloThreshold, 
 
   // Court assignments for each round
   const roundsLineups = [];
-  const maxOpponentFrequency = Math.floor(gamePerPlayer / 2) + 1;
+  const maxOpponentFrequency = Math.floor(gamePerPlayer / 2) + 2;
   for (let attempt = 0; attempt < 10000; attempt++) {
     let success = true;
-    let tempLineups = [];
+    let tempLineups = [];    
     let playerRemainingRounds = {};
-    players.forEach(p => playerRemainingRounds[p] = gamePerPlayer);
+    players.forEach(p => playerRemainingRounds[p.name] = gamePerPlayer);
     // Reset global trackers
     Object.keys(global_partnerships).forEach(k => delete global_partnerships[k]);
     Object.keys(global_opponents).forEach(k => delete global_opponents[k]);
     Object.keys(global_expected_wins).forEach(k => delete global_expected_wins[k]);
-    for (let r = 0; r < rounds; r++) {
+    for (let r = 0; r < rounds; r++) {      
       const active = players.filter(p => !restSchedule[r].includes(p));
-      const activeFemales = active.filter(p => femaleSet.has(p));
-      const activeMales = active.filter(p => !femaleSet.has(p));
+      const activeFemales = active.filter(p => femaleSet.has(p.name));
+      const activeMales = active.filter(p => !femaleSet.has(p.name));
       const roundCourtCount = courtsPerRound[r];
       const courts = [];
       const usedPlayers = new Set();
@@ -237,11 +236,11 @@ function generateRotationFull(players, courtCount, gamePerPlayer, eloThreshold, 
         roundCourtCount,
         femaleSet,
         usedPlayers,
-        playerElos,
         eloThreshold,
         maxOpponentFrequency,
         teamEloDiff,
-        playerRemainingRounds
+        playerRemainingRounds,
+        minExpectedWins
       );
       if (!ok || courts.length < roundCourtCount) {
         success = false;
@@ -259,21 +258,19 @@ function generateRotationFull(players, courtCount, gamePerPlayer, eloThreshold, 
 }
 
 
-function checkTeammateEloCompatibility(player1, player2, playerElos, teamEloDiff) {
-  return Math.abs(playerElos[player1] - playerElos[player2]) <= teamEloDiff;
+function checkTeammateEloCompatibility(player1, player2, teamEloDiff) {
+  return Math.abs(player1.elo - player2.elo) <= teamEloDiff;
 }
 
-// Merged: checkExpectedWinBalance (now includes ELO threshold check)
-function checkExpectedWinBalance(team1, team2, playerElos, playerRemainingRounds, eloThreshold, minExpectedWins = 0) {
+function checkExpectedWinBalance(team1, team2, playerRemainingRounds, eloThreshold, minExpectedWins) {
   // ELO difference check (formerly checkTeamElo)
-  const team1Avg = (playerElos[team1[0]] + playerElos[team1[1]]) / 2;
-  const team2Avg = (playerElos[team2[0]] + playerElos[team2[1]]) / 2;
+  const team1Avg = (team1[0].elo + team1[1].elo) / 2;
+  const team2Avg = (team2[0].elo + team2[1].elo) / 2;
   if (Math.abs(team1Avg - team2Avg) > eloThreshold) return false;
   // Expected win balance check
-  const disadvantaged = team1Avg > team2Avg ? team2 : team1;
-  for (const p of disadvantaged) {
-    const current = global_expected_wins[p] || 0;
-    const remaining = (playerRemainingRounds[p] || 0) - 1;
+  const disadvantaged = team1Avg > team2Avg ? team2 : team1;  for (const p of disadvantaged) {
+    const current = global_expected_wins[p.name] || 0;
+    const remaining = (playerRemainingRounds[p.name] || 0) - 1;
     if (current + remaining < minExpectedWins) return false;
   }
   return true;
@@ -282,7 +279,7 @@ function checkExpectedWinBalance(team1, team2, playerElos, playerRemainingRounds
 function checkOpponentsValid(team1, team2, maxOpponentFrequency) {
   for (const p1 of team1) {
     for (const p2 of team2) {
-      const pair = [p1, p2].sort().join('|');
+      const pair = [p1.name, p2.name].sort().join('|');
       if ((global_opponents[pair] || 0) > maxOpponentFrequency) {
         return false;
       }
@@ -304,7 +301,7 @@ function getCombinations(arr, k) {
   return result;
 }
 
-function backtrackCourts(courts, females, males, courtCount, femaleSet, usedPlayers, playerElos, eloThreshold, maxOpponentFrequency, teamEloDiff, playerRemainingRounds) {
+function backtrackCourts(courts, females, males, courtCount, femaleSet, usedPlayers, eloThreshold, maxOpponentFrequency, teamEloDiff, playerRemainingRounds, minExpectedWins) {
   // Base case: all courts filled
   if (courts.length === courtCount) return true;
 
@@ -340,12 +337,13 @@ function backtrackCourts(courts, females, males, courtCount, femaleSet, usedPlay
         if (usedCopy.has(f1)) continue;
         for (const m1 of malesCopy) {
           if (usedCopy.has(m1)) continue;
-          const pair = [f1, m1].sort().join('|');
+          const pair = [f1.name, m1.name].sort().join('|');
           if (global_partnerships[pair]) continue;
-          if (!checkTeammateEloCompatibility(f1, m1, playerElos, teamEloDiff)) continue;
+          if (!checkTeammateEloCompatibility(f1, m1, teamEloDiff)) continue;
           team1 = [f1, m1];
           global_partnerships[pair] = (global_partnerships[pair] || 0) + 1;
-          usedCopy.add(f1); usedCopy.add(m1);
+          usedCopy.add(f1); 
+          usedCopy.add(m1);
           break;
         }
         if (team1) break;
@@ -357,33 +355,34 @@ function backtrackCourts(courts, females, males, courtCount, femaleSet, usedPlay
         if (usedCopy.has(f2)) continue;
         for (const m2 of malesCopy) {
           if (usedCopy.has(m2)) continue;
-          const pair = [f2, m2].sort().join('|');
+          const pair = [f2.name, m2.name].sort().join('|');
           if (global_partnerships[pair]) continue;
-          if (!checkExpectedWinBalance(team1, [f2, m2], playerElos, playerRemainingRounds, eloThreshold)) continue;
+          if (!checkExpectedWinBalance(team1, [f2, m2], playerRemainingRounds, eloThreshold, minExpectedWins)) continue;
           if (!checkOpponentsValid(team1, [f2, m2], maxOpponentFrequency)) continue;
-          if (!checkTeammateEloCompatibility(f2, m2, playerElos, teamEloDiff)) continue;
+          if (!checkTeammateEloCompatibility(f2, m2, teamEloDiff)) continue;
           team2 = [f2, m2];
           global_partnerships[pair] = (global_partnerships[pair] || 0) + 1;
           for (const p1 of team1) for (const p2 of team2) {
-            const oppPair = [p1, p2].sort().join('|');
+            const oppPair = [p1.name, p2.name].sort().join('|');
             global_opponents[oppPair] = (global_opponents[oppPair] || 0) + 1;
           }
-          for (const p of [...team1, ...team2]) playerRemainingRounds[p]--;
-          usedCopy.add(f2); usedCopy.add(m2);
+          for (const p of [...team1, ...team2]) playerRemainingRounds[p.name]--;
+          usedCopy.add(f2); 
+          usedCopy.add(m2);
           break;
         }
         if (team2) break;
       }
       if (team1 && team2) {
-        court = [...team1, ...team2];
-        femalesCopy = femalesCopy.filter(f => !usedCopy.has(f));
+        court = [...team1, ...team2];        
+        femalesCopy = femalesCopy.filter(f => !usedCopy.has(f));        
         malesCopy = malesCopy.filter(m => !usedCopy.has(m));
-        const team1Avg = (playerElos[team1[0]] + playerElos[team1[1]]) / 2;
-        const team2Avg = (playerElos[team2[0]] + playerElos[team2[1]]) / 2;
+        const team1Avg = (team1[0].elo + team1[1].elo) / 2;
+        const team2Avg = (team2[0].elo + team2[1].elo) / 2;
         if (team1Avg > team2Avg) {
-          for (const p of team1) global_expected_wins[p] = (global_expected_wins[p] || 0) + 1;
+          for (const p of team1) global_expected_wins[p.name] = (global_expected_wins[p.name] || 0) + 1;
         } else {
-          for (const p of team2) global_expected_wins[p] = (global_expected_wins[p] || 0) + 1;
+          for (const p of team2) global_expected_wins[p.name] = (global_expected_wins[p.name] || 0) + 1;
         }
         success = true;
       }
@@ -401,7 +400,7 @@ function backtrackCourts(courts, females, males, courtCount, femaleSet, usedPlay
         if (usedCopy.has(f1) || usedCopy.has(f2)) continue;
         const pair = [f1, f2].sort().join('|');
         if (global_partnerships[pair]) continue;
-        if (!checkTeammateEloCompatibility(f1, f2, playerElos, teamEloDiff)) continue;
+        if (!checkTeammateEloCompatibility(f1, f2, teamEloDiff)) continue;
         team1 = [f1, f2];
         global_partnerships[pair] = (global_partnerships[pair] || 0) + 1;
         usedCopy.add(f1); usedCopy.add(f2);
@@ -413,28 +412,27 @@ function backtrackCourts(courts, females, males, courtCount, femaleSet, usedPlay
         if (usedCopy.has(f1) || usedCopy.has(f2)) continue;
         const pair = [f1, f2].sort().join('|');
         if (global_partnerships[pair]) continue;
-        if (!checkExpectedWinBalance(team1, [f1, f2], playerElos, playerRemainingRounds, eloThreshold)) continue;
+        if (!checkExpectedWinBalance(team1, [f1, f2], playerRemainingRounds, eloThreshold, minExpectedWins)) continue;
         if (!checkOpponentsValid(team1, [f1, f2], maxOpponentFrequency)) continue;
-        if (!checkTeammateEloCompatibility(f1, f2, playerElos, teamEloDiff)) continue;
+        if (!checkTeammateEloCompatibility(f1, f2, teamEloDiff)) continue;
         team2 = [f1, f2];
         global_partnerships[pair] = (global_partnerships[pair] || 0) + 1;
         for (const p1 of team1) for (const p2 of team2) {
           const oppPair = [p1, p2].sort().join('|');
           global_opponents[oppPair] = (global_opponents[oppPair] || 0) + 1;
-        }
-        for (const p of [...team1, ...team2]) playerRemainingRounds[p]--;
+        }        
+        for (const p of [...team1, ...team2]) playerRemainingRounds[p.name]--;
         usedCopy.add(f1); usedCopy.add(f2);
         break;
       }
-      if (team1 && team2) {
-        court = [...team1, ...team2];
+      if (team1 && team2) {        court = [...team1, ...team2];
         femalesCopy = femalesCopy.filter(f => !usedCopy.has(f));
-        const team1Avg = (playerElos[team1[0]] + playerElos[team1[1]]) / 2;
-        const team2Avg = (playerElos[team2[0]] + playerElos[team2[1]]) / 2;
+        const team1Avg = (team1[0].elo + team1[1].elo) / 2;
+        const team2Avg = (team2[0].elo + team2[1].elo) / 2;
         if (team1Avg > team2Avg) {
-          for (const p of team1) global_expected_wins[p] = (global_expected_wins[p] || 0) + 1;
+          for (const p of team1) global_expected_wins[p.name] = (global_expected_wins[p.name] || 0) + 1;
         } else {
-          for (const p of team2) global_expected_wins[p] = (global_expected_wins[p] || 0) + 1;
+          for (const p of team2) global_expected_wins[p.name] = (global_expected_wins[p.name] || 0) + 1;
         }
         success = true;
       }
@@ -446,46 +444,44 @@ function backtrackCourts(courts, females, males, courtCount, femaleSet, usedPlay
           const j = Math.floor(Math.random() * (i + 1));
           [malePairs[i], malePairs[j]] = [malePairs[j], malePairs[i]];
         }
-      }
+      }      
       let team1 = null;
       for (const [m1, m2] of malePairs) {
         if (usedCopy.has(m1) || usedCopy.has(m2)) continue;
-        if (m1.endsWith('(F)') && m2.endsWith('(F)')) continue;
         const pair = [m1, m2].sort().join('|');
         if (global_partnerships[pair]) continue;
-        if (!checkTeammateEloCompatibility(m1, m2, playerElos, teamEloDiff)) continue;
+        if (!checkTeammateEloCompatibility(m1, m2, teamEloDiff)) continue;
         team1 = [m1, m2];
         global_partnerships[pair] = (global_partnerships[pair] || 0) + 1;
         usedCopy.add(m1); usedCopy.add(m2);
         break;
       }
-      if (!team1) continue;
+      if (!team1) continue;      
       let team2 = null;
       for (const [m1, m2] of malePairs) {
         if (usedCopy.has(m1) || usedCopy.has(m2)) continue;
-        if (m1.endsWith('(F)') && m2.endsWith('(F)')) continue;
         const pair = [m1, m2].sort().join('|');
         if (global_partnerships[pair]) continue;
-        if (!checkExpectedWinBalance(team1, [m1, m2], playerElos, playerRemainingRounds, eloThreshold)) continue;
+        if (!checkExpectedWinBalance(team1, [m1, m2], playerRemainingRounds, eloThreshold, minExpectedWins)) continue;
         if (!checkOpponentsValid(team1, [m1, m2], maxOpponentFrequency)) continue;
-        if (!checkTeammateEloCompatibility(m1, m2, playerElos, teamEloDiff)) continue;
+        if (!checkTeammateEloCompatibility(m1, m2, teamEloDiff)) continue;
         team2 = [m1, m2];
         global_partnerships[pair] = (global_partnerships[pair] || 0) + 1;
         for (const p1 of team1) for (const p2 of team2) {
           const oppPair = [p1, p2].sort().join('|');
           global_opponents[oppPair] = (global_opponents[oppPair] || 0) + 1;
-        }
-        for (const p of [...team1, ...team2]) playerRemainingRounds[p]--;
+        }        
+        for (const p of [...team1, ...team2]) playerRemainingRounds[p.name]--;
         usedCopy.add(m1); usedCopy.add(m2);
         break;
       }
-      if (team1 && team2) {
-        const team1Avg = (playerElos[team1[0]] + playerElos[team1[1]]) / 2;
-        const team2Avg = (playerElos[team2[0]] + playerElos[team2[1]]) / 2;
+      if (team1 && team2) {        
+        const team1Avg = (team1[0].elo + team1[1].elo) / 2;
+        const team2Avg = (team2[0].elo + team2[1].elo) / 2;
         if (team1Avg > team2Avg) {
-          for (const p of team1) global_expected_wins[p] = (global_expected_wins[p] || 0) + 1;
+          for (const p of team1) global_expected_wins[p.name] = (global_expected_wins[p.name] || 0) + 1;
         } else {
-          for (const p of team2) global_expected_wins[p] = (global_expected_wins[p] || 0) + 1;
+          for (const p of team2) global_expected_wins[p.name] = (global_expected_wins[p.name] || 0) + 1;
         }
         court = [...team1, ...team2];
         malesCopy = malesCopy.filter(m => !usedCopy.has(m));
@@ -496,7 +492,7 @@ function backtrackCourts(courts, females, males, courtCount, femaleSet, usedPlay
     if (success && court.length === 4) {
       courts.push(court);
       // Continue with the next court
-      if (backtrackCourts(courts, femalesCopy, malesCopy, courtCount, femaleSet, usedCopy, playerElos, eloThreshold, maxOpponentFrequency, teamEloDiff, playerRemainingRounds)) {
+      if (backtrackCourts(courts, femalesCopy, malesCopy, courtCount, femaleSet, usedCopy, eloThreshold, maxOpponentFrequency, teamEloDiff, playerRemainingRounds, minExpectedWins)) {
         return true;
       }
       // Backtrack
@@ -529,16 +525,15 @@ function shuffleArray(arr) {
  * @param {number} courtCount
  * @param {number} gamePerPlayer
  * @param {number} eloThreshold
- * @param {Object} playerElos
  * @param {number} teamEloDiff
  * @param {number} [maxTries=20]
  * @returns {{restSchedule: string[][], roundsLineups: string[][][]}|null}
  */
-function tryGenerateRotationFull(players, courtCount, gamePerPlayer, eloThreshold, playerElos, teamEloDiff, maxTries = 20) {
+function tryGenerateRotationFull(players, courtCount, gamePerPlayer, eloThreshold, teamEloDiff, maxTries = 20) {
   for (let attempt = 1; attempt <= maxTries; attempt++) {
     const shuffled = shuffleArray([...players]);
     try {
-      const result = generateRotationFull(shuffled, courtCount, gamePerPlayer, eloThreshold, playerElos, teamEloDiff);
+      const result = generateRotationFull(shuffled, courtCount, gamePerPlayer, eloThreshold, teamEloDiff);
       console.log(`[tryGenerateRotationFull] Success on attempt ${attempt}`);
       return result;
     } catch (e) {
@@ -549,37 +544,97 @@ function tryGenerateRotationFull(players, courtCount, gamePerPlayer, eloThreshol
   return null;
 }
 
-// Test for generateRotationFull
-function testGenerateRotationFull() {
-  const players = [
-    "敏敏子(F)", "Acaprice", "liyu", "Max(F)",
-    "张晴川", "方文", "米兰的小铁匠", "gdc", 'x1(F)', 'x2(F)'
-  ];
-  const courtCount = 2;
-  const gamePerPlayer = 4;
-  const eloThreshold = 100;
-  const teamEloDiff = 70;
-  const playerElos = {
-    "敏敏子(F)": 1500, "Acaprice": 1500, "liyu": 1500, "Max(F)": 1500,
-    "张晴川": 1500, "方文": 1500, "米兰的小铁匠": 1500, "gdc": 1500, 'x1(F)': 1500, 'x2(F)': 1500
-  };
-  const result = tryGenerateRotationFull(players, courtCount, gamePerPlayer, eloThreshold, playerElos, teamEloDiff, 30);
-  if (result) {
-    console.log("Rest schedule:", JSON.stringify(result.restSchedule, null, 2));
-    console.log("Rounds lineups:", JSON.stringify(result.roundsLineups, null, 2));
-  } else {
-    console.error("Failed to generate rotation after multiple attempts.");
-  }
-}
-
-// testGenerateRotationFull();
-
 // Export functions for use in pages
 module.exports = {
   tryGenerateRotationFull,
   generateRotationFull,
   backtrackRestScheduleVariable,
   backtrackCourts,
-  shuffleArray
+  shuffleArray,
+  testGenerateMatchWithSampleData // Export the test function
 };
+
+/**
+ * Test function for debugging tryGenerateRotationFull with sample player data
+ * @param {number} courtCount Number of courts to use
+ * @param {number} gamePerPlayer Games per player
+ * @param {number} eloThreshold ELO threshold for team balance
+ * @param {number} teamEloDiff Maximum ELO difference for teammates
+ * @returns {Object|null} The match result or null if generation failed
+ */
+function testGenerateMatchWithSampleData(courtCount = 2, gamePerPlayer = 4, eloThreshold = 100, teamEloDiff = 300) {
+  // Sample player data
+  const players = [
+    {"avatar":"/assets/icons/user.png","elo":1500,"gender":"female","name":"敏敏子"},
+    {"avatar":"/assets/icons/user.png","elo":1550,"gender":"male","name":"Acaprice"},
+    {"avatar":"/assets/icons/user.png","elo":1600,"gender":"male","name":"liyu"},
+    {"avatar":"/assets/icons/user.png","elo":1500,"gender":"female","name":"Max"},
+    {"avatar":"/assets/icons/user.png","elo":1500,"gender":"female","name":"小白"},
+    {"avatar":"/assets/icons/user.png","elo":1500,"gender":"female","name":"ai"},
+    {"avatar":"/assets/icons/user.png","elo":1580,"gender":"male","name":"张晴川"},
+    {"avatar":"/assets/icons/user.png","elo":1520,"gender":"male","name":"方文"},
+    {"avatar":"/assets/icons/user.png","elo":1500,"gender":"male","name":"米兰的小铁匠"},
+    {"avatar":"/assets/icons/user.png","elo":1500,"gender":"male","name":"gdc"}
+  ];
+
+  console.log('Starting test with sample data:');
+  console.log(`- Court Count: ${courtCount}`);
+  console.log(`- Games Per Player: ${gamePerPlayer}`);
+  console.log(`- ELO Threshold: ${eloThreshold}`);
+  console.log(`- Team ELO Diff: ${teamEloDiff}`);
+  console.log('Sample Players:', players.map(p => `${p.name}(${p.gender})`).join(', '));
+
+  try {
+    // Call the match generation function
+    const result = tryGenerateRotationFull(
+      players, 
+      courtCount, 
+      gamePerPlayer, 
+      eloThreshold,
+      teamEloDiff
+    );
+    
+    if (result) {
+      console.log('✅ Match generation succeeded!');
+      console.log('Round lineups:', result.roundsLineups);
+      console.log('Rest schedule:', result.restSchedule);
+      
+      // Additional validation
+      console.log('\nValidation:');
+      
+      // Check female/male balance in each court
+      let isBalanced = true;
+      result.roundsLineups.forEach((round, roundIndex) => {
+        round.forEach((court, courtIndex) => {
+          const femaleCount = court.filter(p => players.find(player => player.name === p)?.gender === 'female').length;
+          const maleCount = court.length - femaleCount;
+          
+          if (!(
+            (femaleCount === 0 && maleCount === 4) || // All male court
+            (femaleCount === 4 && maleCount === 0) || // All female court
+            (femaleCount === 2 && maleCount === 2)    // Mixed court (2F+2M)
+          )) {
+            console.log(`⚠️ Court balance issue at Round ${roundIndex+1}, Court ${courtIndex+1}: ${femaleCount}F/${maleCount}M`);
+            isBalanced = false;
+          }
+        });
+      });
+      
+      if (isBalanced) {
+        console.log('✅ All courts have proper gender balance');
+      }
+      
+      return result;
+    } else {
+      console.error('❌ Failed to generate match with sample data');
+      return null;
+    }
+  } catch (error) {
+    console.error('❌ Error during match generation:', error.message);
+    return null;
+  }
+}
+
+// const result = testGenerateMatchWithSampleData();
+
 

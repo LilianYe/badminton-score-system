@@ -19,26 +19,15 @@ Page({
       owner: null // Owner field to track who created the game
     }
   },
-  
-  onLoad: function(options) {
+    onLoad: function(options) {
     console.log('Game Signup page loaded');
     
     // Get app global data
     const app = getApp();
     app.globalData = app.globalData || {};
     
-    // Only load sample games if no games exist yet
-    if (!app.globalData.games || app.globalData.games.length === 0) {
-      this.loadSampleGames();
-    } else {
-      // Use existing games from globalData
-      console.log('Using existing games from globalData:', app.globalData.games.length);
-      this.setData({
-        games: app.globalData.games,
-        selectedGameIndex: 0,
-        selectedGame: app.globalData.games[0]
-      });
-    }
+    // Load games from the cloud
+    this.loadGamesFromCloud();
   },
   
   // This method will be called every time this page is shown
@@ -46,106 +35,59 @@ Page({
   onShow: function() {
     console.log('Game Signup page shown/returned to');
     
-    // Get the latest games from globalData
-    const app = getApp();
-    if (app.globalData && app.globalData.games) {
-      console.log('Found games in globalData:', app.globalData.games.length);
-      
-      // Update the local games list with the latest from global data
-      this.setData({
-        games: app.globalData.games,
-        // If we have no games or the previously selected game was deleted,
-        // reset the selected game
-        selectedGameIndex: app.globalData.games.length > 0 ? 0 : null,
-        selectedGame: app.globalData.games.length > 0 ? app.globalData.games[0] : null
+    // Get the latest games from the cloud
+    this.loadGamesFromCloud();
+  },
+    // Load games from cloud database
+  loadGamesFromCloud: async function() {
+    try {
+      wx.showLoading({
+        title: '加载活动...',
+        mask: true
       });
       
-      console.log('Updated game list in game-signup page:', this.data.games.length);
-    } else {
-      console.warn('No games found in globalData');
+      // Get app global data
+      const app = getApp();
+      app.globalData = app.globalData || {};
+      
+      // Import the CloudDBService
+      const CloudDBService = require('../../utils/cloud-db.js');
+      
+      // Make sure cloud database is initialized
+      CloudDBService.init();
+      
+      // Get all games from cloud
+      const cloudGames = await CloudDBService.getAllGames();
+      console.log('Loaded games from cloud:', cloudGames);
+      
+      // If no games found, load sample games
+      if (!cloudGames || cloudGames.length === 0) {
+        console.log('No games found in cloud.');
+        return;
+      }
+      
+      // Update global data and local state
+      app.globalData.games = cloudGames;
+      
+      this.setData({
+        games: cloudGames,
+        selectedGameIndex: cloudGames.length > 0 ? 0 : null,
+        selectedGame: cloudGames.length > 0 ? cloudGames[0] : null
+      });
+      
+      console.log('Updated game list from cloud in game-signup page:', this.data.games.length);
+    } catch (error) {
+      console.error('Failed to load games from cloud:', error);
+      wx.showToast({
+        title: '加载活动失败',
+        icon: 'none'
+      });
+      
+    } finally {
+      wx.hideLoading();
     }
   },
   
-  loadSampleGames: function() {
-    // Sample games for demonstration
-    const sampleGames = [
-      {
-        id: 'game1',
-        title: '8人转 A场地',
-        date: '2025/06/24 (星期一)',
-        time: '20:00',
-        location: '聚星羽毛球馆',
-        rules: '一局定胜负，21分制',
-        matchupMethod: '系统优化轮转',
-        maxPlayers: 8,
-        courtCount: 2,
-        players: [
-          { name: '敏敏子', displayName: '敏敏子(F)', gender: 'female', avatar: '/assets/icons/user.png', elo: 1500 },
-          { name: 'Acaprice', displayName: 'Acaprice', gender: 'male', avatar: '/assets/icons/user.png', elo: 1550 },
-          { name: 'liyu', displayName: 'liyu', gender: 'male', avatar: '/assets/icons/user.png', elo: 1600 },
-          { name: 'Max', displayName: 'Max(F)', gender: 'female', avatar: '/assets/icons/user.png', elo: 1500 }
-        ],
-        status: '招募中',
-        owner: {
-          openid: 'system_admin',
-          nickname: 'System Admin',
-          avatarUrl: '/assets/icons/user.png'
-        }
-      },
-      {
-        id: 'game2',
-        title: '6人转 B场地',
-        date: '2025/06/25 (星期二)',
-        time: '19:00',
-        location: '万福羽毛球馆',
-        rules: '三局两胜，21分制',
-        matchupMethod: '系统优化轮转',
-        maxPlayers: 6,
-        courtCount: 1,
-        players: [
-          { name: '张晴川', displayName: '张晴川', gender: 'male', avatar: '/assets/icons/user.png', elo: 1600 },
-          { name: '方文', displayName: '方文', gender: 'male', avatar: '/assets/icons/user.png', elo: 1520 }
-        ],
-        status: '招募中',
-        owner: {
-          openid: 'system_admin',
-          nickname: 'System Admin',
-          avatarUrl: '/assets/icons/user.png'
-        }
-      },
-      {
-        id: 'game3',
-        title: '12人混双',
-        date: '2025/06/26 (星期三)',
-        time: '20:30',
-        location: '星火体育中心',
-        rules: '一局定胜负，21分制',
-        matchupMethod: '随机配对',
-        maxPlayers: 12,
-        courtCount: 3,
-        players: [],
-        status: '招募中',
-        owner: {
-          openid: 'system_admin',
-          nickname: 'System Admin',
-          avatarUrl: '/assets/icons/user.png'
-        }
-      }
-    ];
-    
-    // Store in local state
-    this.setData({ 
-      games: sampleGames,
-      // Select the first game by default
-      selectedGameIndex: 0,
-      selectedGame: sampleGames[0]
-    });
-    
-    // Store in global data for access across pages
-    const app = getApp();
-    app.globalData = app.globalData || {};
-    app.globalData.games = sampleGames;
-  },
     // Game selection
   selectGame: function(e) {
     const index = e.currentTarget.dataset.index;
@@ -299,5 +241,4 @@ Page({
     });
   }
   
-  // Share game and navigateToGenerate functions moved to game-detail page
 });

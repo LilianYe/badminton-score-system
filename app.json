@@ -29,8 +29,8 @@
         "selectedIconPath": "assets/icons/game-active.png"
       },
       {
-        "pagePath": "pages/generate-match/generate-match",
-        "text": "生成轮次",
+        "pagePath": "pages/players/players",
+        "text": "排名",
         "iconPath": "assets/icons/ranking.png",
         "selectedIconPath": "assets/icons/ranking-active.png"
       },      {
