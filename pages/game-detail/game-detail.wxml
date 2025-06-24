@@ -1,0 +1,178 @@
+<view class="container">
+  <!-- Game Info Card -->
+  <block wx:if="{{game}}">
+    <view class="game-card">
+      <view class="status-badge">{{game.status || '招募中'}}</view>
+      
+      <!-- Owner Info Section -->
+      <view class="owner-info" wx:if="{{game.owner}}">
+        <image class="owner-avatar" src="{{game.owner.avatarUrl || '/assets/icons/user.png'}}" mode="aspectFill"></image>
+        <text class="owner-name">创建者: {{game.owner.nickname || 'Unknown'}}</text>
+        <view wx:if="{{isOwner && !isEditing}}" class="owner-actions">
+          <view class="edit-button" bindtap="toggleEditMode">编辑</view>
+          <view class="delete-button" bindtap="deleteGame">删除</view>
+        </view>
+      </view>
+      
+      <!-- Normal View Mode -->
+      <view wx:if="{{!isEditing}}">
+        <view class="game-header">
+          <view class="game-title">{{game.title || '8人转 (示例)'}}</view>
+          <view class="game-icon">
+            <image src="/assets/icons/game.png" mode="aspectFit"></image>
+          </view>
+        </view>
+        
+        <view class="info-row">
+          <view class="info-icon">
+            <text class="cuIcon">日</text>
+          </view>
+          <view class="info-content">
+            日期: {{game.date || '2025/06/24 (星期一)'}} {{game.time || '20:00'}}
+          </view>
+        </view>
+        
+        <view class="info-row">
+          <view class="info-icon">
+            <text class="cuIcon">地</text>
+          </view>
+          <view class="info-content">
+            地点: {{game.location || '聚星羽毛球馆'}}
+          </view>
+        </view>
+        
+        <view class="info-row">
+          <view class="info-icon">
+            <text class="cuIcon">赛</text>
+          </view>
+          <view class="info-content">
+            赛制: {{game.rules || '一局定胜负，21分制'}}
+          </view>
+        </view>
+
+        <view class="info-row">
+          <view class="info-icon">
+            <text class="cuIcon">人</text>
+          </view>
+          <view class="info-content">
+            最大人数: {{game.maxPlayers}}
+          </view>
+        </view>
+
+        <view class="info-row">
+          <view class="info-icon">
+            <text class="cuIcon">场</text>
+          </view>
+          <view class="info-content">
+            场地数: {{game.courtCount || '2'}}
+          </view>
+        </view>
+
+        <view class="info-row">
+          <view class="info-icon">
+            <text class="cuIcon">对</text>
+          </view>
+          <view class="info-content">
+            对阵: {{game.matchupMethod || '系统优化轮转'}}
+          </view>
+        </view>
+      </view>
+      
+      <!-- Edit Mode -->
+      <view wx:if="{{isEditing}}" class="edit-form">
+        <view class="form-group">
+          <view class="form-label">活动名称</view>
+          <input class="form-input" type="text" value="{{editGame.title}}" bindinput="onEditInputChange" data-field="title" placeholder="输入活动名称" />
+        </view>
+        
+        <view class="form-group">
+          <view class="form-label">日期</view>
+          <picker mode="date" value="{{editGame.date}}" bindchange="onEditInputChange" data-field="date">
+            <view class="form-picker">{{editGame.date || '选择日期'}}</view>
+          </picker>
+        </view>
+        
+        <view class="form-group">
+          <view class="form-label">时间</view>
+          <picker mode="time" value="{{editGame.time}}" bindchange="onEditInputChange" data-field="time">
+            <view class="form-picker">{{editGame.time || '选择时间'}}</view>
+          </picker>
+        </view>
+        
+        <view class="form-group">
+          <view class="form-label">地点</view>
+          <input class="form-input" type="text" value="{{editGame.location}}" bindinput="onEditInputChange" data-field="location" placeholder="输入地点" />
+        </view>
+        
+        <view class="form-group">
+          <view class="form-label">赛制</view>
+          <input class="form-input" type="text" value="{{editGame.rules}}" bindinput="onEditInputChange" data-field="rules" placeholder="输入赛制" />
+        </view>
+        
+        <view class="form-group">
+          <view class="form-label">对阵方法</view>
+          <input class="form-input" type="text" value="{{editGame.matchupMethod}}" bindinput="onEditInputChange" data-field="matchupMethod" placeholder="输入对阵方法" />
+        </view>
+        
+        <view class="form-group">
+          <view class="form-label">最大人数: {{editGame.maxPlayers}}</view>
+          <slider min="2" max="20" value="{{editGame.maxPlayers}}" show-value bindchange="onEditInputChange" data-field="maxPlayers"></slider>
+        </view>
+        
+        <view class="form-group">
+          <view class="form-label">场地数: {{editGame.courtCount}}</view>
+          <slider min="1" max="8" value="{{editGame.courtCount}}" show-value bindchange="onEditInputChange" data-field="courtCount"></slider>
+        </view>
+        
+        <view class="button-group">
+          <button class="cancel-button" bindtap="onCancelEdit">取消</button>
+          <button class="save-button" bindtap="onSaveGameDetails">保存</button>
+        </view>
+      </view>
+    </view>
+
+    <!-- Player Signup Section -->
+    <view class="section">
+      <view class="section-header">
+        <text class="section-title">已报名: {{game.players.length}}/{{game.maxPlayers}}</text>
+        <view class="section-action" bindtap="navigateToGenerate" wx:if="{{game.players.length > 0}}">
+          生成对阵 >
+        </view>
+      </view>
+      
+      <view class="player-list">
+        <!-- Signed-up players -->
+        <view class="player-grid">
+          <view class="player-item {{item.gender == 'female' ? 'female-indicator' : ''}}" wx:for="{{game.players}}" wx:key="index">
+            <view class="player-avatar">
+              <image src="{{item.avatar || '/assets/icons/user.png'}}" mode="aspectFill"></image>
+            </view>
+            <view class="player-name">{{item.displayName}}</view>
+            <!-- Show remove button for owner or if it's the current user -->
+            <view class="player-remove" bindtap="removePlayer" data-index="{{index}}">×</view>
+          </view>
+          
+          <!-- Signup button - directly adds the current user -->
+          <view class="player-item add-player" wx:if="{{game.players.length < game.maxPlayers}}" bindtap="addPlayer">
+            <view class="add-icon">+</view>
+            <view class="add-text">我要报名</view>
+          </view>
+        </view>
+      </view>
+    </view>
+  </block>
+  
+  <!-- Empty State when no game loaded -->
+  <view class="empty-state" wx:if="{{!game}}">
+    <image src="/assets/icons/game.png" mode="aspectFit"></image>
+    <text>未找到活动数据</text>
+  </view>
+  
+  <!-- Bottom Action Buttons -->
+  <view class="action-buttons" wx:if="{{game}}">
+    <button class="action-button share" bindtap="shareGame" disabled="{{isNavigating}}">分享</button>
+    <button class="action-button primary{{isNavigating ? ' isNavigating' : ''}}" bindtap="navigateToGenerate" wx:if="{{game.players.length > 0}}" disabled="{{isNavigating}}">
+      {{isNavigating ? '正在生成...' : '生成对阵表'}}
+    </button>
+  </view>
+</view>

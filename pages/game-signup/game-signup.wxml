@@ -1,0 +1,99 @@
+<view class="container">  <!-- Game List Section -->
+  <view class="section">
+    <view class="section-header">
+      <text class="section-title">可参加的活动</text>
+      <view class="section-action" bindtap="showAddGameModal">
+        <text class="add-game-btn">+ 新建活动</text>
+      </view>
+    </view>
+    
+    <view class="game-list">
+      <scroll-view scroll-y="true" style="height: 800rpx;">
+        <view 
+          class="game-list-item" 
+          wx:for="{{games}}" 
+          wx:key="id" 
+          bindtap="selectGame" 
+          data-index="{{index}}"
+          hover-class="game-list-item-hover"
+        >
+          <view class="game-list-title">{{item.title}}</view>
+          <view class="game-list-info">{{item.date}} {{item.time}} · {{item.location}}</view>
+          <view class="game-list-info-row">
+            <view class="game-list-status">{{item.status || '招募中'}}</view>
+            <view class="game-list-players">已报名: {{item.players.length}}/{{item.maxPlayers}}</view>
+          </view>
+          <view class="game-list-arrow">></view>
+        </view>
+      </scroll-view>
+    </view>
+  </view>
+  
+  <!-- Empty State when no games -->
+  <view class="empty-state" wx:if="{{games.length === 0}}">
+    <image src="/assets/icons/game.png" mode="aspectFit"></image>
+    <view class="empty-state-text">暂无活动，点击右上角创建新活动</view>
+  </view>
+    <!-- Player modal moved to game-detail page -->
+  
+  <!-- Add Game Modal -->
+  <view class="modal" wx:if="{{showAddGameModal}}">
+    <view class="modal-mask" bindtap="hideAddGameModal"></view>
+    <view class="modal-content game-modal">
+      <view class="modal-header">创建新活动</view>
+      <view class="modal-body">
+        <scroll-view scroll-y="true" style="max-height: 600rpx;">
+          <view class="form-group">
+            <label>活动名称</label>
+            <input placeholder="输入活动名称" bindinput="onNewGameInput" data-field="title" value="{{newGame.title}}"/>
+          </view>
+          
+          <view class="form-group">
+            <label>日期</label>
+            <picker mode="date" value="{{newGame.date}}" bindchange="onDateChange">
+              <view class="picker {{newGame.date ? '' : 'placeholder'}}">
+                {{newGame.date || '选择日期'}}
+              </view>
+            </picker>
+          </view>
+          
+          <view class="form-group">
+            <label>时间</label>
+            <picker mode="time" value="{{newGame.time}}" bindchange="onTimeChange">
+              <view class="picker {{newGame.time ? '' : 'placeholder'}}">
+                {{newGame.time || '选择时间'}}
+              </view>
+            </picker>
+          </view>
+          
+          <view class="form-group">
+            <label>地点</label>
+            <input placeholder="输入活动地点" bindinput="onNewGameInput" data-field="location" value="{{newGame.location}}"/>
+          </view>
+  
+          
+          <view class="form-group">
+            <label>最大人数</label>
+            <slider min="2" max="16" step="1" value="{{newGame.maxPlayers}}" show-value bindchange="onMaxPlayersChange"></slider>
+          </view>
+          
+          <view class="form-group">
+            <label>场地数量</label>
+            <slider min="1" max="4" step="1" value="{{newGame.courtCount}}" show-value bindchange="onCourtCountChange"></slider>
+          </view>
+          
+          <view class="form-group">
+            <label>比赛规则</label>
+            <textarea placeholder="输入比赛规则" bindinput="onNewGameInput" data-field="rules" value="{{newGame.rules}}"/>
+          </view>
+        </scroll-view>
+        
+        <view class="modal-actions">
+          <button bindtap="hideAddGameModal">取消</button>
+          <button type="primary" bindtap="addNewGame">创建</button>
+        </view>
+      </view>
+    </view>
+  </view>
+    <!-- No bottom action buttons needed as they're in the game detail page -->
+</view>

@@ -562,7 +562,12 @@ Page({
         return;
       }
       
-      // Create user profile with WechatId field
+    // Create user profile with WechatId field
+      // Make sure we have a valid openid/WechatId to prevent duplicate key errors
+      if (!tempUserInfo || !tempUserInfo.openid) {
+        throw new Error('无效的用户ID，请重新登录');
+      }
+      
       const userProfile = {
         openid: tempUserInfo.openid, // This will be stored as WechatId in cloud
         nickname: finalNickname,
@@ -604,10 +609,9 @@ Page({
       });
     }
   },
-  
-  redirectToMainPage: function() {
+    redirectToMainPage: function() {
     wx.switchTab({
-      url: '/pages/newGame/newGame'
+      url: '/pages/game-signup/game-signup'
     });
   },
   

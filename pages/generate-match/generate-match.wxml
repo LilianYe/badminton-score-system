@@ -1,0 +1,106 @@
+<view class="container">
+  <view class="section" wx:if="{{!fromSignup}}">
+    <text>球员列表（每行一个，女球员请加(F)）：</text>
+    <textarea placeholder="如：张三\n李四(F)\n王五" auto-height bindinput="onPlayersInput" value="{{playersInput}}" />
+  </view>
+  <view class="section" wx:else>    <view class="player-list-header">
+      <text class="player-list-title">已导入球员 ({{playerCount}}人)</text>
+      <view class="edit-button" bindtap="togglePlayerEdit">{{showPlayerEdit ? '完成' : '编辑'}}</view>
+    </view>
+    <view class="player-chips">
+      <view wx:for="{{processedPlayers}}" wx:key="index" class="player-chip {{item.isFemale ? 'female' : ''}}">
+        {{item.name}}
+        <text wx:if="{{showPlayerEdit}}" class="remove-player" data-index="{{index}}" bindtap="removePlayer">×</text>
+      </view>
+    </view>
+  </view>
+  <view class="parameters-section">
+    <view class="parameter-group">
+      <view class="parameter">
+        <text>每人场数：</text>
+        <input type="number" value="{{gamePerPlayer}}" placeholder="如 4" bindinput="onGamePerPlayerInput" />
+      </view>
+      <view class="parameter">
+        <text>场地数：</text>
+        <input type="number" value="{{courtCount}}" placeholder="如 2" bindinput="onCourtCountInput" />
+      </view>
+    </view>
+    <view class="parameter-group advanced-settings {{showAdvanced ? 'show' : ''}}">
+      <view class="parameter" wx:if="{{showAdvanced}}">
+        <text>ELO阈值：</text>
+        <input type="number" value="{{eloThreshold}}" placeholder="如 100" bindinput="onEloThresholdInput" />
+      </view>
+      <view class="parameter" wx:if="{{showAdvanced}}">
+        <text>队伍ELO差：</text>
+        <input type="number" value="{{teamEloDiff}}" placeholder="如 70" bindinput="onTeamEloDiffInput" />
+      </view>
+    </view>
+    <view class="toggle-advanced" bindtap="toggleAdvanced">
+      {{showAdvanced ? '隐藏高级设置' : '显示高级设置'}}
+    </view>
+  </view>
+  
+  <view class="button-row">
+    <button wx:if="{{fromSignup}}" class="back-button" bindtap="navigateBack">返回</button>
+    <button type="primary" class="generate-button" bindtap="onGenerate" loading="{{loading}}" disabled="{{loading}}">生成轮次</button>
+  </view>
+  
+  <view wx:if="{{loading}}" class="loading-section">
+    <text>正在生成，请稍候...</text>
+  </view>
+  
+  <view wx:if="{{matchRounds && matchRounds.length}}" class="result-section">
+    <view wx:for="{{matchRounds}}" wx:key="index" class="match-round">
+      <view class="round-header">第 {{index+1}} 轮</view>
+      
+      <view wx:for="{{item.courts}}" wx:for-item="court" wx:for-index="courtIndex" wx:key="courtIndex" class="match-court">
+        <view class="court-number">场地 {{courtIndex+1}}</view>
+        
+        <view class="team">
+          <view class="team-players">
+            <view wx:for="{{court[0]}}" wx:for-item="player" wx:key="index" class="player {{femaleSet.has(player) ? 'female-player' : ''}}">
+              {{player}}
+            </view>
+          </view>
+        </view>
+        
+        <view class="versus">VS</view>
+        
+        <view class="team">
+          <view class="team-players">
+            <view wx:for="{{court[1]}}" wx:for-item="player" wx:key="index" class="player {{femaleSet.has(player) ? 'female-player' : ''}}">
+              {{player}}
+            </view>
+          </view>
+        </view>
+      </view>
+      
+      <view class="rest-players">
+        <text>本轮休息: </text>
+        <view wx:for="{{item.rest}}" wx:for-item="player" wx:key="index" class="rest-player {{femaleSet.has(player) ? 'female-player' : ''}}">
+          {{player}}
+        </view>
+      </view>
+    </view>
+    
+    <!-- Raw output for debugging -->
+    <view wx:if="{{showRawOutput}}" class="raw-output">
+      <text>原始输出：</text>
+      <text>{{result}}</text>
+    </view>
+    
+    <!-- Action buttons -->
+    <view class="toolbar">
+      <button class="toolbar-button" bindtap="shareMatchResults" disabled="{{loading}}">分享对阵表</button>
+      <button class="toolbar-button" bindtap="regenerateMatches" disabled="{{loading}}">重新生成</button>
+      <button class="toolbar-button" bindtap="toggleRawOutput">{{showRawOutput ? '隐藏详情' : '显示详情'}}</button>
+    </view>
+  </view>
+  
+  <view wx:elif="{{result && !matchRounds.length}}" class="result-section">
+    <text>生成结果：</text>
+    <scroll-view scroll-y style="max-height:400px;">
+      <text>{{result}}</text>
+    </scroll-view>
+  </view>
+</view>

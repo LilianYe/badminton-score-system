@@ -1,0 +1,218 @@
+.container {
+  padding: 24rpx;
+}
+.section {
+  margin-bottom: 32rpx;
+}
+textarea, input {
+  width: 100%;
+  border: 1px solid #ddd;
+  border-radius: 8rpx;
+  padding: 12rpx;
+  margin-top: 8rpx;
+  font-size: 32rpx;
+}
+.button-row {
+  display: flex;
+  margin-top: 24rpx;
+  gap: 20rpx;
+}
+.back-button {
+  flex: 1;
+  background-color: #f8f8f8;
+  color: #333;
+}
+.generate-button {
+  flex: 2;
+}
+.result-section {
+  margin-top: 32rpx;
+  background: #f7f7f7;
+  padding: 16rpx;
+  border-radius: 8rpx;
+}
+.loading-section {
+  margin-top: 32rpx;
+  text-align: center;
+  color: #007AFF;
+}
+
+/* New styles for match results */
+.match-round {
+  margin: 20rpx 0;
+  padding: 16rpx;
+  background-color: white;
+  border-radius: 8rpx;
+  box-shadow: 0 2rpx 8rpx rgba(0,0,0,0.05);
+}
+
+.round-header {
+  font-weight: bold;
+  font-size: 28rpx;
+  color: #007AFF;
+  padding-bottom: 10rpx;
+  border-bottom: 1rpx solid #eee;
+  margin-bottom: 10rpx;
+}
+
+.match-court {
+  display: flex;
+  align-items: center;
+  padding: 12rpx 0;
+  border-bottom: 1rpx dashed #eee;
+}
+
+.court-number {
+  flex: 0 0 80rpx;
+  font-weight: bold;
+  color: #666;
+}
+
+.team {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.team-players {
+  display: flex;
+  flex-direction: column;
+}
+
+.player {
+  font-size: 28rpx;
+  padding: 4rpx 0;
+}
+
+.versus {
+  flex: 0 0 60rpx;
+  text-align: center;
+  font-weight: bold;
+  color: #999;
+}
+
+.female-player {
+  color: #ff4f9c;
+}
+
+.rest-players {
+  margin-top: 8rpx;
+  padding: 8rpx;
+  background-color: #f0f0f0;
+  border-radius: 8rpx;
+  font-size: 26rpx;
+}
+
+.rest-player {
+  display: inline-block;
+  margin-right: 16rpx;
+  background-color: #e0e0e0;
+  padding: 6rpx 12rpx;
+  border-radius: 4rpx;
+}
+
+/* For more advanced features */
+.partner-metadata {
+  font-size: 22rpx;
+  color: #999;
+  margin-top: 4rpx;
+}
+
+.toolbar {
+  display: flex;
+  margin-top: 20rpx;
+  justify-content: space-between;
+}
+
+.toolbar-button {
+  flex: 1;
+  margin: 0 8rpx;
+  font-size: 26rpx;
+  padding: 10rpx 0;
+}
+
+.player-list-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20rpx;
+}
+
+.player-list-title {
+  font-weight: bold;
+}
+
+.edit-button {
+  color: #007AFF;
+  font-size: 28rpx;
+}
+
+.player-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16rpx;
+  margin-bottom: 20rpx;
+}
+
+.player-chip {
+  background-color: #f0f0f0;
+  border-radius: 30rpx;
+  padding: 8rpx 20rpx;
+  font-size: 28rpx;
+  display: flex;
+  align-items: center;
+  position: relative;
+}
+
+.player-chip.female {
+  background-color: #ffecf5;
+  color: #ff4f9c;
+}
+
+.remove-player {
+  margin-left: 10rpx;
+  font-weight: bold;
+  height: 32rpx;
+  width: 32rpx;
+  text-align: center;
+  line-height: 32rpx;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.1);
+}
+
+.parameters-section {
+  background-color: #f7f7f7;
+  padding: 20rpx;
+  border-radius: 12rpx;
+  margin-bottom: 32rpx;
+}
+
+.parameter-group {
+  display: flex;
+  flex-wrap: wrap;
+  margin-bottom: 20rpx;
+  gap: 20rpx;
+}
+
+.parameter {
+  flex: 1;
+  min-width: 300rpx;
+}
+
+.toggle-advanced {
+  text-align: center;
+  color: #007AFF;
+  font-size: 28rpx;
+  padding: 10rpx;
+}
+
+.advanced-settings {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.3s;
+}
+
+.advanced-settings.show {
+  max-height: 500rpx;
+}

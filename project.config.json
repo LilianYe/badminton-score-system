@@ -41,8 +41,9 @@
     "disableUseStrict": false,
     "useCompilerPlugins": false,
     "condition": false,
-    "swc": false,
-    "disableSWC": true
+    "swc": false,    
+    "disableSWC": true,
+    "ignoreUploadUnusedFiles": true
   },
   "appid": "wx96be3c8055236315",
   "projectname": "badminton-score-system",

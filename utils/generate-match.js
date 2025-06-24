@@ -510,6 +510,45 @@ function backtrackCourts(courts, females, males, courtCount, femaleSet, usedPlay
   return false;
 }
 
+/**
+ * Shuffle an array in place (Fisher-Yates)
+ * @param {Array} arr
+ * @returns {Array}
+ */
+function shuffleArray(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+/**
+ * Try to generateRotationFull() multiple times with shuffled players until success or maxTries reached.
+ * @param {string[]} players
+ * @param {number} courtCount
+ * @param {number} gamePerPlayer
+ * @param {number} eloThreshold
+ * @param {Object} playerElos
+ * @param {number} teamEloDiff
+ * @param {number} [maxTries=20]
+ * @returns {{restSchedule: string[][], roundsLineups: string[][][]}|null}
+ */
+function tryGenerateRotationFull(players, courtCount, gamePerPlayer, eloThreshold, playerElos, teamEloDiff, maxTries = 20) {
+  for (let attempt = 1; attempt <= maxTries; attempt++) {
+    const shuffled = shuffleArray([...players]);
+    try {
+      const result = generateRotationFull(shuffled, courtCount, gamePerPlayer, eloThreshold, playerElos, teamEloDiff);
+      console.log(`[tryGenerateRotationFull] Success on attempt ${attempt}`);
+      return result;
+    } catch (e) {
+      console.warn(`[tryGenerateRotationFull] Failed attempt ${attempt}: ${e.message}`);
+    }
+  }
+  console.error(`[tryGenerateRotationFull] Failed to generate a valid schedule after ${maxTries} attempts.`);
+  return null;
+}
+
 // Test for generateRotationFull
 function testGenerateRotationFull() {
   const players = [
@@ -524,14 +563,23 @@ function testGenerateRotationFull() {
     "敏敏子(F)": 1500, "Acaprice": 1500, "liyu": 1500, "Max(F)": 1500,
     "张晴川": 1500, "方文": 1500, "米兰的小铁匠": 1500, "gdc": 1500, 'x1(F)': 1500, 'x2(F)': 1500
   };
-  try {
-    const result = generateRotationFull(players, courtCount, gamePerPlayer, eloThreshold, playerElos, teamEloDiff);
+  const result = tryGenerateRotationFull(players, courtCount, gamePerPlayer, eloThreshold, playerElos, teamEloDiff, 30);
+  if (result) {
     console.log("Rest schedule:", JSON.stringify(result.restSchedule, null, 2));
     console.log("Rounds lineups:", JSON.stringify(result.roundsLineups, null, 2));
-  } catch (e) {
-    console.error("Failed to generate rotation:", e.message);
+  } else {
+    console.error("Failed to generate rotation after multiple attempts.");
   }
 }
 
-testGenerateRotationFull();
+// testGenerateRotationFull();
+
+// Export functions for use in pages
+module.exports = {
+  tryGenerateRotationFull,
+  generateRotationFull,
+  backtrackRestScheduleVariable,
+  backtrackCourts,
+  shuffleArray
+};
 
