@@ -1,82 +1,78 @@
 const app = getApp();
+const CloudDBService = require('../../utils/cloud-db.js');
 
 Page({
   data: {
     userInfo: null,
-    nickname: '',
+    isLoading: true,
     isEditing: false,
-    isEditingGender: false,
-    isLoading: false,
-    originalNickname: '',
-    nicknameAvailable: null,
-    checkingAvailability: false,
-    gender: 'male',
+    tempNickname: '',
+    tempGender: 'male',
     genderOptions: ['male', 'female'],
-    genderIndex: 0
+    genderIndex: 0,
+    nicknameAvailable: null,
+    checkingAvailability: false
   },
-  
+
   onLoad: function() {
-    this.loadUserInfo();
+    this.loadUserProfile();
   },
-  
+
   onShow: function() {
-    this.loadUserInfo();
+    // Refresh user data when page is shown
+    this.loadUserProfile();
   },
-  
-  loadUserInfo: function() {
-    const userInfo = wx.getStorageSync('userInfo');
-    if (userInfo) {
-      const genderIndex = userInfo.gender === 'female' ? 1 : 0;
-      this.setData({
-        userInfo: userInfo,
-        nickname: userInfo.nickname || userInfo.nickName || 'Player',
-        originalNickname: userInfo.nickname || userInfo.nickName || 'Player',
-        gender: userInfo.gender || 'male',
-        genderIndex: genderIndex
-      });
-    } else {
-      // If no user info, redirect to login
-      wx.redirectTo({
-        url: '/pages/user-login/user-login'
+
+  // Load user profile from cloud database
+  async loadUserProfile() {
+    this.setData({ isLoading: true });
+    
+    try {
+      const userInfo = await app.getCurrentUser();
+      
+      if (userInfo) {
+        this.setData({
+          userInfo: userInfo,
+          tempNickname: userInfo.nickname || '',
+          tempGender: userInfo.gender || 'male',
+          genderIndex: userInfo.gender === 'female' ? 1 : 0,
+          isLoading: false
+        });
+      } else {
+        // No user logged in, redirect to login
+        wx.redirectTo({
+          url: '/pages/user-login/user-login'
+        });
+      }
+    } catch (error) {
+      console.error('Error loading user profile:', error);
+      this.setData({ isLoading: false });
+      
+      wx.showToast({
+        title: 'Failed to load profile',
+        icon: 'none'
       });
     }
   },
-  
-  startEdit: function() {
+
+  // Toggle edit mode
+  toggleEdit: function() {
     this.setData({
-      isEditing: true
+      isEditing: !this.data.isEditing
     });
   },
-  
-  startEditGender: function() {
-    this.setData({
-      isEditingGender: true
-    });
-  },
-  
-  cancelEdit: function() {
-    this.setData({
-      isEditing: false,
-      nickname: this.data.originalNickname
-    });
-  },
-  
-  cancelEditGender: function() {
-    this.setData({
-      isEditingGender: false
-    });
-  },
-  
+
+  // Handle nickname input
   onNicknameInput: function(e) {
     const nickname = e.detail.value;
     this.setData({
-      nickname: nickname
+      tempNickname: nickname
     });
     
     // Check availability in real-time (debounced)
     this.checkNicknameAvailability(nickname);
   },
-  
+
   // Check nickname availability with debouncing
   checkNicknameAvailability: function(nickname) {
     // Clear previous timeout
@@ -85,13 +81,23 @@ Page({
     }
     
     // Set new timeout for debouncing
-    this.availabilityTimeout = setTimeout(() => {
-      if (nickname.trim()) {
-        const isAvailable = this.isNicknameUnique(nickname.trim(), this.data.userInfo.openid);
-        this.setData({
-          nicknameAvailable: isAvailable,
-          checkingAvailability: false
-        });
+    this.availabilityTimeout = setTimeout(async () => {
+      if (nickname.trim() && nickname.trim() !== this.data.userInfo.nickname) {
+        this.setData({ checkingAvailability: true });
+        
+        try {
+          const isAvailable = await app.isNicknameUnique(nickname.trim(), this.data.userInfo.openid);
+          this.setData({
+            nicknameAvailable: isAvailable,
+            checkingAvailability: false
+          });
+        } catch (error) {
+          console.error('Error checking nickname availability:', error);
+          this.setData({
+            nicknameAvailable: null,
+            checkingAvailability: false
+          });
+        }
       } else {
         this.setData({
           nicknameAvailable: null,
@@ -100,12 +106,24 @@ Page({
       }
     }, 500); // 500ms delay
   },
-  
-  saveNickname: function() {
-    const { nickname, userInfo } = this.data;
+
+  // Handle gender selection
+  onGenderChange: function(e) {
+    const selectedIndex = e.detail.value;
+    const selectedGender = this.data.genderOptions[selectedIndex];
+    
+    this.setData({
+      tempGender: selectedGender,
+      genderIndex: selectedIndex
+    });
+  },
+
+  // Save profile changes
+  async saveProfile() {
+    const { tempNickname, tempGender, userInfo } = this.data;
     
     // Validate nickname
-    if (!nickname.trim()) {
+    if (!tempNickname.trim()) {
       wx.showToast({
         title: 'Please enter a nickname',
         icon: 'none'
@@ -113,7 +131,7 @@ Page({
       return;
     }
     
-    if (nickname.trim().length > 20) {
+    if (tempNickname.trim().length > 20) {
       wx.showToast({
         title: 'Nickname too long (max 20 chars)',
         icon: 'none'
@@ -121,74 +139,76 @@ Page({
       return;
     }
     
-    // Check if nickname is unique (excluding current user)
-    if (!this.isNicknameUnique(nickname.trim(), userInfo.openid)) {
-      wx.showToast({
-        title: 'Nickname already taken',
-        icon: 'none'
-      });
-      return;
+    // Check if nickname changed and is unique using WechatId
+    if (tempNickname.trim() !== userInfo.nickname) {
+      const isUnique = await app.isNicknameUnique(tempNickname.trim(), userInfo.openid);
+      if (!isUnique) {
+        wx.showToast({
+          title: 'Nickname already taken',
+          icon: 'none'
+        });
+        return;
+      }
     }
     
     this.setData({ isLoading: true });
     
     try {
-      // Update user info with new nickname
+      // Update user profile
       const updatedUserInfo = {
         ...userInfo,
-        nickname: nickname.trim(),
+        nickname: tempNickname.trim(),
+        gender: tempGender,
         updatedAt: new Date().toISOString()
       };
       
-      // Save to storage
-      wx.setStorageSync('userInfo', updatedUserInfo);
+      // Save to cloud database using WechatId field
+      const success = await app.saveUserToGlobalList(updatedUserInfo);
       
-      // Update global user list
-      this.updateUserInGlobalList(updatedUserInfo);
-      
-      // Update global data
-      app.globalData.userInfo = updatedUserInfo;
-      
-      // Update data
-      this.setData({
-        userInfo: updatedUserInfo,
-        originalNickname: nickname.trim(),
-        isEditing: false,
-        isLoading: false
-      });
-      
-      wx.showToast({
-        title: 'Nickname updated!',
-        icon: 'success'
-      });
-      
+      if (success) {
+        this.setData({
+          userInfo: updatedUserInfo,
+          isEditing: false,
+          isLoading: false
+        });
+        
+        wx.showToast({
+          title: 'Profile updated successfully',
+          icon: 'success'
+        });
+      } else {
+        throw new Error('Failed to update profile');
+      }
     } catch (error) {
-      console.error('Failed to update nickname:', error);
+      console.error('Failed to update profile:', error);
+      this.setData({ isLoading: false });
+      
       wx.showToast({
-        title: 'Failed to update nickname',
+        title: 'Failed to update profile',
         icon: 'none'
       });
-      this.setData({ isLoading: false });
     }
   },
-  
-  // Check if nickname is unique (excluding current user)
-  isNicknameUnique: function(nickname, currentOpenid) {
-    return app.isNicknameUnique(nickname, currentOpenid);
+
+  // Cancel edit mode
+  cancelEdit: function() {
+    this.setData({
+      isEditing: false,
+      tempNickname: this.data.userInfo.nickname,
+      tempGender: this.data.userInfo.gender,
+      genderIndex: this.data.userInfo.gender === 'female' ? 1 : 0,
+      nicknameAvailable: null
+    });
   },
-  
-  // Update user in global list
-  updateUserInGlobalList: function(updatedUserInfo) {
-    return app.saveUserToGlobalList(updatedUserInfo);
-  },
-  
+
+  // Logout user
   logout: function() {
     wx.showModal({
-      title: 'Logout',
+      title: 'Confirm Logout',
       content: 'Are you sure you want to logout?',
       success: (res) => {
         if (res.confirm) {
-          // Clear user info
+          // Clear local storage
           wx.removeStorageSync('userInfo');
           app.globalData.userInfo = null;
           
@@ -200,62 +220,28 @@ Page({
       }
     });
   },
-  
-  goBack: function() {
-    wx.navigateBack();
-  },
-  
-  onGenderChange: function(e) {
-    const selectedIndex = e.detail.value;
-    const selectedGender = this.data.genderOptions[selectedIndex];
-    
-    this.setData({
-      gender: selectedGender,
-      genderIndex: selectedIndex
+
+  // Sync data to cloud
+  async syncToCloud() {
+    wx.showLoading({
+      title: 'Syncing...'
     });
-  },
-  
-  saveGender: function() {
-    const { gender, userInfo } = this.data;
-    
-    this.setData({ isLoading: true });
     
     try {
-      // Update user info with new gender
-      const updatedUserInfo = {
-        ...userInfo,
-        gender: gender,
-        updatedAt: new Date().toISOString()
-      };
-      
-      // Save to storage
-      wx.setStorageSync('userInfo', updatedUserInfo);
-      
-      // Update global user list
-      this.updateUserInGlobalList(updatedUserInfo);
-      
-      // Update global data
-      app.globalData.userInfo = updatedUserInfo;
-      
-      // Update data
-      this.setData({
-        userInfo: updatedUserInfo,
-        isEditingGender: false,
-        isLoading: false
-      });
-      
-      wx.showToast({
-        title: 'Gender updated!',
-        icon: 'success'
-      });
-      
+      const success = await app.syncToCloud();
+      if (success) {
+        // Reload user profile after sync
+        await this.loadUserProfile();
+      }
     } catch (error) {
-      console.error('Failed to update gender:', error);
-      wx.showToast({
-        title: 'Failed to update gender',
-        icon: 'none'
-      });
-      this.setData({ isLoading: false });
+      console.error('Error syncing to cloud:', error);
+    } finally {
+      wx.hideLoading();
     }
+  },
+
+  // Get display nickname with gender indicator
+  getDisplayNickname: function(user) {
+    return app.getDisplayNickname(user);
   }
 }); 

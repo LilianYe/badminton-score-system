@@ -58,6 +58,17 @@
         >
           🧪 Test Mode Login
         </button>
+        
+        <!-- Test Login Scenarios button -->
+        <button 
+          wx:if="{{isDevTools}}"
+          bindtap="testLoginScenarios" 
+          class="test-scenarios-btn" 
+          type="default"
+          size="mini"
+        >
+          🎭 Test Login Scenarios
+        </button>
       </view>
       
       <view class="note">
@@ -68,55 +79,35 @@
     
     <!-- Nickname Configuration Step -->
     <view wx:else class="nickname-config">
-      <view class="welcome-text">Choose Your Nickname</view>
-      <view class="subtitle">How would you like to be called in the app?</view>
+      <view class="welcome-text">Welcome to Badminton Score System!</view>
+      <view class="subtitle">You can edit your nickname below or keep your WeChat name.</view>
       
-      <view class="avatar-section" wx:if="{{userInfo}}">
-        <image class="avatar" src="{{userInfo.avatarUrl}}" mode="aspectFill"></image>
+      <view class="avatar-section" wx:if="{{tempUserInfo}}">
+        <image class="avatar" src="{{tempUserInfo.avatarUrl}}" mode="aspectFill"></image>
       </view>
       
-      <view class="nickname-options">
-        <!-- Option 1: Use WeChat name -->
-        <view class="option-card" bindtap="toggleNameOption">
-          <view class="option-header">
-            <view class="radio-btn {{useWeChatName ? 'selected' : ''}}">
-              <view wx:if="{{useWeChatName}}" class="radio-inner"></view>
-            </view>
-            <text class="option-title">Use WeChat Name</text>
-          </view>
-          <text class="option-value">{{userInfo ? userInfo.nickName : 'Player'}}</text>
-        </view>
+      <!-- Nickname Input Section -->
+      <view class="nickname-section">
+        <text class="nickname-label">Nickname</text>
+        <input 
+          class="nickname-input" 
+          value="{{nickname}}" 
+          bindinput="onNicknameInput"
+          placeholder="Enter your nickname"
+          maxlength="20"
+          focus="true"
+        />
         
-        <!-- Option 2: Custom nickname -->
-        <view class="option-card" bindtap="toggleNameOption">
-          <view class="option-header">
-            <view class="radio-btn {{!useWeChatName ? 'selected' : ''}}">
-              <view wx:if="{{!useWeChatName}}" class="radio-inner"></view>
-            </view>
-            <text class="option-title">Custom Nickname</text>
+        <!-- Availability indicator -->
+        <view wx:if="{{nickname}}" class="availability-indicator">
+          <view wx:if="{{checkingAvailability}}" class="checking">
+            <text class="checking-text">Checking availability...</text>
           </view>
-          <input 
-            wx:if="{{!useWeChatName}}"
-            class="custom-nickname-input" 
-            value="{{nickname}}" 
-            bindinput="onNicknameInput"
-            placeholder="Enter your nickname"
-            maxlength="20"
-            focus="true"
-          />
-          <text wx:else class="option-value">{{nickname}}</text>
-          
-          <!-- Availability indicator -->
-          <view wx:if="{{!useWeChatName && nickname}}" class="availability-indicator">
-            <view wx:if="{{checkingAvailability}}" class="checking">
-              <text class="checking-text">Checking availability...</text>
-            </view>
-            <view wx:elif="{{nicknameAvailable === true}}" class="available">
-              <text class="available-text">✓ Available</text>
-            </view>
-            <view wx:elif="{{nicknameAvailable === false}}" class="unavailable">
-              <text class="unavailable-text">✗ Already taken</text>
-            </view>
+          <view wx:elif="{{nicknameAvailable === true}}" class="available">
+            <text class="available-text">✓ Available</text>
+          </view>
+          <view wx:elif="{{nicknameAvailable === false}}" class="unavailable">
+            <text class="unavailable-text">✗ Already taken</text>
           </view>
         </view>
       </view>
@@ -140,7 +131,7 @@
       
       <view class="config-actions">
         <button 
-          bindtap="saveNicknameAndContinue" 
+          bindtap="handleContinue" 
           class="continue-btn" 
           type="primary"
           loading="{{isLoading}}"
@@ -155,3 +146,22 @@
     </view>
   </view>
 </view>
+
+.test-cloud-btn::after {
+  border: none;
+}
+
+.test-scenarios-btn {
+  width: 100%;
+  height: 36px;
+  margin-top: 8px;
+  background-color: #5856D6 !important;
+  border-color: #5856D6 !important;
+  color: #fff !important;
+  font-size: 12px;
+  border-radius: 6px;
+}
+
+.test-scenarios-btn::after {
+  border: none;
+}

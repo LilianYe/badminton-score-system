@@ -1,0 +1,9 @@
+{
+  "name": "getOpenId",
+  "version": "1.0.0",
+  "description": "Cloud function to get WeChat openid",
+  "main": "index.js",
+  "dependencies": {
+    "wx-server-sdk": "~2.6.3"
+  }
+} 

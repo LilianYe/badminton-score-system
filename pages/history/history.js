@@ -11,37 +11,12 @@ Page({
   },
 
   onLoad: function() {
-    // Get current player from storage
-    const userInfo = wx.getStorageSync('userInfo');
-    if (userInfo && userInfo.username) {
-      this.setData({
-        currentPlayer: userInfo.username
-      });
-      
-      // Load game history for logged in user
-      this.loadGameHistory(userInfo.username);
-    } else {
-      // Handle case when user is not logged in
-      wx.showToast({
-        title: 'Please log in first',
-        icon: 'none'
-      });
-      
-      // Redirect to login page after delay
-      setTimeout(() => {
-        wx.redirectTo({
-          url: '/pages/user-login/user-login'
-        });
-      }, 1500);
-    }
+    this.checkUserAndLoadHistory();
   },
 
   onShow: function() {
     // Always refresh data when page becomes visible
-    const userInfo = wx.getStorageSync('userInfo');
-    if (userInfo && userInfo.username) {
-      this.loadGameHistory(userInfo.username);
-    }
+    this.checkUserAndLoadHistory();
   },
 
   onDateSelect: function(e) {
@@ -528,6 +503,53 @@ Page({
       });
       
       wx.setStorageSync('players', updatedPlayers);
+    }
+  },
+
+  // Check if user is logged in and load history
+  async checkUserAndLoadHistory() {
+    try {
+      console.log('Checking user login status...');
+      
+      // Get current user from cloud database
+      const currentUser = await app.getCurrentUser();
+      console.log('Current user from cloud database:', currentUser);
+      
+      if (currentUser && currentUser.nickname) {
+        console.log('User is logged in, nickname:', currentUser.nickname);
+        this.setData({
+          currentPlayer: currentUser.nickname
+        });
+        
+        // Load game history for logged in user
+        this.loadGameHistory(currentUser.nickname);
+      } else {
+        console.log('No user found or no nickname');
+        // Handle case when user is not logged in
+        wx.showToast({
+          title: 'Please log in first',
+          icon: 'none'
+        });
+        
+        // Redirect to login page after delay
+        setTimeout(() => {
+          wx.redirectTo({
+            url: '/pages/user-login/user-login'
+          });
+        }, 1500);
+      }
+    } catch (error) {
+      console.error('Error checking user login:', error);
+      wx.showToast({
+        title: 'Please log in first',
+        icon: 'none'
+      });
+      
+      setTimeout(() => {
+        wx.redirectTo({
+          url: '/pages/user-login/user-login'
+        });
+      }, 1500);
     }
   }
 });
