@@ -181,12 +181,13 @@ Page({
       }
       
       // Create player object from current user info
+      // currentUser.elo is already set from UserPerformance in app.getCurrentUser()
       const newPlayer = {
         name: currentUser.nickname,
         gender: currentUser.gender || 'male',
         avatar: currentUser.avatarUrl || '/assets/icons/user.png',
         openid: currentUser.openid,
-        elo: currentUser.elo || app.globalData.defaultElo || 1500
+        elo: currentUser.elo // Now fetched from UserPerformance collection
       };
       
       // Import the CloudDBService
@@ -340,10 +341,10 @@ Page({
       return;
     }
     
-    if (!game || game.players.length < 2) {
+    if (!game || game.players.length < 4) {
       console.log('Not enough players:', game?.players?.length);
       wx.showToast({
-        title: '至少需要2名球员',
+        title: '至少需要4名球员',
         icon: 'none'
       });
       return;
@@ -376,11 +377,8 @@ Page({
           femalePlayers.push(player.name);
         }
       });
-      app.globalData.femalePlayerSet = femalePlayers;
-      console.log('Female players:', femalePlayers);
-      
       // Store court count for match generation
-      app.globalData.courtCount = game.courtCount || 2;
+      app.globalData.courtCount = game.courtCount;
       console.log('Court count:', app.globalData.courtCount);
       
       console.log('App global data after setup:', JSON.stringify(app.globalData));

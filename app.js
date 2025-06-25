@@ -127,8 +127,7 @@ App({
       return false;
     }
   },
-  
-  // Get current user from cloud database
+    // Get current user from cloud database
   async getCurrentUser() {
     try {
       console.log('getCurrentUser called');
@@ -142,6 +141,18 @@ App({
         console.log('Cloud user result:', cloudUser);
         
         if (cloudUser) {
+          // Get ELO from UserPerformance collection
+          try {
+            const elo = await CloudDBService.getUserElo(storedOpenid);
+            // Add ELO to the user object
+            cloudUser.elo = elo;
+            console.log(`Updated user ELO from UserPerformance: ${elo}`);
+          } catch (eloError) {
+            console.error('Error fetching ELO from UserPerformance:', eloError);
+            // If there's an error, use default ELO
+            cloudUser.elo = this.globalData.defaultElo || 1500;
+          }
+          
           // Update global user info
           this.globalData.userInfo = cloudUser;
           console.log('User found and set in global data');
