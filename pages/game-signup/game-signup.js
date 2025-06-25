@@ -9,7 +9,8 @@ Page({
     newGame: {
       title: '',
       date: '',
-      time: '',
+      startTime: '',
+      endTime: '',
       location: '',
       rules: '一局定胜负，21分制',
       matchupMethod: '系统优化轮转',
@@ -19,7 +20,8 @@ Page({
       owner: null // Owner field to track who created the game
     }
   },
-    onLoad: function(options) {
+  
+  onLoad: function(options) {
     console.log('Game Signup page loaded');
     
     // Get app global data
@@ -38,7 +40,8 @@ Page({
     // Get the latest games from the cloud
     this.loadGamesFromCloud();
   },
-    // Load games from cloud database
+  
+  // Load games from cloud database
   loadGamesFromCloud: async function() {
     try {
       wx.showLoading({
@@ -88,7 +91,7 @@ Page({
     }
   },
   
-    // Game selection
+  // Game selection
   selectGame: function(e) {
     const index = e.currentTarget.dataset.index;
     const gameId = this.data.games[index].id;
@@ -109,8 +112,8 @@ Page({
       url: `/pages/game-detail/game-detail?id=${gameId}`
     });
   },
-    // Player management functions moved to game-detail page
-    // New game creation
+  
+  // New game creation
   showAddGameModal: function() {
     // Reset the new game form
     this.setData({ 
@@ -118,7 +121,8 @@ Page({
       newGame: {
         title: '',
         date: '',
-        time: '',
+        startTime: '',
+        endTime: '',
         location: '',
         rules: '一局定胜负，21分制',
         matchupMethod: '系统优化轮转',
@@ -152,10 +156,11 @@ Page({
     const newGame = this.data.newGame;
     newGame.time = e.detail.value;
     this.setData({ newGame });
-  },  onMaxPlayersChange: function(e) {
+  },
+  
+  onMaxPlayersChange: function(e) {
     const newGame = this.data.newGame;
     newGame.maxPlayers = e.detail.value;
-    
     this.setData({ newGame });
   },
   
@@ -163,6 +168,24 @@ Page({
     const newGame = this.data.newGame;
     newGame.courtCount = e.detail.value;
     this.setData({ newGame });
+  },
+  
+  onStartTimeChange: function(e) {
+    const newGame = this.data.newGame;
+    newGame.startTime = e.detail.value;
+    this.setData({ newGame });
+  },
+  
+  onEndTimeChange: function(e) {
+    const newGame = this.data.newGame;
+    newGame.endTime = e.detail.value;
+    this.setData({ newGame });
+  },
+  
+  // Helper function to convert time string (HH:MM) to minutes for comparison
+  convertTimeToMinutes: function(timeString) {
+    const [hours, minutes] = timeString.split(':').map(Number);
+    return hours * 60 + minutes;
   },
   
   addNewGame: async function() {
@@ -179,13 +202,27 @@ Page({
       return;
     }
     
-    if (!newGame.time) {
-      wx.showToast({ title: '请选择时间', icon: 'none' });
+    if (!newGame.startTime) {
+      wx.showToast({ title: '请选择开始时间', icon: 'none' });
+      return;
+    }
+    
+    if (!newGame.endTime) {
+      wx.showToast({ title: '请选择结束时间', icon: 'none' });
       return;
     }
     
     if (!newGame.location.trim()) {
       wx.showToast({ title: '请输入地点', icon: 'none' });
+      return;
+    }
+    
+    // Validate time logic: end time should be after start time
+    const startMinutes = this.convertTimeToMinutes(newGame.startTime);
+    const endMinutes = this.convertTimeToMinutes(newGame.endTime);
+    
+    if (endMinutes <= startMinutes) {
+      wx.showToast({ title: '结束时间必须晚于开始时间', icon: 'none' });
       return;
     }
 
@@ -268,5 +305,4 @@ Page({
       });
     }
   }
-  
 });

@@ -28,7 +28,7 @@
             <text class="cuIcon">日</text>
           </view>
           <view class="info-content">
-            日期: {{game.date || '2025/06/24 (星期一)'}} {{game.time || '20:00'}}
+            日期: {{game.date || '2025/06/24 (星期一)'}} {{game.startTime || '19:00'}}-{{game.endTime || '21:00'}}
           </view>
         </view>
         
@@ -92,10 +92,14 @@
           </picker>
         </view>
         
-        <view class="form-group">
-          <view class="form-label">时间</view>
-          <picker mode="time" value="{{editGame.time}}" bindchange="onEditInputChange" data-field="time">
-            <view class="form-picker">{{editGame.time || '选择时间'}}</view>
+        <view class="form-group">          <view class="form-label">开始时间</view>
+          <picker mode="time" value="{{editGame.startTime}}" bindchange="onEditInputChange" data-field="startTime">
+            <view class="form-picker">{{editGame.startTime || '选择开始时间'}}</view>
+          </picker>
+          
+          <view class="form-label">结束时间</view>
+          <picker mode="time" value="{{editGame.endTime}}" bindchange="onEditInputChange" data-field="endTime">
+            <view class="form-picker">{{editGame.endTime || '选择结束时间'}}</view>
           </picker>
         </view>
         

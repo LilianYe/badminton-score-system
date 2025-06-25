@@ -9,7 +9,8 @@ Page({
     editGame: {
       title: '',
       date: '',
-      time: '',
+      startTime: '',
+      endTime: '',
       location: '',
       rules: '',
       matchupMethod: '',
@@ -421,7 +422,8 @@ Page({
       editGame: {
         title: game.title,
         date: game.date,
-        time: game.time,
+        startTime: game.startTime || game.time || '', // Fall back to time for backward compatibility
+        endTime: game.endTime || '', // New field
         location: game.location,
         rules: game.rules,
         matchupMethod: game.matchupMethod,
@@ -464,9 +466,26 @@ Page({
       const { editGame, game } = this.data;
       
       // Validate required fields
-      if (!editGame.title || !editGame.date || !editGame.time) {
+      if (!editGame.title || !editGame.date || !editGame.startTime || !editGame.endTime) {
         wx.showToast({
           title: '请填写所有必填项',
+          icon: 'none'
+        });
+        return;
+      }
+      
+      // Validate time logic: end time should be after start time
+      const convertTimeToMinutes = (timeString) => {
+        const [hours, minutes] = timeString.split(':').map(Number);
+        return hours * 60 + minutes;
+      };
+      
+      const startMinutes = convertTimeToMinutes(editGame.startTime);
+      const endMinutes = convertTimeToMinutes(editGame.endTime);
+      
+      if (endMinutes <= startMinutes) {
+        wx.showToast({
+          title: '结束时间必须晚于开始时间',
           icon: 'none'
         });
         return;

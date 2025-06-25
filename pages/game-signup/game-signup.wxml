@@ -16,9 +16,8 @@
           bindtap="selectGame" 
           data-index="{{index}}"
           hover-class="game-list-item-hover"
-        >
-          <view class="game-list-title">{{item.title}}</view>
-          <view class="game-list-info">{{item.date}} {{item.time}} · {{item.location}}</view>
+        >          <view class="game-list-title">{{item.title}}</view>
+          <view class="game-list-info">{{item.date}} {{item.startTime}}-{{item.endTime}} · {{item.location}}</view>
           <view class="game-list-info-row">
             <view class="game-list-status">{{item.status || '招募中'}}</view>
             <view class="game-list-players">已报名: {{item.players.length}}/{{item.maxPlayers}}</view>
@@ -56,12 +55,20 @@
               </view>
             </picker>
           </view>
+            <view class="form-group">
+            <label>开始时间</label>
+            <picker mode="time" value="{{newGame.startTime}}" bindchange="onStartTimeChange">
+              <view class="picker {{newGame.startTime ? '' : 'placeholder'}}">
+                {{newGame.startTime || '选择开始时间'}}
+              </view>
+            </picker>
+          </view>
           
           <view class="form-group">
-            <label>时间</label>
-            <picker mode="time" value="{{newGame.time}}" bindchange="onTimeChange">
-              <view class="picker {{newGame.time ? '' : 'placeholder'}}">
-                {{newGame.time || '选择时间'}}
+            <label>结束时间</label>
+            <picker mode="time" value="{{newGame.endTime}}" bindchange="onEndTimeChange">
+              <view class="picker {{newGame.endTime ? '' : 'placeholder'}}">
+                {{newGame.endTime || '选择结束时间'}}
               </view>
             </picker>
           </view>
