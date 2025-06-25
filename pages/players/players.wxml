@@ -1,39 +1,43 @@
 <view class="container">
   <view class="header">
     <text class="title">Player Rankings</text>
-    <button bindtap="addPlayer" type="primary" size="mini">Add Player</button>
   </view>
 
-  <view class="player-list">
+  <view wx:if="{{isLoading}}" class="loading-container">
+    <text>Loading rankings...</text>
+  </view>
+
+  <view wx:elif="{{isEmpty}}" class="empty-container">
+    <text>No players found.</text>
+  </view>
+
+  <view wx:else class="player-list">
     <view class="list-header">
-      <text class="rank">Rank</text>
-      <text class="name">Name</text>
-      <text class="stats">W/L</text>
-      <text class="rating">ELO</text>
+      <text class="rank">#</text>
+      <text class="player">Player</text>
+      <text class="elo">ELO</text>
+      <text class="games">Games</text>
+      <text class="wins">W</text>
+      <text class="losses">L</text>
+      <text class="winrate">Win%</text>
     </view>
 
-    <block wx:if="{{players.length > 0}}">
-      <view 
-        wx:for="{{players}}" 
-        wx:for-item="item" 
-        wx:for-index="index" 
-        wx:key="id" 
-        class="{{item.className}}" 
-        bindtap="onPlayerTap"
-        data-id="{{item.id}}"
-      >
-        <text class="rank">{{index + 1}}</text>
-        <text class="name">{{item.name}}</text>
-        <text class="stats">{{item.statsDisplay}}</text>
-        <text class="rating">{{item.rating}}</text>
-      </view>
-    </block>
-
-    <block wx:else>
-      <view class="empty-state">
-        <text>No players added yet.</text>
-        <button bindtap="addPlayer" type="primary" size="mini" class="empty-action">Add First Player</button>
-      </view>
-    </block>
+    <view 
+      wx:for="{{players}}" 
+      wx:for-item="item" 
+      wx:for-index="index" 
+      wx:key="_id" 
+      class="player-item" 
+      bindtap="onPlayerTap"
+      data-name="{{item.Name}}"
+    >
+      <text class="rank">{{item.rank}}</text>
+      <text class="player">{{item.Name}}</text>
+      <text class="elo">{{item.ELO}}</text>
+      <text class="games">{{item.totalGames}}</text>
+      <text class="wins">{{item.totalWins}}</text>
+      <text class="losses">{{item.totalLosses}}</text>
+      <text class="winrate">{{item.winRateDisplay}}</text>
+    </view>
   </view>
 </view>

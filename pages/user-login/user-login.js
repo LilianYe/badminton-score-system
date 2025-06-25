@@ -584,6 +584,36 @@ Page({
       const success = await app.saveUserToGlobalList(userProfile);
       
       if (success) {
+        // Create initial UserPerformance record
+        try {
+          const db = wx.cloud.database();
+          const initialPerformance = {
+            Name: finalNickname,
+            ELO: 1500.0,
+            Games: 0.0,
+            Wins: 0.0,
+            Losses: 0.0,
+            WinRate: 0.0,
+            MixedGames: 0.0,
+            MixedWins: 0.0,
+            MixedLosses: 0.0,
+            MixedWinRate: 0.0,
+            SameGenderGames: 0.0,
+            SameGenderWins: 0.0,
+            SameGenderLosses: 0.0,
+            SameGenderWinRate: 0.0
+          };
+          
+          await db.collection('UserPerformance').add({
+            data: initialPerformance
+          });
+          
+          console.log('Initial UserPerformance record created for:', finalNickname);
+        } catch (performanceError) {
+          console.error('Failed to create UserPerformance record:', performanceError);
+          // Don't fail the entire registration if performance record creation fails
+        }
+        
         // Store session info
         wx.setStorageSync('currentOpenid', tempUserInfo.openid);
         

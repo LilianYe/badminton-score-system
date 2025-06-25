@@ -1,0 +1,95 @@
+<view class="container">
+    <!-- User Profile Section -->
+    <view class="profile-section">
+        <view class="avatar-container">
+            <image class="avatar" src="{{currentUser.avatarUrl || '/images/default-avatar.png'}}" mode="aspectFill"></image>
+        </view>
+        <view class="user-info">
+            <text class="nickname">{{currentUser.nickname || 'User'}}</text>
+        </view>
+    </view>
+
+    <!-- Title Section -->
+    <view class="title-section">
+        <text class="title">比赛</text>
+    </view>
+
+    <!-- Tab Navigation -->
+    <view class="tab-navigation">
+        <view class="tab-item {{activeTab === 'upcoming' ? 'active' : ''}}" 
+              bindtap="switchTab" data-tab="upcoming">
+            <text>待进行</text>
+        </view>
+        <view class="tab-item {{activeTab === 'history' ? 'active' : ''}}" 
+              bindtap="switchTab" data-tab="history">
+            <text>历史</text>
+        </view>
+    </view>
+
+    <!-- Content Section -->
+    <view class="content-section">
+        <view wx:if="{{isLoading}}" class="loading-container">
+            <text>Loading...</text>
+        </view>
+        
+        <view wx:elif="{{isEmpty}}" class="empty-container">
+            <text wx:if="{{activeTab === 'upcoming'}}">No upcoming matches</text>
+            <text wx:else>No completed matches</text>
+        </view>
+        
+        <block wx:else>
+            <!-- Upcoming Matches -->
+            <view wx:if="{{activeTab === 'upcoming'}}" class="match-list">
+                <view wx:for="{{upcomingMatches}}" wx:key="MatchId" class="match-card">
+                    <view class="match-header">
+                        <text class="match-time">{{item.formattedStartTime}}</text>
+                        <view class="match-status">Upcoming</view>
+                    </view>
+                    <view class="teams-container">
+                        <view class="team">
+                            <text class="player-name">{{item.PlayerNameA1}}</text>
+                            <text wx:if="{{item.PlayerNameA2}}" class="player-name">{{item.PlayerNameA2}}</text>
+                        </view>
+                        <view class="score">
+                            <text>{{item.ScoreA || 0}} - {{item.ScoreB || 0}}</text>
+                        </view>
+                        <view class="team">
+                            <text class="player-name">{{item.PlayerNameB1}}</text>
+                            <text wx:if="{{item.PlayerNameB2}}" class="player-name">{{item.PlayerNameB2}}</text>
+                        </view>
+                    </view>
+                    <view class="match-footer">
+                        <text>Referee: {{item.RefereeName}}</text>
+                        <button class="edit-btn" bindtap="editScore" data-matchid="{{item.MatchId}}">Edit Score</button>
+                    </view>
+                </view>
+            </view>
+
+            <!-- Completed Matches -->
+            <view wx:if="{{activeTab === 'history'}}" class="match-list">
+                <view wx:for="{{completedMatches}}" wx:key="MatchId" class="match-card">
+                    <view class="match-header">
+                        <text class="match-time">{{item.formattedCompleteTime}}</text>
+                        <view class="result-badge {{item.result}}">{{item.result}}</view>
+                    </view>
+                    <view class="teams-container">
+                        <view class="team">
+                            <text class="player-name">{{item.PlayerNameA1}}</text>
+                            <text wx:if="{{item.PlayerNameA2}}" class="player-name">{{item.PlayerNameA2}}</text>
+                        </view>
+                        <view class="score">
+                            <text>{{item.ScoreA}} - {{item.ScoreB}}</text>
+                        </view>
+                        <view class="team">
+                            <text class="player-name">{{item.PlayerNameB1}}</text>
+                            <text wx:if="{{item.PlayerNameB2}}" class="player-name">{{item.PlayerNameB2}}</text>
+                        </view>
+                    </view>
+                    <view class="match-footer">
+                        <text>Referee: {{item.RefereeName}}</text>
+                    </view>
+                </view>
+            </view>
+        </block>
+    </view>
+</view> 

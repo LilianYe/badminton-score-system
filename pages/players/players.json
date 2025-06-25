@@ -1,3 +1,6 @@
 {
+  "navigationBarTitleText": "排名",
+  "enablePullDownRefresh": true,
+  "backgroundColor": "#f4f4f4",
   "usingComponents": {}
 }

@@ -3,19 +3,6 @@
     <text class="title">Game History</text>
   </view>
   
-  <!-- Date filter -->
-  <view class="date-filter">
-    <picker mode="date" value="{{selectedDate}}" bindchange="onDateSelect">
-      <view class="date-picker">
-        <text>{{selectedDate ? 'Date: ' + selectedDate : 'Filter by date'}}</text>
-        <view class="picker-arrow"></view>
-      </view>
-    </picker>
-    <view wx:if="{{selectedDate}}" class="clear-filter" bindtap="clearDateFilter">
-      <text>Clear filter</text>
-    </view>
-  </view>
-  
   <!-- Loading indicator -->
   <view wx:if="{{isLoading}}" class="loading-container">
     <text>Loading History...</text>

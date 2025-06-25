@@ -49,7 +49,7 @@ Page({
             }).orderBy('CompleteTime', 'desc').get();
 
             const userMatches = res.data.filter(match =>
-                [match.PlayerNameA1, match.PlayerNameA2, match.PlayerNameB1, match.PlayerNameB2, match.RefereeName].includes(currentUserName)
+                [match.PlayerNameA1, match.PlayerNameA2, match.PlayerNameB1, match.PlayerNameB2].includes(currentUserName)
             );
 
             const processedMatches = userMatches.map(match => {
@@ -61,12 +61,7 @@ Page({
                     result = match.ScoreA > match.ScoreB ? 'Win' : 'Loss';
                 } else if (isPlayerB) {
                     result = match.ScoreB > match.ScoreA ? 'Win' : 'Loss';
-                } else {
-                    result = 'Referee';
                 }
-                
-                if (match.ScoreA === match.ScoreB) result = 'Draw';
-
                 return {
                     ...match,
                     formattedCompleteTime: formatTime(match.CompleteTime),
