@@ -1,4 +1,7 @@
 <view class="container">
+  <view class="top-actions">
+    <button class="mymatch-btn" bindtap="goToMyMatch" type="default">My Matches</button>
+  </view>
   <view class="card">
     <view class="card-header">
       <view class="card-title">New Doubles Game</view>

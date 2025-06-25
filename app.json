@@ -9,7 +9,9 @@
     "pages/players/players",
     "pages/add-player/add-player",
     "pages/player-detail/player-detail",
-    "pages/user-profile/user-profile"
+    "pages/user-profile/user-profile",
+    "pages/my-match/my-match",
+    "pages/my-profile/my-profile"
   ],
   "window": {
     "navigationBarTitleText": "Badminton Score System",
@@ -33,9 +35,10 @@
         "text": "排名",
         "iconPath": "assets/icons/ranking.png",
         "selectedIconPath": "assets/icons/ranking-active.png"
-      },      {
-        "pagePath": "pages/history/history",
-        "text": "历史",
+      },
+      {
+        "pagePath": "pages/my-profile/my-profile",
+        "text": "我的",
         "iconPath": "assets/icons/history.png",
         "selectedIconPath": "assets/icons/history-active.png"
       }
