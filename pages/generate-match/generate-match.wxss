@@ -138,6 +138,30 @@ textarea, input {
   font-weight: bold;
 }
 
+/* Styling for disabled buttons */
+.toolbar-button[disabled] {
+  background-color: #e0e0e0;
+  color: #888;
+}
+
+/* Show saved status visually on the match rounds */
+.match-rounds-saved {
+  position: relative;
+}
+
+.match-rounds-saved::before {
+  content: "已保存";
+  position: absolute;
+  top: 10rpx;
+  right: 10rpx;
+  background-color: #1aad19; 
+  color: white;
+  padding: 5rpx 10rpx;
+  border-radius: 8rpx;
+  font-size: 24rpx;
+  z-index: 2;
+}
+
 .player-list-header {
   display: flex;
   justify-content: space-between;

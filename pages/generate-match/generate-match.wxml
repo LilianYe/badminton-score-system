@@ -50,8 +50,7 @@
   <view wx:if="{{loading}}" class="loading-section">
     <text>正在生成，请稍候...</text>
   </view>
-  
-  <view wx:if="{{matchRounds && matchRounds.length}}" class="result-section">
+    <view wx:if="{{matchRounds && matchRounds.length}}" class="result-section {{matchesSaved ? 'match-rounds-saved' : ''}}">
     <view wx:for="{{matchRounds}}" wx:key="index" class="match-round">
       <view class="round-header">第 {{index+1}} 轮</view>
       
@@ -79,27 +78,14 @@
         <text>本轮休息: </text>        <view wx:for="{{item.rest}}" wx:for-item="player" wx:key="index" class="rest-player">
           {{player}}
         </view>
-      </view>
-    </view>
-    
-    <!-- Raw output for debugging -->
-    <view wx:if="{{showRawOutput}}" class="raw-output">
-      <text>原始输出：</text>
-      <text>{{result}}</text>
-    </view>
-      <!-- Action buttons -->
-    <view class="toolbar">
-      <button class="toolbar-button primary" bindtap="confirmAndSaveMatches" disabled="{{loading || matchesSaved}}">{{matchesSaved ? '已保存' : '确认并保存'}}</button>
-      <button class="toolbar-button" bindtap="shareMatchResults" disabled="{{loading}}">分享对阵表</button>
-      <button class="toolbar-button" bindtap="regenerateMatches" disabled="{{loading}}">重新生成</button>
-      <button class="toolbar-button" bindtap="toggleRawOutput">{{showRawOutput ? '隐藏详情' : '显示详情'}}</button>
+      </view>    </view>
+      
+    <!-- Action buttons -->
+    <view class="toolbar">      <button class="toolbar-button primary" bindtap="confirmAndSaveMatches" disabled="{{loading || matchesSaved}}">{{matchesSaved ? '已保存' : '确认并保存'}}</button>
+      <button class="toolbar-button" bindtap="regenerateMatches" disabled="{{loading || matchesSaved}}">{{matchesSaved ? '已锁定对阵' : '重新生成'}}</button>
     </view>
   </view>
-  
-  <view wx:elif="{{result && !matchRounds.length}}" class="result-section">
-    <text>生成结果：</text>
-    <scroll-view scroll-y style="max-height:400px;">
-      <text>{{result}}</text>
-    </scroll-view>
+    <view wx:elif="{{!matchRounds.length}}" class="result-section">
+    <text>请点击"确认参数并生成对阵"按钮开始生成对阵表</text>
   </view>
 </view>

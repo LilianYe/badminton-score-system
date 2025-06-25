@@ -9,11 +9,11 @@ Page({
     teamEloDiff: '300',
     gamePerPlayer: '4',
     courtCount: '2',
-    result: '',
+    result: '',    
     loading: false,
     fromSignup: false,    
     showAdvanced: false, // Toggle for advanced settings
-    showPlayerEdit: false, // Toggle for player list editing    showRawOutput: false, // Toggle for raw debug output
+    showPlayerEdit: false, // Toggle for player list editing
     matchRounds: [], // Structured match data for display
     processedPlayers: [], // Processed player array for rendering
     playerCount: 0, // Count of players,
@@ -64,13 +64,8 @@ Page({
   toggleAdvanced() {
     this.setData({ showAdvanced: !this.data.showAdvanced });
   },
-  
-  togglePlayerEdit() {
+    togglePlayerEdit() {
     this.setData({ showPlayerEdit: !this.data.showPlayerEdit });
-  },
-  
-  toggleRawOutput() {
-    this.setData({ showRawOutput: !this.data.showRawOutput });
   },
     removePlayer(e) {    
         const index = e.currentTarget.dataset.index;
@@ -103,19 +98,34 @@ Page({
   onGamePerPlayerInput(e) {
     this.setData({ gamePerPlayer: e.detail.value });
   },
-  
-  onCourtCountInput(e) {
+    onCourtCountInput(e) {
     this.setData({ courtCount: e.detail.value });
   },
-  
-  shareMatchResults() {
-    wx.showToast({
-      title: '分享功能开发中',
-      icon: 'none'
-    });
-  },
-    regenerateMatches() {
-    this.onGenerate();
+  regenerateMatches() {
+    // Don't allow regeneration if matches have been saved
+    if (this.data.matchesSaved) {
+      wx.showToast({
+        title: '对阵已保存，不能重新生成',
+        icon: 'none',
+        duration: 2000
+      });
+      return;
+    }
+    
+    // Ask for confirmation before regenerating
+    if (this.data.matchRounds && this.data.matchRounds.length > 0) {
+      wx.showModal({
+        title: '确认重新生成？',
+        content: '重新生成将丢失当前对阵表，确定要继续吗？',
+        success: (res) => {
+          if (res.confirm) {
+            this.onGenerate();
+          }
+        }
+      });
+    } else {
+      this.onGenerate();
+    }
   },
   
   // Process players from input string to array for rendering
@@ -151,8 +161,8 @@ Page({
       processedPlayers: processedPlayers,
       playerCount: processedPlayers.length
     });
-  },
-    onGenerate() {
+  },    onGenerate() {
+    // Reset saved state whenever generating new matches
     this.setData({ 
       loading: true, 
       result: '',
@@ -195,54 +205,47 @@ Page({
     setTimeout(() => {
       try {
         const matchResult = util.tryGenerateRotationFull(playerObjects, courtCount, gamePerPlayer, eloThreshold, teamEloDiff, 1);
-        
-        if (!matchResult) {
+          if (!matchResult) {
           this.setData({ 
-            result: '生成失败，请调整参数或球员列表', 
             loading: false 
+          });
+          
+          wx.showToast({
+            title: '生成失败，请调整参数或球员列表',
+            icon: 'none',
+            duration: 2000
           });
           return;
         }
-        
-        // Format the raw output for debugging
-        let output = '';
-        matchResult.roundsLineups.forEach((round, i) => {
-          output += `第${i+1}轮：\n`;
-          round.forEach((court, j) => {
-            output += `  场地${j+1}: ${court.join('，')}\n`;
-          });
-        });
-        output += '\n休息安排：\n';
-        matchResult.restSchedule.forEach((rest, i) => {
-          output += `第${i+1}轮休息: ${rest.join('，') || '无'}\n`;
-        });
-        
-        // Format the structured match data for display
+          // Format the structured match data for display
         const matchRounds = [];
         matchResult.roundsLineups.forEach((round, i) => {
           const courts = [];
           round.forEach(court => {
             // Each court has two teams
-            const team1 = court.slice(0, 2);
-            const team2 = court.slice(2, 4);
+            // Extract just the player names for display
+            const team1 = court.slice(0, 2).map(player => typeof player === 'object' ? player.name : player);
+            const team2 = court.slice(2, 4).map(player => typeof player === 'object' ? player.name : player);
             courts.push([team1, team2]);
           });
           
+          // Also ensure rest players are displayed by name only
+          const restPlayers = (matchResult.restSchedule[i] || []).map(player => 
+            typeof player === 'object' ? player.name : player
+          );
+          
           matchRounds.push({
             courts: courts,
-            rest: matchResult.restSchedule[i] || []
+            rest: restPlayers
           });
         });
-        
-        // Save result to global data for potential sharing or history
+          // Save result to global data for potential sharing or history
         getApp().globalData.lastGeneratedMatches = {
           rounds: matchRounds,
-          rawOutput: output,
           timestamp: new Date().toISOString()
         };
         
         this.setData({ 
-          result: output, 
           matchRounds: matchRounds,
           loading: false 
         });
@@ -250,8 +253,12 @@ Page({
       } catch (e) {
         console.error('生成失败:', e);
         this.setData({ 
-          result: '生成失败: ' + e.message, 
           loading: false 
+        });
+        wx.showToast({
+          title: '生成失败: ' + e.message,
+          icon: 'none',
+          duration: 2000
         });
       }
     }, 100);
@@ -306,21 +313,25 @@ Page({
     
     // Expected start time for the first match
     let startTime = new Date();
-    
-    this.data.matchRounds.forEach((round, roundIndex) => {
+      this.data.matchRounds.forEach((round, roundIndex) => {
       round.courts.forEach((court, courtIndex) => {
         // Each court has two teams (team1, team2), each team has two players
         const team1 = court[0];
         const team2 = court[1];
         
+        // Ensure we have player names as strings (in case of player objects)
+        const getPlayerName = (player) => {
+          return typeof player === 'object' ? player.name : player;
+        };
+        
         // Create match object
         const matchData = {
           MatchId: `${roundIndex + 1}-${courtIndex + 1}`, // Format: round-court
           Court: (courtIndex + 1).toString(),
-          PlayerNameA1: team1[0],
-          PlayerNameA2: team1[1],
-          PlayerNameB1: team2[0],
-          PlayerNameB2: team2[1],
+          PlayerNameA1: getPlayerName(team1[0]),
+          PlayerNameA2: getPlayerName(team1[1]),
+          PlayerNameB1: getPlayerName(team2[0]),
+          PlayerNameB2: getPlayerName(team2[1]),
           StartTime: new Date(startTime.getTime() + (roundIndex * 12 * 60000)), // 12 minutes per round
           // RefereeName will be set by whoever completes the match
         };
