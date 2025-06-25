@@ -87,9 +87,9 @@
       <text>原始输出：</text>
       <text>{{result}}</text>
     </view>
-    
-    <!-- Action buttons -->
+      <!-- Action buttons -->
     <view class="toolbar">
+      <button class="toolbar-button primary" bindtap="confirmAndSaveMatches" disabled="{{loading || matchesSaved}}">{{matchesSaved ? '已保存' : '确认并保存'}}</button>
       <button class="toolbar-button" bindtap="shareMatchResults" disabled="{{loading}}">分享对阵表</button>
       <button class="toolbar-button" bindtap="regenerateMatches" disabled="{{loading}}">重新生成</button>
       <button class="toolbar-button" bindtap="toggleRawOutput">{{showRawOutput ? '隐藏详情' : '显示详情'}}</button>

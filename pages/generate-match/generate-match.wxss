@@ -132,6 +132,12 @@ textarea, input {
   padding: 10rpx 0;
 }
 
+.toolbar-button.primary {
+  background-color: #1aad19;
+  color: #ffffff;
+  font-weight: bold;
+}
+
 .player-list-header {
   display: flex;
   justify-content: space-between;

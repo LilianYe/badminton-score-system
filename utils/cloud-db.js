@@ -6,29 +6,50 @@
 let db = null;
 let userCollection = null;
 let gameCollection = null;
+let matchCollection = null;
 
 class CloudDBService {
-  
   /**
    * Initialize cloud database connection
    */
   static init() {
     try {
-      // Initialize cloud environment first
-      wx.cloud.init({
-        env: "elo-system-8g6jq2r4a931945e",
-        traceUser: true
-      });
-        // Initialize database connection
+      // Check if cloud SDK is available
+      if (!wx.cloud) {
+        console.error('wx.cloud is not available. Please ensure the WeChat cloud development environment is enabled.');
+        return false;
+      }
+
+      // If cloud is not initialized yet, initialize it
+      try {
+        console.log('Initializing cloud environment...');
+        wx.cloud.init({
+          env: "elo-system-8g6jq2r4a931945e",
+          traceUser: true
+        });
+      } catch (cloudError) {
+        // Initialization might fail if already initialized, which is fine
+        console.log('Cloud init result:', cloudError);
+      }
+      
+      // Now try to connect to the database
+      console.log('Connecting to database...');
       db = wx.cloud.database();
+      
+      if (!db) {
+        console.error('Failed to get database instance. wx.cloud.database() returned null.');
+        return false;
+      }
+      
+      console.log('Database connection successful. Setting up collections...');
       userCollection = db.collection('UserProfile');
       gameCollection = db.collection('Session');
+      matchCollection = db.collection('Match');
       
       console.log('Cloud database initialized successfully');
-      console.log('Database instance:', db);
-      console.log('User collection:', userCollection);
-      console.log('Game collection:', gameCollection);
-      console.log('Game collection:', gameCollection);
+      console.log('User collection:', userCollection ? 'Created' : 'Failed');
+      console.log('Game collection:', gameCollection ? 'Created' : 'Failed');
+      console.log('Match collection:', matchCollection ? 'Created' : 'Failed');
       return true;
     } catch (error) {
       console.error('Failed to initialize cloud database:', error);
@@ -38,11 +59,15 @@ class CloudDBService {
 
   /**
    * Ensure database is initialized
-   */
-  static ensureInit() {
-    if (!db || !userCollection || !gameCollection) {
+   */  static ensureInit() {
+    if (!db || !userCollection || !gameCollection || !matchCollection) {
       console.log('Database not initialized, initializing now...');
-      this.init();
+      const initSuccess = this.init();
+      
+      if (!initSuccess) {
+        console.error('Failed to initialize database in ensureInit call.');
+        throw new Error('数据库初始化失败，请检查网络连接');
+      }
     }
   }
 
@@ -996,6 +1021,62 @@ class CloudDBService {
     
     console.log('Mapped to app game schema:', mapped);
     return mapped;
+  }
+  
+  /**************************************************************************
+   * MATCH MANAGEMENT METHODS
+   **************************************************************************/
+
+  /**
+   * Save generated matches to the Match collection
+   * @param {Array} matchData - Array of match data objects
+   * @param {string} sessionId - ID of the session these matches belong to
+   * @returns {Promise<Array>} - Array of match insertion results
+   */
+  static async saveGeneratedMatches(matchData, sessionId) {
+    this.ensureInit();
+    
+    try {
+      console.log('Saving matches to database for session:', sessionId);
+      
+      // Prepare promises for all match insertions
+      const insertPromises = matchData.map(async (match) => {
+        // Add creation timestamp and session ID
+        const matchToInsert = {
+          ...match,
+          SessionId: sessionId,
+          CreatedTime: new Date(),
+          UpdatedTime: new Date(),
+          // Default values for required fields
+          ScoreA: 0,
+          ScoreB: 0,
+          PlayerA1ScoreChange: 0,
+          PlayerA2ScoreChange: 0,
+          PlayerB1ScoreChange: 0,
+          PlayerB2ScoreChange: 0
+        };
+        
+        try {
+          const result = await matchCollection.add({
+            data: matchToInsert
+          });
+          
+          console.log('Match added with ID:', result._id);
+          return { success: true, _id: result._id };
+        } catch (error) {
+          console.error('Failed to add match:', error);
+          return { success: false, error };
+        }
+      });
+      
+      // Execute all promises
+      const results = await Promise.all(insertPromises);
+      console.log('All matches saved:', results);
+      return results;
+    } catch (error) {
+      console.error('Error saving matches:', error);
+      throw error;
+    }
   }
 }
 

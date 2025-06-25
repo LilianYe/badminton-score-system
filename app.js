@@ -6,15 +6,32 @@ const CloudDBService = require('./utils/cloud-db.js');
 App({
   onLaunch: function () {
     console.log('Badminton Score System App Launched');
-    
-    // Initialize cloud development environment first
-    wx.cloud.init({
-      env: "elo-system-8g6jq2r4a931945e", // Current cloud development environment ID
-      traceUser: true
-    });
+      // Initialize cloud development environment first
+    try {
+      console.log('Initializing cloud environment in app.js...');
+      wx.cloud.init({
+        env: "elo-system-8g6jq2r4a931945e", // Current cloud development environment ID
+        traceUser: true
+      });
+      console.log('Cloud environment initialized successfully in app.js');
+    } catch (error) {
+      console.error('Failed to initialize cloud environment in app.js:', error);
+    }
     
     // Initialize cloud database service
-    CloudDBService.init();
+    try {
+      console.log('Initializing cloud database service...');
+      const dbInitResult = CloudDBService.init();
+      console.log('Cloud database initialization result:', dbInitResult);
+    } catch (error) {
+      console.error('Failed to initialize cloud database service:', error);
+      // Show an error message to the user
+      wx.showToast({
+        title: '数据库连接失败',
+        icon: 'none',
+        duration: 3000
+      });
+    }
     
     // Initialize player data if it doesn't exist
     const players = wx.getStorageSync('players');

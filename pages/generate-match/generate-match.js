@@ -11,14 +11,13 @@ Page({
     courtCount: '2',
     result: '',
     loading: false,
-    fromSignup: false,
+    fromSignup: false,    
     showAdvanced: false, // Toggle for advanced settings
-    showPlayerEdit: false, // Toggle for player list editing
-    showRawOutput: false, // Toggle for raw debug output
-    playerElos: {}, // Track player ELOs
+    showPlayerEdit: false, // Toggle for player list editing    showRawOutput: false, // Toggle for raw debug output
     matchRounds: [], // Structured match data for display
     processedPlayers: [], // Processed player array for rendering
-    playerCount: 0, // Count of players
+    playerCount: 0, // Count of players,
+    matchesSaved: false, // Flag to track if matches have been saved to database
   },
   
   onLoad(options) {
@@ -39,17 +38,8 @@ Page({
             .map(player => player.name);
           console.log('Loaded female players:', femalePlayers);
         }
-        
-        // Get ELO ratings if available
-        const playerElos = {};
-        if (app.globalData.signupPlayerData && app.globalData.signupPlayerData.length > 0) {
-          app.globalData.signupPlayerData.forEach(player => {
-            playerElos[player.name] = player.elo || app.globalData.defaultElo || 1500;
-          });
-        }
-          this.setData({
+            this.setData({
           playersInput: playerList,
-          playerElos: playerElos,
           // Auto-adjust settings based on player count
           gamePerPlayer: Math.min(Math.floor(14 / app.globalData.signupPlayers.length) * 2, 7).toString(), 
           // Use court count from the selected game, if available
@@ -162,12 +152,12 @@ Page({
       playerCount: processedPlayers.length
     });
   },
-  
-  onGenerate() {
+    onGenerate() {
     this.setData({ 
       loading: true, 
       result: '',
-      matchRounds: []
+      matchRounds: [],
+      matchesSaved: false
     });
     
     const players = this.data.playersInput.split(/\r?\n/).map(s => s.trim()).filter(Boolean);
@@ -184,15 +174,7 @@ Page({
     if (players.length < 4) {
       this.setData({ result: '至少需要4名球员才能生成对阵表', loading: false });
       return;
-    }
-      // Set up player ELOs - use data from signup if available
-    const playerElos = this.data.playerElos || {};
-    players.forEach(p => {
-      if (!playerElos[p]) {
-        playerElos[p] = getApp().globalData.defaultElo || 1500;
-      }
-    });
-      // Get player data from app.globalData
+    }      // Get player data from app.globalData
     const app = getApp();
     const playerMap = {};
     
@@ -202,12 +184,11 @@ Page({
         playerMap[player.name] = player;
       });
     }
-    
-    // Create player objects with gender information from playerMap
+      // Create player objects with gender and ELO information from playerMap
     const playerObjects = players.map(name => ({
       name: name,
       gender: playerMap[name]?.gender || 'male',
-      elo: playerElos[name] || 1500
+      elo: playerMap[name]?.elo || getApp().globalData.defaultElo || 1500
     }));
     
     // Use setTimeout to allow the UI to update before starting calculation
@@ -274,6 +255,130 @@ Page({
         });
       }
     }, 100);
+  },
+    confirmAndSaveMatches() {
+    if (this.data.loading || this.data.matchesSaved || !this.data.matchRounds.length) {
+      return;
+    }
+    
+    this.setData({ loading: true });
+    
+    const app = getApp();    const CloudDBService = require('../../utils/cloud-db.js');
+    
+    // Try to initialize the database with retries
+    try {
+      CloudDBService.ensureInit();
+    } catch (error) {
+      console.error('Failed to initialize database:', error);
+      
+      wx.showModal({
+        title: '数据库连接失败',
+        content: '无法连接到数据库，是否重试？',
+        success: (res) => {
+          if (res.confirm) {
+            // Try to reinitialize
+            try {
+              // Reinitialize
+              CloudDBService.init();
+              // Continue with saving if successful
+              setTimeout(() => this.confirmAndSaveMatches(), 500);
+            } catch (retryError) {
+              wx.showToast({
+                title: '连接失败，请稍后再试',
+                icon: 'none',
+                duration: 2000
+              });
+              this.setData({ loading: false });
+            }
+          } else {
+            this.setData({ loading: false });
+          }
+        }
+      });
+      return;
+    }
+    
+    // Generate a session ID for this batch of matches
+    const sessionId = new Date().getFullYear().toString();
+    
+    // Create match data from the matchRounds
+    const matchDataArray = [];
+    
+    // Expected start time for the first match
+    let startTime = new Date();
+    
+    this.data.matchRounds.forEach((round, roundIndex) => {
+      round.courts.forEach((court, courtIndex) => {
+        // Each court has two teams (team1, team2), each team has two players
+        const team1 = court[0];
+        const team2 = court[1];
+        
+        // Create match object
+        const matchData = {
+          MatchId: `${roundIndex + 1}-${courtIndex + 1}`, // Format: round-court
+          Court: (courtIndex + 1).toString(),
+          PlayerNameA1: team1[0],
+          PlayerNameA2: team1[1],
+          PlayerNameB1: team2[0],
+          PlayerNameB2: team2[1],
+          StartTime: new Date(startTime.getTime() + (roundIndex * 12 * 60000)), // 12 minutes per round
+          // RefereeName will be set by whoever completes the match
+        };
+        
+        matchDataArray.push(matchData);
+      });
+    });
+      // Save matches to database
+    try {      CloudDBService.saveGeneratedMatches(matchDataArray, sessionId)
+        .then(results => {
+          console.log('Matches saved successfully:', results);
+          
+          // Check if all were successful
+          const allSuccess = results.every(result => result.success);
+          
+          if (allSuccess) {
+            this.setData({ 
+              matchesSaved: true,
+              loading: false 
+            });
+            
+            wx.showToast({
+              title: '比赛已保存',
+              icon: 'success',
+              duration: 2000
+            });
+            
+            // Save session ID to global data for future reference
+            app.globalData.currentSessionId = sessionId;
+          } else {
+            throw new Error('Some matches failed to save');
+          }
+        })
+        .catch(error => {
+          console.error('Failed to save matches:', error);
+          this.setData({ loading: false });
+          
+          wx.showModal({
+            title: '保存失败',
+            content: '是否重试保存？',
+            success: (res) => {
+              if (res.confirm) {
+                // Try again
+                setTimeout(() => this.confirmAndSaveMatches(), 500);
+              }
+            }
+          });
+        });
+    } catch (error) {
+      console.error('Exception when trying to save matches:', error);
+      this.setData({ loading: false });
+      
+      wx.showToast({
+        title: '保存失败，请检查网络连接',
+        icon: 'none',
+        duration: 2000
+      });
+    }
   },
   
   // Navigate back to signup page
