@@ -17,70 +17,40 @@
   </view>
   
   <!-- Loading indicator -->
-  <view wx:if="{{isLoading}}" class="loading">
-    <text>Loading match history...</text>
+  <view wx:if="{{isLoading}}" class="loading-container">
+    <text>Loading History...</text>
   </view>
   
   <!-- Empty state -->
-  <view wx:elif="{{isEmpty}}" class="empty-state">
-    <text class="empty-text">No matches found</text>
-    <text class="empty-hint" wx:if="{{selectedDate}}">No matches on {{selectedDate}}</text>
-    <text class="empty-hint" wx:elif="{{currentPlayer}}">No match history for {{currentPlayer}}</text>
-    <text class="empty-hint" wx:else>Please login to view your match history</text>
+  <view wx:elif="{{isEmpty}}" class="empty-container">
+    <text>No completed matches found.</text>
   </view>
   
   <!-- Game history list -->
-  <view wx:else class="history-list">
-    <block wx:for="{{games}}" wx:key="id">
-      <view class="game-item" bindtap="viewGameDetails" data-id="{{item.id}}" hover-class="game-item-hover">
-        <view class="game-date">{{item.displayDate}}</view>
-        
-        <!-- Display for doubles games -->
-        <block wx:if="{{item.gameType === 'doubles'}}">
-          <block wx:if="{{item.winningTeam === 'teamA'}}">
-            <view class="team winner">
-              <text class="player-names">{{item.teamA.player1.name}}, {{item.teamA.player2.name}}</text>
-              <text class="score">{{item.teamA.score}}</text>
-            </view>
-          </block>
-          <block wx:else>
-            <view class="team">
-              <text class="player-names">{{item.teamA.player1.name}}, {{item.teamA.player2.name}}</text>
-              <text class="score">{{item.teamA.score}}</text>
-            </view>
-          </block>
-          
-          <view class="vs">VS</view>
-          
-          <block wx:if="{{item.winningTeam === 'teamB'}}">
-            <view class="team winner">
-              <text class="player-names">{{item.teamB.player1.name}}, {{item.teamB.player2.name}}</text>
-              <text class="score">{{item.teamB.score}}</text>
-            </view>
-          </block>
-          <block wx:else>
-            <view class="team">
-              <text class="player-names">{{item.teamB.player1.name}}, {{item.teamB.player2.name}}</text>
-              <text class="score">{{item.teamB.score}}</text>
-            </view>
-          </block>
-        </block>
-        
-        <!-- Display for singles games -->
-        <block wx:else>
-          <view class="team winner">
-            <text class="player-names">{{item.winner.name}}</text>
-            <text class="score">{{item.winner.score}}</text>
-          </view>
-          
-          <view class="vs">VS</view>
-          
+  <block wx:else>
+    <view class="match-list">
+      <view wx:for="{{completedMatches}}" wx:key="MatchId" class="match-card">
+        <view class="match-header">
+          <text class="match-time">{{item.formattedCompleteTime}}</text>
+          <view class="result-badge {{item.result}}">{{item.result}}</view>
+        </view>
+        <view class="teams-container">
           <view class="team">
-            <text class="player-names">{{item.loser.name}}</text>
-            <text class="score">{{item.loser.score}}</text>
+            <text class="player-name">{{item.PlayerNameA1}}</text>
+            <text wx:if="{{item.PlayerNameA2}}" class="player-name">{{item.PlayerNameA2}}</text>
           </view>
-        </block>
+          <view class="score">
+            <text>{{item.ScoreA}} - {{item.ScoreB}}</text>
+          </view>
+          <view class="team">
+            <text class="player-name">{{item.PlayerNameB1}}</text>
+            <text wx:if="{{item.PlayerNameB2}}" class="player-name">{{item.PlayerNameB2}}</text>
+          </view>
+        </view>
+        <view class="match-footer">
+          <text>Referee: {{item.RefereeName}}</text>
+        </view>
       </view>
-    </block>
-  </view>
+    </view>
+  </block>
 </view>

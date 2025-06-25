@@ -1,0 +1,34 @@
+<view class="container">
+  <view wx:if="{{isLoading}}" class="loading">Loading matches...</view>
+  <view wx:elif="{{attentionMatches.length === 0}}" class="empty">No matches need your attention.</view>
+  <view wx:else>
+    <view wx:for="{{attentionMatches}}" wx:key="_id" class="match-card">
+      <view class="match-header">
+        <text class="players">{{item.PlayerNameA1}}, {{item.PlayerNameA2}} <text class="vs">vs</text> {{item.PlayerNameB1}}, {{item.PlayerNameB2}}</text>
+      </view>
+      <view class="score-row">
+        <text class="score-label">Score</text>
+        <text class="score-value">{{item.ScoreA}} : {{item.ScoreB}}</text>
+      </view>
+      <view class="meta-row">
+        <text class="court">Court: {{item.Court}}</text>
+        <text class="ref">Referee: {{item.RefereeName}}</text>
+      </view>
+      <view class="time-row">
+        <text class="start-time">Start: {{item.formattedStartTime}}</text>
+      </view>
+      <view class="edit-row">
+        <button class="edit-btn" size="mini" bindtap="onEditTap" data-id="{{item._id}}">Edit</button>
+      </view>
+      <view wx:if="{{editMatchId === item._id}}" class="edit-form">
+        <view class="edit-inputs">
+          <input class="score-input" type="number" placeholder="Team A Score" value="{{editScoreA}}" bindinput="onEditScoreAInput" />
+          <text class="edit-vs">:</text>
+          <input class="score-input" type="number" placeholder="Team B Score" value="{{editScoreB}}" bindinput="onEditScoreBInput" />
+        </view>
+        <button class="save-btn" size="mini" type="primary" loading="{{isSaving}}" bindtap="onSaveScore">Save</button>
+        <button class="cancel-btn" size="mini" bindtap="onCancelEdit">Cancel</button>
+      </view>
+    </view>
+  </view>
+</view> 

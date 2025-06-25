@@ -9,7 +9,8 @@
     "pages/players/players",
     "pages/add-player/add-player",
     "pages/player-detail/player-detail",
-    "pages/user-profile/user-profile"
+    "pages/user-profile/user-profile",
+    "pages/MyMatch/MyMatch"
   ],
   "window": {
     "navigationBarTitleText": "Badminton Score System",
