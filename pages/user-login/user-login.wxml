@@ -80,7 +80,7 @@
     <!-- Nickname Configuration Step -->
     <view wx:else class="nickname-config">
       <view class="welcome-text">Welcome to Badminton Score System!</view>
-      <view class="subtitle">You can edit your name below or keep your WeChat name.</view>
+      <view class="subtitle">You can edit your nickname below or keep your WeChat name.</view>
       
       <view class="avatar-section" wx:if="{{tempUserInfo}}">
         <image class="avatar" src="{{tempUserInfo.avatarUrl}}" mode="aspectFill"></image>

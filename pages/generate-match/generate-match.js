@@ -193,8 +193,8 @@ Page({
       app.globalData.signupPlayerData.forEach(player => {
         playerMap[player.name] = player;
       });
-    }    // Create player objects with gender and ELO information from playerMap
-    // playerMap now contains ELO values fetched from UserPerformance
+    }
+      // Create player objects with gender and ELO information from playerMap
     const playerObjects = players.map(name => ({
       name: name,
       gender: playerMap[name]?.gender || 'male',

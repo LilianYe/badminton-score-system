@@ -571,7 +571,8 @@ class CloudDBService {
       WechatId: userData.openid || userData.WechatId,
       
       // User profile fields
-      Name: userData.Name,
+      Name: userData.nickname || userData.Name,
+      nickname: userData.nickname || userData.Name, // For compatibility
       Avatar: userData.avatarUrl || userData.Avatar || '',
       avatarUrl: userData.avatarUrl || userData.Avatar || '', // For compatibility
       Gender: userData.gender || userData.Gender || 'male',
@@ -603,7 +604,8 @@ class CloudDBService {
       WechatId: cloudData.WechatId || cloudData._openid,
       
       // User profile fields
-      Name: cloudData.Name,
+      nickname: cloudData.nickname || cloudData.Name,
+      Name: cloudData.Name || cloudData.nickname,
       avatarUrl: cloudData.avatarUrl || cloudData.Avatar || '',
       Avatar: cloudData.Avatar || cloudData.avatarUrl || '',
       gender: cloudData.gender || cloudData.Gender || 'male',
@@ -1074,50 +1076,6 @@ class CloudDBService {
     } catch (error) {
       console.error('Error saving matches:', error);
       throw error;
-    }
-  }
-
-  /**
-   * Get user's ELO rating from UserPerformance collection
-   * @param {string} userId - User ID or openId 
-   * @returns {Promise<number>} ELO rating (defaults to 1500 if not found)
-   */  static async getUserElo(userId) {
-    this.ensureInit();
-    
-    try {
-      // First get the user's name from their profile
-      const userProfile = await this.getUserByOpenid(userId);
-      
-      if (!userProfile) {
-        console.warn('User profile not found for userId:', userId);
-        return 1500; // Default ELO
-      }
-      
-      const userName = userProfile.Name;
-      
-      if (!userName) {
-        console.warn('User has no Name property:', userProfile);
-        return 1500; // Default ELO
-      }
-      
-      // Now fetch the ELO from UserPerformance collection
-      const performanceData = await db.collection('UserPerformance')
-        .where({
-          Name: userName
-        })
-        .get();
-      
-      if (performanceData.data && performanceData.data.length > 0) {
-        const elo = performanceData.data[0].ELO || 1500;
-        console.log(`Found ELO for ${userName}: ${elo}`);
-        return elo;
-      } else {
-        console.warn(`No performance record found for ${userName}, using default ELO`);
-        return 1500; // Default ELO
-      }
-    } catch (error) {
-      console.error('Error fetching user ELO:', error);
-      return 1500; // Default to 1500 on error
     }
   }
 }

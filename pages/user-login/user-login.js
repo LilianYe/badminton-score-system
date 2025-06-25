@@ -570,6 +570,7 @@ Page({
       
       const userProfile = {
         openid: tempUserInfo.openid, // This will be stored as WechatId in cloud
+        nickname: finalNickname,
         Name: finalNickname,
         avatarUrl: tempUserInfo.avatarUrl,
         Avatar: tempUserInfo.avatarUrl,
