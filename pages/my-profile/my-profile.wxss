@@ -39,6 +39,9 @@
     background-color: white;
     padding: 30rpx;
     border-bottom: 1rpx solid #eee;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
 }
 
 .title {
@@ -302,4 +305,154 @@
 .confirm-btn {
     background-color: #007AFF;
     color: white;
+}
+
+.stats-section {
+    background: #fff;
+    border-radius: 20rpx;
+    margin: 30rpx 0 0 0;
+    padding: 32rpx 24rpx 16rpx 24rpx;
+    box-shadow: 0 4rpx 16rpx rgba(0,0,0,0.06);
+}
+
+.stats-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16rpx;
+}
+
+.stats-title {
+    font-size: 32rpx;
+    font-weight: bold;
+    color: #333;
+}
+
+.stats-more-btn {
+    background: #f4f4f4;
+    color: #007AFF;
+    border-radius: 16rpx;
+    font-size: 24rpx;
+    padding: 8rpx 24rpx;
+    border: none;
+}
+
+.stats-main {
+    width: 100%;
+}
+
+.stats-row {
+    display: flex;
+    align-items: center;
+    margin-bottom: 12rpx;
+    gap: 24rpx;
+}
+
+.elo-item {
+    min-width: 110rpx;
+    flex: 1.2;
+    align-items: center;
+}
+
+.elo-row {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 16rpx;
+}
+
+.stats-elo-value {
+    font-size: 56rpx;
+    font-weight: bold;
+    color: #FF9800;
+    margin-top: 2rpx;
+}
+
+.stats-label {
+    font-size: 22rpx;
+    color: #888;
+    margin-bottom: 4rpx;
+}
+
+.stats-value {
+    font-size: 28rpx;
+    font-weight: bold;
+    color: #333;
+}
+
+.stats-more {
+    margin-top: 12rpx;
+    background: #f8f9fa;
+    border-radius: 12rpx;
+    padding: 16rpx 0 8rpx 0;
+}
+
+.stats-subtitle {
+    font-size: 24rpx;
+    color: #888;
+    font-weight: bold;
+    margin: 8rpx 0 0 8rpx;
+}
+
+.stats-toggle-icon {
+    font-size: 28rpx;
+    color: #888;
+    margin-left: 16rpx;
+    user-select: none;
+}
+
+.stats-cards {
+    display: flex;
+    flex-direction: column;
+    gap: 20rpx;
+    margin-top: 20rpx;
+}
+
+.stats-card {
+    background: #f8f9fa;
+    border-radius: 16rpx;
+    box-shadow: 0 2rpx 8rpx rgba(0,0,0,0.04);
+    padding: 20rpx 16rpx 12rpx 16rpx;
+}
+
+.stats-card-title {
+    font-size: 26rpx;
+    font-weight: bold;
+    color: #555;
+    margin-bottom: 10rpx;
+}
+
+.stats-card-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12rpx;
+}
+
+.stats-card-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 70rpx;
+    flex: 1;
+}
+
+.same-gender-card {
+    border-left: 6rpx solid #4caf50;
+}
+
+.mixed-card {
+    border-left: 6rpx solid #ff9800;
+}
+
+.main-stats-card {
+    border-left: 6rpx solid #007AFF;
+}
+
+.gender-icon {
+    width: 32rpx;
+    height: 32rpx;
+    vertical-align: middle;
+    margin-left: 8rpx;
 } 
