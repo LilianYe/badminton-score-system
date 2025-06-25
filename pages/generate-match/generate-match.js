@@ -6,7 +6,7 @@ Page({
   data: {
     playersInput: '',
     eloThreshold: '100',
-    teamEloDiff: '70',
+    teamEloDiff: '300',
     gamePerPlayer: '4',
     courtCount: '2',
     result: '',
@@ -15,7 +15,6 @@ Page({
     showAdvanced: false, // Toggle for advanced settings
     showPlayerEdit: false, // Toggle for player list editing
     showRawOutput: false, // Toggle for raw debug output
-    femaleSet: new Set(), // Track female players
     playerElos: {}, // Track player ELOs
     matchRounds: [], // Structured match data for display
     processedPlayers: [], // Processed player array for rendering
@@ -31,16 +30,14 @@ Page({
       
       // Get players from global data
       const app = getApp();
-      if (app.globalData && app.globalData.signupPlayers && app.globalData.signupPlayers.length > 0) {
-        const playerList = app.globalData.signupPlayers.join('\n');        // Set up the female player set from player gender property
-        let femaleSet = new Set();
+      if (app.globalData && app.globalData.signupPlayers && app.globalData.signupPlayers.length > 0) {        
+        const playerList = app.globalData.signupPlayers.join('\n');
+        
         if (app.globalData.signupPlayerData && app.globalData.signupPlayerData.length > 0) {
-          // Create femaleSet from players with gender='female'
           const femalePlayers = app.globalData.signupPlayerData
             .filter(player => player.gender === 'female')
             .map(player => player.name);
-          femaleSet = new Set(femalePlayers);
-          console.log('Loaded female players:', Array.from(femaleSet));
+          console.log('Loaded female players:', femalePlayers);
         }
         
         // Get ELO ratings if available
@@ -50,10 +47,8 @@ Page({
             playerElos[player.name] = player.elo || app.globalData.defaultElo || 1500;
           });
         }
-        
-        this.setData({
+          this.setData({
           playersInput: playerList,
-          femaleSet: femaleSet,
           playerElos: playerElos,
           // Auto-adjust settings based on player count
           gamePerPlayer: Math.min(Math.floor(14 / app.globalData.signupPlayers.length) * 2, 7).toString(), 
@@ -87,14 +82,10 @@ Page({
   toggleRawOutput() {
     this.setData({ showRawOutput: !this.data.showRawOutput });
   },
-    removePlayer(e) {
-    const index = e.currentTarget.dataset.index;
+    removePlayer(e) {    
+        const index = e.currentTarget.dataset.index;
     const players = this.data.playersInput.split('\n');
     const removedPlayer = players[index];
-      // Update femaleSet if needed
-    const femaleSet = this.data.femaleSet;
-    femaleSet.delete(removedPlayer);
-    this.setData({ femaleSet: femaleSet });
     
     // Remove player from list
     players.splice(index, 1);
@@ -105,31 +96,9 @@ Page({
   
   onShow() {
     console.log('Generate Match page shown');
-  },
-  onPlayersInput(e) {
+  },  onPlayersInput(e) {
     this.setData({ playersInput: e.detail.value }, () => {
-      // Update female players set based on player objects from app.globalData
-      const app = getApp();
-      const femaleSet = new Set();
-      
-      // If we have player data with gender information, use it
-      if (app.globalData && app.globalData.signupPlayerData) {
-        const playerMap = {};
-        app.globalData.signupPlayerData.forEach(player => {
-          playerMap[player.name] = player;
-        });
-        
-        e.detail.value.split('\n').forEach(name => {
-          const trimmedName = name.trim();
-          if (trimmedName && playerMap[trimmedName] && playerMap[trimmedName].gender === 'female') {
-            femaleSet.add(trimmedName);
-          }
-        });
-      }
-      
-      this.setData({ femaleSet: femaleSet }, () => {
-        this.processPlayersInput();
-      });
+      this.processPlayersInput();
     });
   },
   
@@ -155,24 +124,35 @@ Page({
       icon: 'none'
     });
   },
-  
-  regenerateMatches() {
+    regenerateMatches() {
     this.onGenerate();
   },
-    // Process players from input string to array for rendering
+  
+  // Process players from input string to array for rendering
   processPlayersInput() {
     // Split by newlines and filter empty lines
     const playerLines = this.data.playersInput.split('\n');
-    const femaleSet = this.data.femaleSet || new Set();
+    const app = getApp();
+    const playerMap = {};
+    
+    // Build player map with gender info
+    if (app.globalData && app.globalData.signupPlayerData) {
+      app.globalData.signupPlayerData.forEach(player => {
+        playerMap[player.name] = player;
+      });
+    }
 
     const processedPlayers = playerLines
       .map(line => {
         const trimmedLine = line.trim();
         if (!trimmedLine) return null; // Skip empty lines
         
+        // Use player map to determine gender
+        const gender = playerMap[trimmedLine]?.gender || 'male';
         return {
           name: trimmedLine,
-          isFemale: femaleSet.has(trimmedLine) // Use femaleSet to determine gender
+          gender: gender,
+          isFemale: gender === 'female'
         };
       })
       .filter(player => player !== null); // Remove null entries
@@ -192,7 +172,7 @@ Page({
     
     const players = this.data.playersInput.split(/\r?\n/).map(s => s.trim()).filter(Boolean);
     const eloThreshold = parseInt(this.data.eloThreshold) || 100;
-    const teamEloDiff = parseInt(this.data.teamEloDiff) || 70;
+    const teamEloDiff = parseInt(this.data.teamEloDiff) || 300;
     const gamePerPlayer = parseInt(this.data.gamePerPlayer) || 4;
     const courtCount = parseInt(this.data.courtCount) || 2;
     
@@ -212,19 +192,28 @@ Page({
         playerElos[p] = getApp().globalData.defaultElo || 1500;
       }
     });
+      // Get player data from app.globalData
+    const app = getApp();
+    const playerMap = {};
     
-    // Use the existing femaleSet to create player objects
-    const femaleSet = this.data.femaleSet;
+    // Build player map with gender and elo info
+    if (app.globalData && app.globalData.signupPlayerData) {
+      app.globalData.signupPlayerData.forEach(player => {
+        playerMap[player.name] = player;
+      });
+    }
+    
+    // Create player objects with gender information from playerMap
     const playerObjects = players.map(name => ({
       name: name,
-      gender: femaleSet.has(name) ? 'female' : 'male',
+      gender: playerMap[name]?.gender || 'male',
       elo: playerElos[name] || 1500
     }));
     
     // Use setTimeout to allow the UI to update before starting calculation
     setTimeout(() => {
       try {
-        const matchResult = util.tryGenerateRotationFull(playerObjects, courtCount, gamePerPlayer, eloThreshold, playerElos, teamEloDiff, 30);
+        const matchResult = util.tryGenerateRotationFull(playerObjects, courtCount, gamePerPlayer, eloThreshold, teamEloDiff, 1);
         
         if (!matchResult) {
           this.setData({ 

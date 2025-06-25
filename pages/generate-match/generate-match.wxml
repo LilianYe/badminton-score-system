@@ -33,7 +33,7 @@
       </view>
       <view class="parameter" wx:if="{{showAdvanced}}">
         <text>队伍ELO差：</text>
-        <input type="number" value="{{teamEloDiff}}" placeholder="如 70" bindinput="onTeamEloDiffInput" />
+        <input type="number" value="{{teamEloDiff}}" placeholder="如 300" bindinput="onTeamEloDiffInput" />
       </view>
     </view>
     <view class="toggle-advanced" bindtap="toggleAdvanced">
@@ -59,8 +59,7 @@
         <view class="court-number">场地 {{courtIndex+1}}</view>
         
         <view class="team">
-          <view class="team-players">
-            <view wx:for="{{court[0]}}" wx:for-item="player" wx:key="index" class="player {{femaleSet.has(player) ? 'female-player' : ''}}">
+          <view class="team-players">            <view wx:for="{{court[0]}}" wx:for-item="player" wx:key="index" class="player">
               {{player}}
             </view>
           </view>
@@ -69,8 +68,7 @@
         <view class="versus">VS</view>
         
         <view class="team">
-          <view class="team-players">
-            <view wx:for="{{court[1]}}" wx:for-item="player" wx:key="index" class="player {{femaleSet.has(player) ? 'female-player' : ''}}">
+          <view class="team-players">            <view wx:for="{{court[1]}}" wx:for-item="player" wx:key="index" class="player">
               {{player}}
             </view>
           </view>
@@ -78,8 +76,7 @@
       </view>
       
       <view class="rest-players">
-        <text>本轮休息: </text>
-        <view wx:for="{{item.rest}}" wx:for-item="player" wx:key="index" class="rest-player {{femaleSet.has(player) ? 'female-player' : ''}}">
+        <text>本轮休息: </text>        <view wx:for="{{item.rest}}" wx:for-item="player" wx:key="index" class="rest-player">
           {{player}}
         </view>
       </view>
