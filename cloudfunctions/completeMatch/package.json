@@ -1,0 +1,9 @@
+{
+  "name": "completeMatch",
+  "version": "1.0.0",
+  "description": "Cloud function to complete matches and update player performance",
+  "main": "index.js",
+  "dependencies": {
+    "wx-server-sdk": "~2.6.3"
+  }
+} 

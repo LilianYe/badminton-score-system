@@ -19,7 +19,11 @@ Page({
         upcomingMatches: [],
         completedMatches: [],
         isLoading: false,
-        isEmpty: true
+        isEmpty: true,
+        showScoreInput: false,
+        editingMatchId: null,
+        teamAScore: '',
+        teamBScore: ''
     },
 
     onShow: function() {
@@ -51,9 +55,18 @@ Page({
                 CompleteTime: null
             }).orderBy('StartTime', 'asc').get();
 
-            const userUpcomingMatches = upcomingRes.data.filter(match =>
-                [match.PlayerNameA1, match.PlayerNameA2, match.PlayerNameB1, match.PlayerNameB2, match.RefereeName].includes(currentUserName)
-            );
+            const userUpcomingMatches = upcomingRes.data.filter(match => {
+                // Check if current user is in any of the player fields (now objects)
+                const playerNames = [
+                    match.PlayerNameA1?.name,
+                    match.PlayerNameA2?.name,
+                    match.PlayerNameB1?.name,
+                    match.PlayerNameB2?.name,
+                    match.RefereeName
+                ].filter(Boolean);
+                
+                return playerNames.includes(currentUserName);
+            });
 
             const processedUpcomingMatches = userUpcomingMatches.map(match => ({
                 ...match,
@@ -65,14 +78,30 @@ Page({
                 CompleteTime: _.neq(null)
             }).orderBy('CompleteTime', 'desc').get();
 
-            const userCompletedMatches = completedRes.data.filter(match =>
-                [match.PlayerNameA1, match.PlayerNameA2, match.PlayerNameB1, match.PlayerNameB2, match.RefereeName].includes(currentUserName)
-            );
+            const userCompletedMatches = completedRes.data.filter(match => {
+                // Check if current user is in any of the player fields (now objects)
+                const playerNames = [
+                    match.PlayerNameA1?.name,
+                    match.PlayerNameA2?.name,
+                    match.PlayerNameB1?.name,
+                    match.PlayerNameB2?.name,
+                    match.RefereeName
+                ].filter(Boolean);
+                
+                return playerNames.includes(currentUserName);
+            });
 
             const processedCompletedMatches = userCompletedMatches.map(match => {
                 let result = '';
-                const isPlayerA = [match.PlayerNameA1, match.PlayerNameA2].includes(currentUserName);
-                const isPlayerB = [match.PlayerNameB1, match.PlayerNameB2].includes(currentUserName);
+                const playerNames = [
+                    match.PlayerNameA1?.name,
+                    match.PlayerNameA2?.name,
+                    match.PlayerNameB1?.name,
+                    match.PlayerNameB2?.name
+                ].filter(Boolean);
+                
+                const isPlayerA = [match.PlayerNameA1?.name, match.PlayerNameA2?.name].includes(currentUserName);
+                const isPlayerB = [match.PlayerNameB1?.name, match.PlayerNameB2?.name].includes(currentUserName);
 
                 if (isPlayerA) {
                     result = match.ScoreA > match.ScoreB ? 'Win' : 'Loss';
@@ -123,8 +152,120 @@ Page({
         const match = this.data.upcomingMatches.find(m => m.MatchId === matchId);
         
         if (match) {
-            wx.navigateTo({
-                url: `/pages/newGame/newGame?matchId=${matchId}&editMode=true`
+            this.setData({
+                showScoreInput: true,
+                editingMatchId: matchId,
+                teamAScore: '',
+                teamBScore: ''
+            });
+        }
+    },
+
+    // Handle Team A score input
+    onTeamAScoreInput: function(e) {
+        this.setData({
+            teamAScore: e.detail.value
+        });
+    },
+
+    // Handle Team B score input
+    onTeamBScoreInput: function(e) {
+        this.setData({
+            teamBScore: e.detail.value
+        });
+    },
+
+    // Confirm score input
+    confirmScore: function() {
+        const { teamAScore, teamBScore, editingMatchId } = this.data;
+        
+        const scoreA = parseInt(teamAScore);
+        const scoreB = parseInt(teamBScore);
+        
+        if (isNaN(scoreA) || scoreA < 0) {
+            wx.showToast({
+                title: 'Invalid Team A score',
+                icon: 'none'
+            });
+            return;
+        }
+        
+        if (isNaN(scoreB) || scoreB < 0) {
+            wx.showToast({
+                title: 'Invalid Team B score',
+                icon: 'none'
+            });
+            return;
+        }
+        
+        // Check for equal scores (no draws in badminton)
+        if (scoreA === scoreB) {
+            wx.showToast({
+                title: 'Scores cannot be equal. Badminton matches must have a winner.',
+                icon: 'none'
+            });
+            return;
+        }
+        
+        this.setData({
+            showScoreInput: false,
+            editingMatchId: null,
+            teamAScore: '',
+            teamBScore: ''
+        });
+        
+        this.completeMatch(editingMatchId, scoreA, scoreB);
+    },
+
+    // Cancel score input
+    cancelScore: function() {
+        this.setData({
+            showScoreInput: false,
+            editingMatchId: null,
+            teamAScore: '',
+            teamBScore: ''
+        });
+    },
+
+    async completeMatch(matchId, scoreA, scoreB) {
+        wx.showLoading({
+            title: 'Completing match...'
+        });
+
+        try {
+            const result = await wx.cloud.callFunction({
+                name: 'completeMatch',
+                data: {
+                    matchId: matchId,
+                    scoreA: scoreA,
+                    scoreB: scoreB
+                }
+            });
+
+            wx.hideLoading();
+
+            if (result.result && result.result.success) {
+                wx.showToast({
+                    title: 'Match completed!',
+                    icon: 'success'
+                });
+
+                // Refresh the data
+                if (this.data.currentUser) {
+                    this.loadMatches(this.data.currentUser.nickname);
+                }
+            } else {
+                wx.showToast({
+                    title: result.result?.error || 'Failed to complete match',
+                    icon: 'none'
+                });
+            }
+        } catch (error) {
+            wx.hideLoading();
+            console.error('Error completing match:', error);
+            wx.showToast({
+                title: 'Failed to complete match',
+                icon: 'none'
             });
         }
     },

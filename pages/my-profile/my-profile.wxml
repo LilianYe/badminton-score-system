@@ -47,20 +47,20 @@
                     </view>
                     <view class="teams-container">
                         <view class="team">
-                            <text class="player-name">{{item.PlayerNameA1}}</text>
-                            <text wx:if="{{item.PlayerNameA2}}" class="player-name">{{item.PlayerNameA2}}</text>
+                            <text class="player-name">{{item.PlayerNameA1.name}}</text>
+                            <text wx:if="{{item.PlayerNameA2}}" class="player-name">{{item.PlayerNameA2.name}}</text>
                         </view>
                         <view class="score">
                             <text>{{item.ScoreA || 0}} - {{item.ScoreB || 0}}</text>
                         </view>
                         <view class="team">
-                            <text class="player-name">{{item.PlayerNameB1}}</text>
-                            <text wx:if="{{item.PlayerNameB2}}" class="player-name">{{item.PlayerNameB2}}</text>
+                            <text class="player-name">{{item.PlayerNameB1.name}}</text>
+                            <text wx:if="{{item.PlayerNameB2}}" class="player-name">{{item.PlayerNameB2.name}}</text>
                         </view>
                     </view>
                     <view class="match-footer">
                         <text>Referee: {{item.RefereeName}}</text>
-                        <button class="edit-btn" bindtap="editScore" data-matchid="{{item.MatchId}}">Edit Score</button>
+                        <button class="edit-btn" bindtap="editScore" data-matchid="{{item.MatchId}}">Complete Match</button>
                     </view>
                 </view>
             </view>
@@ -74,15 +74,15 @@
                     </view>
                     <view class="teams-container">
                         <view class="team">
-                            <text class="player-name">{{item.PlayerNameA1}}</text>
-                            <text wx:if="{{item.PlayerNameA2}}" class="player-name">{{item.PlayerNameA2}}</text>
+                            <text class="player-name">{{item.PlayerNameA1.name}}</text>
+                            <text wx:if="{{item.PlayerNameA2}}" class="player-name">{{item.PlayerNameA2.name}}</text>
                         </view>
                         <view class="score">
                             <text>{{item.ScoreA}} - {{item.ScoreB}}</text>
                         </view>
                         <view class="team">
-                            <text class="player-name">{{item.PlayerNameB1}}</text>
-                            <text wx:if="{{item.PlayerNameB2}}" class="player-name">{{item.PlayerNameB2}}</text>
+                            <text class="player-name">{{item.PlayerNameB1.name}}</text>
+                            <text wx:if="{{item.PlayerNameB2}}" class="player-name">{{item.PlayerNameB2.name}}</text>
                         </view>
                     </view>
                     <view class="match-footer">
@@ -91,5 +91,36 @@
                 </view>
             </view>
         </block>
+    </view>
+</view>
+
+<!-- Custom Score Input Modal -->
+<view wx:if="{{showScoreInput}}" class="score-input-modal">
+    <view class="score-input-overlay" bindtap="cancelScore"></view>
+    <view class="score-input-container">
+        <view class="score-input-header">
+            <text class="score-input-title">Complete Match</text>
+        </view>
+        <view class="score-input-content">
+            <view class="score-input-row">
+                <input class="score-input-box" 
+                       placeholder="Team A" 
+                       value="{{teamAScore}}"
+                       bindinput="onTeamAScoreInput"
+                       type="number"
+                       maxlength="3" />
+                <text class="score-input-separator">:</text>
+                <input class="score-input-box" 
+                       placeholder="Team B" 
+                       value="{{teamBScore}}"
+                       bindinput="onTeamBScoreInput"
+                       type="number"
+                       maxlength="3" />
+            </view>
+        </view>
+        <view class="score-input-actions">
+            <button class="score-input-btn cancel-btn" bindtap="cancelScore">Cancel</button>
+            <button class="score-input-btn confirm-btn" bindtap="confirmScore">Confirm</button>
+        </view>
     </view>
 </view> 
