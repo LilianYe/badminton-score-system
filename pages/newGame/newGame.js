@@ -316,5 +316,11 @@ Page({
     wx.navigateTo({
       url: '/pages/user-profile/user-profile'
     });
+  },
+  
+  goToMyMatch: function() {
+    wx.navigateTo({
+      url: '/pages/MyMatch/MyMatch'
+    });
   }
 });
