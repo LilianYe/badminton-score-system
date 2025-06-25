@@ -23,15 +23,15 @@
         </view>
         <view class="teams-container">
           <view class="team">
-            <text class="player-name">{{item.PlayerNameA1}}</text>
-            <text wx:if="{{item.PlayerNameA2}}" class="player-name">{{item.PlayerNameA2}}</text>
+            <text class="player-name">{{item.PlayerNameA1.name}}</text>
+            <text wx:if="{{item.PlayerNameA2}}" class="player-name">{{item.PlayerNameA2.name}}</text>
           </view>
           <view class="score">
             <text>{{item.ScoreA}} - {{item.ScoreB}}</text>
           </view>
           <view class="team">
-            <text class="player-name">{{item.PlayerNameB1}}</text>
-            <text wx:if="{{item.PlayerNameB2}}" class="player-name">{{item.PlayerNameB2}}</text>
+            <text class="player-name">{{item.PlayerNameB1.name}}</text>
+            <text wx:if="{{item.PlayerNameB2}}" class="player-name">{{item.PlayerNameB2.name}}</text>
           </view>
         </view>
         <view class="match-footer">

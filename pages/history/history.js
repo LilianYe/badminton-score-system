@@ -48,20 +48,34 @@ Page({
                 CompleteTime: _.neq(null)
             }).orderBy('CompleteTime', 'desc').get();
 
-            const userMatches = res.data.filter(match =>
-                [match.PlayerNameA1, match.PlayerNameA2, match.PlayerNameB1, match.PlayerNameB2].includes(currentUserName)
-            );
+            const userMatches = res.data.filter(match => {
+                // Check if current user is in any of the player fields (now objects)
+                const playerNames = [
+                    match.PlayerNameA1?.name,
+                    match.PlayerNameA2?.name,
+                    match.PlayerNameB1?.name,
+                    match.PlayerNameB2?.name,
+                    match.RefereeName
+                ].filter(Boolean);
+                
+                return playerNames.includes(currentUserName);
+            });
 
             const processedMatches = userMatches.map(match => {
                 let result = '';
-                const isPlayerA = [match.PlayerNameA1, match.PlayerNameA2].includes(currentUserName);
-                const isPlayerB = [match.PlayerNameB1, match.PlayerNameB2].includes(currentUserName);
+                const isPlayerA = [match.PlayerNameA1?.name, match.PlayerNameA2?.name].includes(currentUserName);
+                const isPlayerB = [match.PlayerNameB1?.name, match.PlayerNameB2?.name].includes(currentUserName);
 
                 if (isPlayerA) {
                     result = match.ScoreA > match.ScoreB ? 'Win' : 'Loss';
                 } else if (isPlayerB) {
                     result = match.ScoreB > match.ScoreA ? 'Win' : 'Loss';
+                } else {
+                    result = 'Referee';
                 }
+                
+                if (match.ScoreA === match.ScoreB) result = 'Draw';
+
                 return {
                     ...match,
                     formattedCompleteTime: formatTime(match.CompleteTime),
