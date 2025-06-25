@@ -201,44 +201,72 @@ Page({
       return;
     }
     
-    // Create new game object with owner info
-    const gameId = 'game' + (games.length + 1);
-    const createdGame = {
-      ...newGame,
-      id: gameId,
-      status: '招募中',
-      players: [],
-      owner: {
-        openid: currentUser.openid,
-        nickname: currentUser.nickname,
-        avatarUrl: currentUser.avatarUrl
-      }
-    };
-    
-    // Add to games array and select it
-    const updatedGames = [...games, createdGame];
-    
-    this.setData({
-      games: updatedGames,
-      selectedGameIndex: updatedGames.length - 1,
-      selectedGame: createdGame,
-      showAddGameModal: false
-    });
-    
-    // Store updated games array in global data
-    app.globalData.games = updatedGames;
-    
-    wx.showToast({
-      title: '活动创建成功',
-      icon: 'success',
-      duration: 2000,
-      complete: () => {
-        // Navigate to the game detail page
-        wx.navigateTo({
-          url: `/pages/game-detail/game-detail?id=${gameId}`
-        });
-      }
-    });
+    try {
+      wx.showLoading({
+        title: '创建活动中...',
+        mask: true
+      });
+      
+      // Generate a unique ID for the new game
+      const gameId = 'game' + Date.now();
+      
+      // Create new game object with owner info
+      const createdGame = {
+        ...newGame,
+        id: gameId,
+        status: '招募中',
+        players: [],
+        owner: {
+          openid: currentUser.openid,
+          nickname: currentUser.nickname,
+          avatarUrl: currentUser.avatarUrl
+        }
+      };
+      
+      // Import the CloudDBService
+      const CloudDBService = require('../../utils/cloud-db.js');
+      
+      // Ensure cloud database is initialized
+      CloudDBService.ensureInit();
+      
+      // Save the game to cloud database
+      const savedGame = await CloudDBService.createGame(createdGame);
+      console.log('Game saved to cloud database:', savedGame);
+      
+      // Add to games array and select it
+      const updatedGames = [...games, savedGame];
+      
+      this.setData({
+        games: updatedGames,
+        selectedGameIndex: updatedGames.length - 1,
+        selectedGame: savedGame,
+        showAddGameModal: false
+      });
+      
+      // Store updated games array in global data
+      app.globalData.games = updatedGames;
+      
+      wx.hideLoading();
+      
+      wx.showToast({
+        title: '活动创建成功',
+        icon: 'success',
+        duration: 2000,
+        complete: () => {
+          // Navigate to the game detail page
+          wx.navigateTo({
+            url: `/pages/game-detail/game-detail?id=${gameId}`
+          });
+        }
+      });
+    } catch (error) {
+      wx.hideLoading();
+      console.error('Failed to create game:', error);
+      wx.showToast({
+        title: error.message || '创建活动失败',
+        icon: 'none'
+      });
+    }
   }
   
 });
