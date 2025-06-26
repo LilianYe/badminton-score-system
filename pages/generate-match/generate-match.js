@@ -14,6 +14,8 @@ try {
   };
 }
 
+const GameService = require('../../utils/game-service.js');
+
 Page({
   data: {
     playersInput: '',
@@ -497,36 +499,23 @@ Page({
     }
       // Save matches to database
     try {
-      this.CloudDBService.saveGeneratedMatches(matchDataArray, gameId)
-        .then(results => {
-          console.log('Matches saved successfully:', results);
+      // Use GameService to save matches which will update the game status as well
+      GameService.saveMatches(gameId, matchDataArray)
+        .then(updatedGame => {
+          console.log('Matches saved successfully to game:', updatedGame);
           
-          // Check if all were successful
-          const allSuccess = results.every(result => result.success);
+          this.setData({ 
+            matchesSaved: true,
+            loading: false 
+          });
           
-          if (allSuccess) {
-            this.setData({ 
-              matchesSaved: true,
-              loading: false 
-            });
-            
-            wx.showToast({
-              title: '比赛已保存',
-              icon: 'success',
-              duration: 2000
-            });
-            // Mark the game as having generated matches
-            this.CloudDBService.markGameMatchesGenerated(gameId)
-              .then(() => {
-                console.log('Game marked as having generated matches');
-              })
-              .catch(error => {
-                console.error('Failed to mark game as having generated matches:', error);
-                // Non-critical error, don't show to user
-              });
-          } else {
-            throw new Error('Some matches failed to save');
-          }
+          wx.showToast({
+            title: '比赛已保存',
+            icon: 'success',
+            duration: 2000
+          });
+          
+          // No need to mark the game separately as GameService.saveMatches already updates the status
         })
         .catch(error => {
           console.error('Failed to save matches:', error);

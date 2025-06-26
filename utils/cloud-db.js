@@ -788,12 +788,7 @@ class CloudDBService {
       if (!game) {
         throw new Error('Game not found');
       }
-        
-      if (!game.matchGenerated) {
-        console.log('Game does not have any generated matches');
-        return [];
-      }
-      
+         
       // Query matches by gameId
       const db = wx.cloud.database();
       const matchesResult = await db.collection('Match')
@@ -832,10 +827,6 @@ class CloudDBService {
         throw new Error('Game not found');
       }
         
-      if (!game.matchGenerated) {
-        console.log('Game does not have any generated matches');
-        return { deleted: 0 };
-      }
       const db = wx.cloud.database();
       const deleteResult = await db.collection('Match')
         .where({

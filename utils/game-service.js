@@ -171,8 +171,8 @@ class GameService {
       }
       
       // Check if game is active
-      if (game.status == 'playing' || game.status == 'finished') {
-        throw new Error('游戏已结束，无法加入');
+      if (game.status == 'playing') {
+        throw new Error('游戏正在进行，无法加入');
       }
       
       // Initialize players array if it doesn't exist
@@ -326,7 +326,8 @@ class GameService {
       // Update game with matches
       await CloudDBService.updateGame(gameId, {
         matches: matches,
-        status: 'matched'
+        status: 'matched',
+        matchGenerated: true
       });
       const updatedGame = await this.getGameById(gameId);
       console.log('Matches saved successfully:', updatedGame);
