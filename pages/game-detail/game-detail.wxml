@@ -171,9 +171,8 @@
   
   <!-- Bottom Action Buttons -->
   <view class="action-buttons" wx:if="{{game}}">
-    <button class="action-button share" bindtap="shareGame" disabled="{{isNavigating}}">分享</button>
-    <button class="action-button primary{{isNavigating ? ' isNavigating' : ''}}" bindtap="navigateToGenerate" wx:if="{{isOwner && game.players.length > 0}}" disabled="{{isNavigating}}">
-      {{isNavigating ? '正在生成...' : '生成对阵表'}}
+    <button class="action-button share" bindtap="shareGame" disabled="{{isNavigating}}">分享</button>    <button class="action-button {{hasGeneratedMatches ? 'view-existing' : 'primary'}}{{isNavigating ? ' isNavigating' : ''}}" bindtap="navigateToGenerate" wx:if="{{isOwner && game.players.length > 0}}" disabled="{{isNavigating}}">
+      {{isNavigating ? '正在加载...' : (hasGeneratedMatches ? '查看已生成对阵表' : '生成对阵表')}}
     </button>
   </view>
 </view>

@@ -51,37 +51,43 @@
     <text>正在生成，请稍候...</text>
   </view>
     <view wx:if="{{matchRounds && matchRounds.length}}" class="result-section {{matchesSaved ? 'match-rounds-saved' : ''}}">
-    <view wx:for="{{matchRounds}}" wx:key="index" class="match-round">
-      <view class="round-header">第 {{index+1}} 轮</view>
+    <view wx:for="{{matchRounds}}" wx:key="index" class="match-round">      <view class="round-header">第 {{index+1}} 轮</view>
       
       <view wx:for="{{item.courts}}" wx:for-item="court" wx:for-index="courtIndex" wx:key="courtIndex" class="match-court">
-        <view class="court-number">场地 {{courtIndex+1}}</view>
-        
-        <view class="team">
-          <view class="team-players">            <view wx:for="{{court[0]}}" wx:for-item="player" wx:key="index" class="player">
-              {{player}}
-            </view>
+        <view class="court-number">场地 {{courtIndex+1}}</view>        <view class="team">          <view class="team-players">
+            <block wx:for="{{court[0]}}" wx:key="index">
+              <view class="player">
+                <!-- Use object detection without typeof -->
+                <block wx:if="{{item.name}}">{{item.name}}</block>
+                <block wx:else>{{item}}</block>
+              </view>
+            </block>
           </view>
         </view>
-        
         <view class="versus">VS</view>
-        
-        <view class="team">
-          <view class="team-players">            <view wx:for="{{court[1]}}" wx:for-item="player" wx:key="index" class="player">
-              {{player}}
-            </view>
+          <view class="team">          <view class="team-players">
+            <block wx:for="{{court[1]}}" wx:key="index">
+              <view class="player">
+                <!-- Use object detection without typeof -->
+                <block wx:if="{{item.name}}">{{item.name}}</block>
+                <block wx:else>{{item}}</block>
+              </view>
+            </block>
           </view>
         </view>
+      </view>        <view class="rest-players">
+        <text>本轮休息: </text>        <block wx:for="{{item.rest}}" wx:key="index">
+          <view class="rest-player">
+            <!-- Use object detection without typeof -->
+            <block wx:if="{{item.name}}">{{item.name}}</block>
+            <block wx:else>{{item}}</block>
+          </view>
+        </block>
       </view>
-      
-      <view class="rest-players">
-        <text>本轮休息: </text>        <view wx:for="{{item.rest}}" wx:for-item="player" wx:key="index" class="rest-player">
-          {{player}}
-        </view>
-      </view>    </view>
-      
-    <!-- Action buttons -->
-    <view class="toolbar">      <button class="toolbar-button primary" bindtap="confirmAndSaveMatches" disabled="{{loading || matchesSaved}}">{{matchesSaved ? '已保存' : '确认并保存'}}</button>
+    </view>
+        <!-- Action buttons -->
+    <view class="toolbar">
+      <button class="toolbar-button primary" bindtap="confirmAndSaveMatches" disabled="{{loading || matchesSaved}}">{{matchesSaved ? '已保存' : '确认并保存'}}</button>
       <button class="toolbar-button" bindtap="regenerateMatches" disabled="{{loading || matchesSaved}}">{{matchesSaved ? '已锁定对阵' : '重新生成'}}</button>
     </view>
   </view>

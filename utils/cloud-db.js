@@ -560,22 +560,25 @@ class CloudDBService {
   }
 
   /**
-   * Save generated matches to cloud database
-   * @param {Array} matchData - Array of raw match data
-   * @param {string} sessionId - Session identifier
-   * @returns {Promise<Object>} Insert result
+   * Save generated matches to the Match collection
+   * @param {Array} matchData - Array of match data objects
+   * @param {string} gameId - ID of the game these matches belong to
+   * @returns {Promise<Array>} - Array of match insertion results
    */
-  static async saveGeneratedMatches(matchData, sessionId) {
+  static async saveGeneratedMatches(matchData, gameId) {
     this.ensureInit();
     
     try {
+      console.log('Saving matches to database for session:', gameId);
       console.log('Saving generated matches to cloud database...');
-      console.log('Session ID:', sessionId);
       console.log('Number of matches:', matchData.length);
+      
+      // Use the gameId as sessionId
+      const sessionId = gameId;
       
       const matchesToInsert = matchData.map(match => ({
         ...match,
-        sessionId: sessionId,
+        SessionId: sessionId, // Make sure to use the standard property name
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       }));
@@ -592,6 +595,269 @@ class CloudDBService {
       return results;
     } catch (error) {
       console.error('Error saving matches to cloud database:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Fetch ELO ratings for multiple players from UserPerformance collection
+   * @param {Array} playerObjects - Array of player objects with name property
+   * @returns {Promise<Array>} - Same array with elo properties added
+   */
+  static async fetchPlayerELOs(playerObjects) {
+    this.ensureInit();
+    
+    try {
+      console.log('Fetching ELO ratings for', playerObjects.length, 'players');
+      const db = wx.cloud.database();
+      
+      // Create a promise for each player's ELO fetch
+      const fetchPlayerEloPromises = playerObjects.map(player => {
+        return new Promise((resolve) => {
+          // Query UserPerformance collection by name
+          db.collection('UserPerformance')
+            .where({
+              Name: player.name
+            })
+            .get()
+            .then(res => {
+              if (res.data && res.data.length > 0) {
+                // Update player object with latest ELO
+                player.elo = res.data[0].ELO || 1500;
+                console.log(`Fetched ELO for ${player.name}: ${player.elo}`);
+              } else {
+                // Use default ELO if not found
+                player.elo = player.elo || 1500;
+                console.log(`No ELO found for ${player.name}, using default: ${player.elo}`);
+              }
+              resolve(player);
+            })
+            .catch(error => {
+              console.error(`Error fetching ELO for ${player.name}:`, error);
+              // Use default ELO in case of error
+              player.elo = player.elo || 1500;
+              resolve(player);
+            });
+        });
+      });
+      
+      // Wait for all ELO fetches to complete
+      await Promise.all(fetchPlayerEloPromises);
+      
+      return playerObjects;
+    } catch (error) {
+      console.error('Error fetching player ELOs:', error);
+      // Return the original player objects with default ELOs in case of error
+      return playerObjects.map(player => {
+        if (!player.elo) player.elo = 1500;
+        return player;
+      });
+    }
+  }
+  /**
+   * Create match data objects from round data
+   * @param {Array} matchRounds - Array of match round data
+   * @param {string} gameId - ID of the game
+   * @param {Array} playerObjects - Array of player objects with ELO
+   * @returns {Object} - Object with matchDataArray and sessionId
+   */
+  static createMatchData(matchRounds, gameId, playerObjects) {
+    try {
+      console.log('Creating match data using game ID:', gameId);
+      
+      // Use the game ID as the session ID
+      const sessionId = gameId;
+      
+      // Expected start time for the first match
+      let startTime = new Date();
+      const matchDataArray = [];
+      
+      // Helper function to get player object from name
+      const getPlayerObject = (playerName) => {
+        // First check if playerName is already an object
+        if (typeof playerName === 'object' && playerName.name) {
+          // Already an object, ensure it has all properties
+          return {
+            name: playerName.name,
+            gender: playerName.gender || 'male',
+            elo: playerName.elo || 1500,
+            openid: playerName.openid || null
+          };
+        }
+        
+        // Find the player object by name
+        const playerObject = playerObjects?.find(p => p.name === playerName);
+        
+        // If found, return a clean object with required properties
+        if (playerObject) {
+          return {
+            name: playerObject.name,
+            gender: playerObject.gender || 'male',
+            elo: playerObject.elo || 1500,
+            openid: playerObject.openid || null
+          };
+        }
+        
+        // If not found, create a default object
+        return {
+          name: playerName,
+          gender: 'male',
+          elo: 1500,
+          openid: null
+        };
+      };
+      
+      // Helper function to get player name
+      const getPlayerName = (player) => {
+        return typeof player === 'object' ? player.name : player;
+      };
+      
+      // Process each round and court
+      matchRounds.forEach((round, roundIndex) => {
+        round.courts.forEach((court, courtIndex) => {
+          // Each court has two teams (team1, team2), each team has two players
+          const team1 = court[0];
+          const team2 = court[1];
+          
+          // Get player objects for all players in the match
+          const playerA1Obj = getPlayerObject(team1[0]);
+          const playerA2Obj = getPlayerObject(team1[1]);
+          const playerB1Obj = getPlayerObject(team2[0]);
+          const playerB2Obj = getPlayerObject(team2[1]);
+          
+          // Create match object using gameId as the session ID and store complete player objects
+          const matchData = {
+            MatchId: `${sessionId}-${roundIndex + 1}-${courtIndex + 1}`, // Format: gameId-round-court
+            Round: (roundIndex + 1), // Add round number
+            Court: (courtIndex + 1).toString(),
+            // Store full player objects 
+            PlayerA1: playerA1Obj,
+            PlayerA2: playerA2Obj,
+            PlayerB1: playerB1Obj,
+            PlayerB2: playerB2Obj,
+            StartTime: new Date(startTime.getTime() + (roundIndex * 12 * 60000)), // 12 minutes per round
+          };
+          
+          matchDataArray.push(matchData);
+        });
+      });
+      
+      return { matchDataArray, sessionId };
+    } catch (error) {
+      console.error('Error creating match data:', error);
+      throw error;
+    }
+  }
+  
+  /**
+   * Mark a game as having generated matches
+   * @param {string} gameId - The ID of the game
+   * @returns {Promise<Object>} - Updated game object
+   */
+  static async markGameMatchesGenerated(gameId) {
+    this.ensureInit();
+    
+    try {
+      console.log(`Marking game ${gameId} as having generated matches`);
+        // Update the game with matchGenerated flag
+      const updateData = {
+        matchGenerated: true,
+        matchGeneratedTime: new Date(),
+        matchSessionId: gameId // Ensure matchSessionId is set to track the generated matches
+      };
+      
+      // Use updateGame method to update the game
+      const updatedGame = await this.updateGame(gameId, updateData);
+      return updatedGame;
+    } catch (error) {
+      console.error('Failed to mark game as having generated matches:', error);
+      throw error;
+    }
+  }
+  
+  /**
+   * Get matches for a specific game using the gameId
+   * @param {string} gameId - The ID of the game
+   * @returns {Promise<Array>} - Array of match objects
+   */
+  static async getMatchesForGame(gameId) {
+    this.ensureInit();
+    
+    try {
+      console.log(`Getting matches for game ${gameId}`);
+      const game = await this.getGameById(gameId);
+      if (!game) {
+        throw new Error('Game not found');
+      }
+        
+      if (!game.matchGenerated) {
+        console.log('Game does not have any generated matches');
+        return [];
+      }
+      
+      // Query matches by gameId
+      const db = wx.cloud.database();
+      const matchesResult = await db.collection('Match')
+        .where({
+          SessionId: gameId
+        })
+        .orderBy('Round', 'asc')
+        .orderBy('Court', 'asc')
+        .get();
+      
+      if (matchesResult.data.length === 0) {
+        console.log('No matches found for this game');
+        return [];
+      }
+      
+      console.log(`Found ${matchesResult.data.length} matches for game ${gameId}`);
+      return matchesResult.data;
+    } catch (error) {
+      console.error('Failed to get matches for game:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Delete matches for a specific game using the gameId
+   * @param {string} gameId - The ID of the game
+   * @returns {Promise<Object>} - Result of the delete operation
+   */
+  static async deleteMatchesForGame(gameId) {
+    this.ensureInit();
+    
+    try {
+      console.log(`Deleting matches for game ${gameId}`);
+      const game = await this.getGameById(gameId);
+      if (!game) {
+        throw new Error('Game not found');
+      }
+        
+      if (!game.matchGenerated) {
+        console.log('Game does not have any generated matches');
+        return { deleted: 0 };
+      }
+      const db = wx.cloud.database();
+      const deleteResult = await db.collection('Match')
+        .where({
+          SessionId: gameId
+        })
+        .remove();
+      
+      console.log(`Deleted ${deleteResult.stats.removed} matches for game ${gameId}`);
+      
+      // Also update the game to show matches are no longer generated
+      if (deleteResult.stats.removed > 0) {        await this.updateGame(gameId, {
+          matchGenerated: false,
+          matchGeneratedTime: null,
+          matchSessionId: null // Also remove the matchSessionId
+        });
+        console.log(`Updated game ${gameId} to show matches are no longer generated`);
+      }
+      
+      return deleteResult;
+    } catch (error) {
+      console.error('Failed to delete matches for game:', error);
       throw error;
     }
   }

@@ -46,16 +46,16 @@ App({
     // Check if user has logged in before
     this.checkAndRestoreUser();
   },
-  
-  // Check if user has logged in and restore session
+    // Check if user has logged in and restore session
   async checkAndRestoreUser() {
     try {
-      const currentUser = UserService.getCurrentUser();
-      if (currentUser) {
-        console.log('User session restored:', currentUser);
-        this.globalData.currentUser = currentUser;
+      // Try to get stored user info from storage instead of using UserService
+      const storedUserInfo = wx.getStorageSync('userInfo');
+      if (storedUserInfo) {
+        console.log('User session restored from storage:', storedUserInfo);
+        this.globalData.currentUser = storedUserInfo;
       } else {
-        console.log('No user session found');
+        console.log('No user session found in storage');
       }
     } catch (error) {
       console.error('Error checking user session:', error);

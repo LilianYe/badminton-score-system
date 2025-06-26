@@ -356,6 +356,11 @@
   color: white;
 }
 
+.view-existing {
+  background-color: #4CAF50; /* Green color for viewing existing matches */
+  color: white;
+}
+
 .isNavigating {
   opacity: 0.7;
 }

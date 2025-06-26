@@ -1,10 +1,10 @@
-Page({
-  data: {
+Page({  data: {
     game: null,
     isNavigating: false,
     isOwner: false, // New property to track if current user is the owner
     isEditing: false, // Track if we're in edit mode
     isLoading: false, // Track loading state for cloud operations
+    hasGeneratedMatches: false, // Track if game already has generated matches
     // Edit game data
     editGame: {
       title: '',
@@ -79,14 +79,15 @@ Page({
         
         if (currentUser && game.owner) {
           // Check if current user is the owner
-          isOwner = currentUser.openid === game.owner.openid;
-          console.log('Owner check:', isOwner, currentUser.openid, game.owner.openid);
+          isOwner = currentUser.Name === game.owner.nickname;
+          console.log('Owner check:', isOwner, currentUser.Name, game.owner.nickname);
         }
-        
-        // Set game data and owner status
+          // Set game data and owner status
         this.setData({ 
           game, 
           isOwner,
+          // Check if this game already has generated matches
+          hasGeneratedMatches: game.matchGenerated || false,
           // Initialize edit game data
           editGame: {
             title: game.title,
@@ -321,10 +322,9 @@ Page({
       icon: 'none'
     });
   },
-  
-  // Navigate to match generation
+    // Navigate to match generation or view existing matches
   navigateToGenerate: function() {
-    console.log('navigateToGenerate function called');
+    console.log('navigateToGenerate function called, hasGeneratedMatches:', this.data.hasGeneratedMatches);
     const { game, isOwner } = this.data;
     
     console.log('Current game:', game);
@@ -348,10 +348,9 @@ Page({
       });
       return;
     }
-    
-    // Set loading state
+      // Set loading state
     this.setData({ isNavigating: true });
-    console.log('Setting isNavigating to true');
+    console.log('Setting isNavigating to true, hasGeneratedMatches:', this.data.hasGeneratedMatches);
     
     try {
       // Store the complete player data for match generation
@@ -387,11 +386,15 @@ Page({
       console.log('Game ID for matches:', app.globalData.currentGameId);
       
       console.log('App global data after setup:', JSON.stringify(app.globalData));
+        // Determine which page to navigate to based on whether matches exist
+      const targetUrl = this.data.hasGeneratedMatches
+        ? '/pages/my-match/my-match?gameId=' + game.id  // Navigate to my-match page for viewing existing matches
+        : '/pages/generate-match/generate-match?fromSignup=true&gameId=' + game.id;  // Navigate to generate-match page for creating new matches
       
-      // Navigate to match generation page
-      console.log('Attempting to navigate to generate-match page...');
+      console.log('Navigating to: ' + targetUrl);
+      
       wx.navigateTo({
-        url: '/pages/generate-match/generate-match?fromSignup=true&gameId=' + game.id,
+        url: targetUrl,
         success: function(res) {
           console.log('Navigation successful:', res);
         },

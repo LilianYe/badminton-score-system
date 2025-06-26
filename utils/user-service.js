@@ -13,31 +13,58 @@ class UserService {
   static init() {
     return CloudDBService.init();
   }
-
   /**
    * Get current user from global app data
    * @returns {Object|null} Current user object or null
    */
   static getCurrentUser() {
     const app = getApp();
+    if (!app || !app.globalData) {
+      // App not ready yet, try to get from storage
+      try {
+        const storedUserInfo = wx.getStorageSync('userInfo');
+        return storedUserInfo || null;
+      } catch (e) {
+        console.error('Failed to get user from storage:', e);
+        return null;
+      }
+    }
     return app.globalData.currentUser || null;
   }
-
   /**
    * Set current user in global app data
    * @param {Object} user - User object to set as current
    */
   static setCurrentUser(user) {
     const app = getApp();
-    app.globalData.currentUser = user;
+    if (app && app.globalData) {
+      app.globalData.currentUser = user;
+    }
+    
+    // Also store in persistent storage
+    try {
+      wx.setStorageSync('userInfo', user);
+      console.log('User info stored in local storage');
+    } catch (e) {
+      console.error('Failed to store user info in storage:', e);
+    }
   }
 
   /**
    * Clear current user from global app data
-   */
-  static clearCurrentUser() {
+   */  static clearCurrentUser() {
     const app = getApp();
-    app.globalData.currentUser = null;
+    if (app && app.globalData) {
+      app.globalData.currentUser = null;
+    }
+    
+    // Also remove from storage
+    try {
+      wx.removeStorageSync('userInfo');
+      console.log('User info removed from local storage');
+    } catch (e) {
+      console.error('Failed to remove user info from storage:', e);
+    }
   }
 
   /**
