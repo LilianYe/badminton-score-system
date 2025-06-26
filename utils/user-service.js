@@ -132,8 +132,8 @@ class UserService {
       }
       
       // Prepare user data for database - only save required fields
+      // Note: _openid is automatically added by WeChat Cloud Database
       const userToCreate = {
-        _openid: openid,
         Name: userData.Name,
         Avatar: userData.Avatar,
         Gender: userData.Gender

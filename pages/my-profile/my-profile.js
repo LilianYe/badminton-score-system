@@ -1,17 +1,6 @@
 const app = getApp();
 const UserService = require('../../utils/user-service.js');
-
-function formatTime(dateInput) {
-    if (!dateInput) return '';
-    let d = new Date(dateInput);
-    if (isNaN(d.getTime())) return '';
-    const y = d.getFullYear();
-    const m = (d.getMonth() + 1).toString().padStart(2, '0');
-    const day = d.getDate().toString().padStart(2, '0');
-    const h = d.getHours().toString().padStart(2, '0');
-    const min = d.getMinutes().toString().padStart(2, '0');
-    return `${y}-${m}-${day} ${h}:${min}`;
-}
+const MatchService = require('../../utils/match-service.js');
 
 Page({
     data: {
@@ -41,8 +30,8 @@ Page({
             if (currentUser && currentUser.Name) {
                 console.log('Current user found:', currentUser);
                 this.setData({ currentUser });
-                this.loadMatches(currentUser.Name);
-                this.loadUserStats(currentUser.Name);
+                await this.loadMatches(currentUser.Name);
+                await this.loadUserStats(currentUser.Name);
             } else {
                 console.log('No current user found, redirecting to login');
                 wx.showToast({
@@ -75,83 +64,19 @@ Page({
 
     async loadMatches(currentUserName) {
         this.setData({ isLoading: true });
-        const db = wx.cloud.database();
-        const _ = db.command;
 
         try {
-            // Load upcoming matches (CompleteTime is null)
-            const upcomingRes = await db.collection('Match').where({
-                CompleteTime: null
-            }).orderBy('StartTime', 'asc').get();
+            // Use MatchService to get matches for current user
+            const [upcomingMatches, completedMatches] = await Promise.all([
+                MatchService.getUpcomingMatchesForUser(),
+                MatchService.getCompletedMatchesForUser()
+            ]);
 
-            const userUpcomingMatches = upcomingRes.data.filter(match => {
-                // Check if current user is in any of the player fields (now objects)
-                const playerNames = [
-                    match.PlayerNameA1?.name,
-                    match.PlayerNameA2?.name,
-                    match.PlayerNameB1?.name,
-                    match.PlayerNameB2?.name,
-                    match.RefereeName
-                ].filter(Boolean);
-                
-                return playerNames.includes(currentUserName);
-            });
-
-            const processedUpcomingMatches = userUpcomingMatches.map(match => ({
-                ...match,
-                formattedStartTime: formatTime(match.StartTime)
-            }));
-
-            // Load completed matches (CompleteTime is not null)
-            const completedRes = await db.collection('Match').where({
-                CompleteTime: _.neq(null)
-            }).orderBy('CompleteTime', 'desc').get();
-
-            const userCompletedMatches = completedRes.data.filter(match => {
-                // Check if current user is in any of the player fields (now objects)
-                const playerNames = [
-                    match.PlayerNameA1?.name,
-                    match.PlayerNameA2?.name,
-                    match.PlayerNameB1?.name,
-                    match.PlayerNameB2?.name,
-                    match.RefereeName
-                ].filter(Boolean);
-                
-                return playerNames.includes(currentUserName);
-            });
-
-            const processedCompletedMatches = userCompletedMatches.map(match => {
-                let result = '';
-                const playerNames = [
-                    match.PlayerNameA1?.name,
-                    match.PlayerNameA2?.name,
-                    match.PlayerNameB1?.name,
-                    match.PlayerNameB2?.name
-                ].filter(Boolean);
-                
-                const isPlayerA = [match.PlayerNameA1?.name, match.PlayerNameA2?.name].includes(currentUserName);
-                const isPlayerB = [match.PlayerNameB1?.name, match.PlayerNameB2?.name].includes(currentUserName);
-
-                if (isPlayerA) {
-                    result = match.ScoreA > match.ScoreB ? 'Win' : 'Loss';
-                } else if (isPlayerB) {
-                    result = match.ScoreB > match.ScoreA ? 'Win' : 'Loss';
-                } else {
-                    result = 'Referee';
-                }
-
-                return {
-                    ...match,
-                    formattedCompleteTime: formatTime(match.CompleteTime),
-                    result: result
-                };
-            });
-
-            const currentMatches = this.data.activeTab === 'upcoming' ? processedUpcomingMatches : processedCompletedMatches;
+            const currentMatches = this.data.activeTab === 'upcoming' ? upcomingMatches : completedMatches;
             
             this.setData({
-                upcomingMatches: processedUpcomingMatches,
-                completedMatches: processedCompletedMatches,
+                upcomingMatches: upcomingMatches,
+                completedMatches: completedMatches,
                 isEmpty: currentMatches.length === 0,
                 isLoading: false
             });
@@ -248,7 +173,7 @@ Page({
         
         if (isNaN(scoreA) || scoreA < 0) {
             wx.showToast({
-                title: 'Invalid Team A score',
+                title: '请输入有效的A队分数',
                 icon: 'none'
             });
             return;
@@ -256,27 +181,19 @@ Page({
         
         if (isNaN(scoreB) || scoreB < 0) {
             wx.showToast({
-                title: 'Invalid Team B score',
+                title: '请输入有效的B队分数',
                 icon: 'none'
             });
             return;
         }
         
-        // Check for equal scores (no draws in badminton)
         if (scoreA === scoreB) {
             wx.showToast({
-                title: 'Scores cannot be equal. Badminton matches must have a winner.',
+                title: '分数不能相同',
                 icon: 'none'
             });
             return;
         }
-        
-        this.setData({
-            showScoreInput: false,
-            editingMatchId: null,
-            teamAScore: '',
-            teamBScore: ''
-        });
         
         this.completeMatch(editingMatchId, scoreA, scoreB);
     },
@@ -292,43 +209,30 @@ Page({
     },
 
     async completeMatch(matchId, scoreA, scoreB) {
-        wx.showLoading({
-            title: 'Completing match...'
-        });
-
         try {
-            const result = await wx.cloud.callFunction({
-                name: 'completeMatch',
-                data: {
-                    matchId: matchId,
-                    scoreA: scoreA,
-                    scoreB: scoreB
-                }
+            // Use MatchService to update match scores
+            await MatchService.updateMatchScores(matchId, scoreA, scoreB);
+            
+            wx.showToast({
+                title: '比赛完成',
+                icon: 'success'
             });
-
-            wx.hideLoading();
-
-            if (result.result && result.result.success) {
-                wx.showToast({
-                    title: 'Match completed!',
-                    icon: 'success'
-                });
-
-                // Refresh the data
-                if (this.data.currentUser) {
-                    this.loadMatches(this.data.currentUser.Name);
-                }
-            } else {
-                wx.showToast({
-                    title: result.result?.error || 'Failed to complete match',
-                    icon: 'none'
-                });
+            
+            this.setData({
+                showScoreInput: false,
+                editingMatchId: null,
+                teamAScore: '',
+                teamBScore: ''
+            });
+            
+            // Reload matches to reflect changes
+            if (this.data.currentUser) {
+                await this.loadMatches(this.data.currentUser.Name);
             }
         } catch (error) {
-            wx.hideLoading();
             console.error('Error completing match:', error);
             wx.showToast({
-                title: 'Failed to complete match',
+                title: error.message || '完成比赛失败',
                 icon: 'none'
             });
         }
