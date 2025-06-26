@@ -138,7 +138,13 @@ Page({
 
     editScore: function(e) {
         const matchId = e.currentTarget.dataset.matchid;
+        console.log('=== EDIT SCORE DEBUG ===');
+        console.log('Raw matchId from dataset:', matchId, 'type:', typeof matchId);
+        
         const match = this.data.upcomingMatches.find(m => m.MatchId === matchId);
+        console.log('Found match:', match);
+        console.log('Available matches:', this.data.upcomingMatches.map(m => ({ MatchId: m.MatchId, _id: m._id })));
+        console.log('=== END EDIT SCORE DEBUG ===');
         
         if (match) {
             this.setData({
@@ -210,8 +216,15 @@ Page({
 
     async completeMatch(matchId, scoreA, scoreB) {
         try {
+            console.log('=== MY-PROFILE COMPLETE MATCH DEBUG ===');
+            console.log('my-profile received matchId:', matchId, 'type:', typeof matchId);
+            console.log('my-profile received scoreA:', scoreA, 'type:', typeof scoreA);
+            console.log('my-profile received scoreB:', scoreB, 'type:', typeof scoreB);
+            
             // Use MatchService to update match scores
             await MatchService.updateMatchScores(matchId, scoreA, scoreB);
+            
+            console.log('=== END MY-PROFILE COMPLETE MATCH DEBUG ===');
             
             wx.showToast({
                 title: '比赛完成',

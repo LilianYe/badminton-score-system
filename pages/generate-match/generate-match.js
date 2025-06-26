@@ -664,8 +664,8 @@ Page({
               team2 = [match.PlayerB1, match.PlayerB2];
             } else {
               // We have the old format with just names
-              team1 = [match.PlayerNameA1, match.PlayerNameA2];
-              team2 = [match.PlayerNameB1, match.PlayerNameB2];
+              team1 = [match.PlayerA1, match.PlayerA2];
+              team2 = [match.PlayerB1, match.PlayerB2];
             }
             
             roundsMap[round].courts.push([team1, team2]);
@@ -698,30 +698,30 @@ Page({
               playerMap[match.PlayerB2.name] = match.PlayerB2;
             } else {
               // Using legacy format with separate name and ELO fields
-              if (match.PlayerNameA1 && match.PlayerEloA1) {
-                playerMap[match.PlayerNameA1] = {
-                  name: match.PlayerNameA1,
+              if (match.PlayerA1 && match.PlayerEloA1) {
+                playerMap[match.PlayerA1] = {
+                  name: match.PlayerA1,
                   elo: match.PlayerEloA1,
                   gender: 'male' // Default gender if not available
                 };
               }
-              if (match.PlayerNameA2 && match.PlayerEloA2) {
-                playerMap[match.PlayerNameA2] = {
-                  name: match.PlayerNameA2,
+              if (match.PlayerA2 && match.PlayerEloA2) {
+                playerMap[match.PlayerA2] = {
+                  name: match.PlayerA2,
                   elo: match.PlayerEloA2,
                   gender: 'male'
                 };
               }
-              if (match.PlayerNameB1 && match.PlayerEloB1) {
-                playerMap[match.PlayerNameB1] = {
-                  name: match.PlayerNameB1,
+              if (match.PlayerB1 && match.PlayerEloB1) {
+                playerMap[match.PlayerB1] = {
+                  name: match.PlayerB1,
                   elo: match.PlayerEloB1,
                   gender: 'male'
                 };
               }
-              if (match.PlayerNameB2 && match.PlayerEloB2) {
-                playerMap[match.PlayerNameB2] = {
-                  name: match.PlayerNameB2,
+              if (match.PlayerB2 && match.PlayerEloB2) {
+                playerMap[match.PlayerB2] = {
+                  name: match.PlayerB2,
                   elo: match.PlayerEloB2,
                   gender: 'male'
                 };

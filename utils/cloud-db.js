@@ -502,7 +502,7 @@ class CloudDBService {
 
   /**
    * Update match scores and completion time
-   * @param {string} matchId - Match document ID
+   * @param {string} matchId - Match ID (MatchId field value)
    * @param {number} scoreA - Team A score
    * @param {number} scoreB - Team B score
    * @returns {Promise<Object>} Update result
@@ -521,7 +521,10 @@ class CloudDBService {
         updatedAt: now
       };
 
-      const result = await matchCollection.doc(matchId).update({
+      // Use where clause with MatchId field instead of doc() with _id
+      const result = await matchCollection.where({
+        MatchId: matchId
+      }).update({
         data: updateData
       });
 
@@ -534,27 +537,30 @@ class CloudDBService {
   }
 
   /**
-   * Get match by document ID
-   * @param {string} matchId - Match document ID
+   * Get match by MatchId field
+   * @param {string} matchId - Match ID (MatchId field value)
    * @returns {Promise<Object|null>} Match data or null if not found
    */
   static async getMatchById(matchId) {
     this.ensureInit();
     
     try {
-      console.log('Getting match by ID:', matchId);
+      console.log('Getting match by MatchId:', matchId);
       
-      const result = await matchCollection.doc(matchId).get();
+      // Use where clause with MatchId field instead of doc() with _id
+      const result = await matchCollection.where({
+        MatchId: matchId
+      }).get();
       
-      if (result.data) {
-        console.log('Match found:', result.data);
-        return result.data;
+      if (result.data && result.data.length > 0) {
+        console.log('Match found:', result.data[0]);
+        return result.data[0];
       }
       
-      console.log('Match not found for ID:', matchId);
+      console.log('Match not found for MatchId:', matchId);
       return null;
     } catch (error) {
-      console.error('Error getting match by ID:', error);
+      console.error('Error getting match by MatchId:', error);
       throw error;
     }
   }
@@ -858,6 +864,56 @@ class CloudDBService {
       return deleteResult;
     } catch (error) {
       console.error('Failed to delete matches for game:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get completed matches for a user by name
+   * @param {string} userName
+   * @returns {Promise<Array>} Array of completed matches for the user
+   */
+  static async getCompletedMatchesByUserName(userName) {
+    this.ensureInit();
+    try {
+      const result = await matchCollection.where({
+        CompleteTime: db.command.neq(null),
+        $or: [
+          { 'PlayerA1.name': userName },
+          { 'PlayerA2.name': userName },
+          { 'PlayerB1.name': userName },
+          { 'PlayerB2.name': userName },
+          { 'Referee.name': userName }
+        ]
+      }).orderBy('CompleteTime', 'desc').get();
+      return result.data;
+    } catch (error) {
+      console.error('Error getting completed matches by user name:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get upcoming matches for a user by name
+   * @param {string} userName
+   * @returns {Promise<Array>} Array of upcoming matches for the user
+   */
+  static async getUpcomingMatchesByUserName(userName) {
+    this.ensureInit();
+    try {
+      const result = await matchCollection.where({
+        CompleteTime: null,
+        $or: [
+          { 'PlayerA1.name': userName },
+          { 'PlayerA2.name': userName },
+          { 'PlayerB1.name': userName },
+          { 'PlayerB2.name': userName },
+          { 'Referee.name': userName }
+        ]
+      }).orderBy('StartTime', 'asc').get();
+      return result.data;
+    } catch (error) {
+      console.error('Error getting upcoming matches by user name:', error);
       throw error;
     }
   }

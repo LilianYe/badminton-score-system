@@ -88,19 +88,20 @@
                 <view wx:for="{{upcomingMatches}}" wx:key="MatchId" class="match-card">
                     <view class="match-header">
                         <text class="match-time">{{item.formattedStartTime}}</text>
+                        <text class="match-round">Round: {{item.Round}}</text>
                         <view class="match-status">Upcoming</view>
                     </view>
                     <view class="teams-container">
                         <view class="team">
-                            <text class="player-name">{{item.PlayerNameA1.name}}</text>
-                            <text wx:if="{{item.PlayerNameA2}}" class="player-name">{{item.PlayerNameA2.name}}</text>
+                            <text class="player-name">{{item.PlayerA1.name}}</text>
+                            <text wx:if="{{item.PlayerA2}}" class="player-name">{{item.PlayerA2.name}}</text>
                         </view>
                         <view class="score">
                             <text>{{item.ScoreA || 0}} - {{item.ScoreB || 0}}</text>
                         </view>
                         <view class="team">
-                            <text class="player-name">{{item.PlayerNameB1.name}}</text>
-                            <text wx:if="{{item.PlayerNameB2}}" class="player-name">{{item.PlayerNameB2.name}}</text>
+                            <text class="player-name">{{item.PlayerB1.name}}</text>
+                            <text wx:if="{{item.PlayerB2}}" class="player-name">{{item.PlayerB2.name}}</text>
                         </view>
                     </view>
                     <view class="match-footer">
@@ -115,19 +116,20 @@
                 <view wx:for="{{completedMatches}}" wx:key="MatchId" class="match-card">
                     <view class="match-header">
                         <text class="match-time">{{item.formattedCompleteTime}}</text>
+                        <text class="match-round">Round: {{item.Round}}</text>
                         <view class="result-badge {{item.result}}">{{item.result}}</view>
                     </view>
                     <view class="teams-container">
                         <view class="team">
-                            <text class="player-name">{{item.PlayerNameA1.name}}</text>
-                            <text wx:if="{{item.PlayerNameA2}}" class="player-name">{{item.PlayerNameA2.name}}</text>
+                            <text class="player-name">{{item.PlayerA1.name}}</text>
+                            <text wx:if="{{item.PlayerA2}}" class="player-name">{{item.PlayerA2.name}}</text>
                         </view>
                         <view class="score">
                             <text>{{item.ScoreA}} - {{item.ScoreB}}</text>
                         </view>
                         <view class="team">
-                            <text class="player-name">{{item.PlayerNameB1.name}}</text>
-                            <text wx:if="{{item.PlayerNameB2}}" class="player-name">{{item.PlayerNameB2.name}}</text>
+                            <text class="player-name">{{item.PlayerB1.name}}</text>
+                            <text wx:if="{{item.PlayerB2}}" class="player-name">{{item.PlayerB2.name}}</text>
                         </view>
                     </view>
                     <view class="match-footer">
