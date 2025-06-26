@@ -22,23 +22,42 @@ class MatchService {
    */
   static formatTime(dateInput) {
     if (!dateInput) return '';
+    
     let d;
+    console.log('formatTime input:', dateInput, 'type:', typeof dateInput);
+    
     if (typeof dateInput === 'string') {
       d = new Date(dateInput);
     } else if (typeof dateInput === 'number') {
       d = new Date(dateInput);
-    } else if (typeof dateInput === 'object' && dateInput.$date) {
-      d = new Date(dateInput.$date);
+    } else if (typeof dateInput === 'object') {
+      if (dateInput.$date) {
+        d = new Date(dateInput.$date);
+      } else if (dateInput instanceof Date) {
+        d = dateInput;
+      } else {
+        console.log('Unknown object format for date:', dateInput);
+        return '';
+      }
     } else {
+      console.log('Unknown date format:', dateInput);
       return '';
     }
-    if (isNaN(d.getTime())) return '';
+    
+    if (isNaN(d.getTime())) {
+      console.log('Invalid date after parsing:', d);
+      return '';
+    }
+    
     const y = d.getFullYear();
     const m = (d.getMonth() + 1).toString().padStart(2, '0');
     const day = d.getDate().toString().padStart(2, '0');
     const h = d.getHours().toString().padStart(2, '0');
     const min = d.getMinutes().toString().padStart(2, '0');
-    return `${y}-${m}-${day} ${h}:${min}`;
+    const formatted = `${y}-${m}-${day} ${h}:${min}`;
+    
+    console.log('formatted time:', formatted);
+    return formatted;
   }
 
   /**
@@ -76,17 +95,6 @@ class MatchService {
   }
 
   /**
-   * Extract player ELO change from player object
-   * @param {any} playerField - Player field (string or object)
-   * @returns {number|null} Player ELO change or null if not available
-   */
-  static getPlayerEloChange(playerField) {
-    if (!playerField) return null;
-    if (typeof playerField === 'object' && typeof playerField.eloChanged === 'number') return playerField.eloChanged;
-    return null;
-  }
-
-  /**
    * Filter matches by current user
    * @param {Array} matches - Array of match data
    * @param {string} currentUserName - Current user's name
@@ -107,9 +115,9 @@ class MatchService {
   }
 
   /**
-   * Process match data for display (add formatted times and ELO changes)
+   * Process match data for display (add formatted times and player names)
    * @param {Array} matches - Array of match data
-   * @returns {Array} Processed matches with formatted times and ELO changes
+   * @returns {Array} Processed matches with formatted times and player names
    */
   static processMatchesForDisplay(matches) {
     return matches.map(match => {
@@ -119,15 +127,12 @@ class MatchService {
         formattedCompleteTime: this.formatTime(match.CompleteTime)
       };
 
-      // Add ELO change information if available
-      if (match.CompleteTime) {
-        processedMatch.eloChanges = {
-          PlayerA1: this.getPlayerEloChange(match.PlayerA1),
-          PlayerA2: this.getPlayerEloChange(match.PlayerA2),
-          PlayerB1: this.getPlayerEloChange(match.PlayerB1),
-          PlayerB2: this.getPlayerEloChange(match.PlayerB2)
-        };
-      }
+      // Add player names for display - provide both object and name properties
+      processedMatch.PlayerNameA1 = match.PlayerA1;
+      processedMatch.PlayerNameA2 = match.PlayerA2;
+      processedMatch.PlayerNameB1 = match.PlayerB1;
+      processedMatch.PlayerNameB2 = match.PlayerB2;
+      processedMatch.RefereeName = match.Referee;
 
       return processedMatch;
     });
@@ -204,11 +209,20 @@ class MatchService {
           result = 'Referee';
         }
 
-        return {
+        const processedMatch = {
           ...match,
           formattedCompleteTime: this.formatTime(match.CompleteTime),
           result: result
         };
+
+        // Add player names for display - provide both object and name properties
+        processedMatch.PlayerNameA1 = match.PlayerA1;
+        processedMatch.PlayerNameA2 = match.PlayerA2;
+        processedMatch.PlayerNameB1 = match.PlayerB1;
+        processedMatch.PlayerNameB2 = match.PlayerB2;
+        processedMatch.RefereeName = match.Referee;
+
+        return processedMatch;
       });
       
       console.log(`Found ${processedMatches.length} completed matches for user`);
@@ -279,7 +293,7 @@ class MatchService {
   /**
    * Get player information from match for ELO calculations
    * @param {Object} match - Match object
-   * @returns {Object} Player information with names, ELOs, genders, and ELO changes
+   * @returns {Object} Player information with names, ELOs, and genders
    */
   static getMatchPlayerInfo(match) {
     return {
@@ -287,35 +301,30 @@ class MatchService {
         { 
           name: this.getPlayerName(match.PlayerA1), 
           elo: this.getPlayerElo(match.PlayerA1), 
-          gender: this.getPlayerGender(match.PlayerA1),
-          eloChanged: this.getPlayerEloChange(match.PlayerA1)
+          gender: this.getPlayerGender(match.PlayerA1)
         },
         { 
           name: this.getPlayerName(match.PlayerA2), 
           elo: this.getPlayerElo(match.PlayerA2), 
-          gender: this.getPlayerGender(match.PlayerA2),
-          eloChanged: this.getPlayerEloChange(match.PlayerA2)
+          gender: this.getPlayerGender(match.PlayerA2)
         }
       ].filter(p => p.name),
       teamBPlayers: [
         { 
           name: this.getPlayerName(match.PlayerB1), 
           elo: this.getPlayerElo(match.PlayerB1), 
-          gender: this.getPlayerGender(match.PlayerB1),
-          eloChanged: this.getPlayerEloChange(match.PlayerB1)
+          gender: this.getPlayerGender(match.PlayerB1)
         },
         { 
           name: this.getPlayerName(match.PlayerB2), 
           elo: this.getPlayerElo(match.PlayerB2), 
-          gender: this.getPlayerGender(match.PlayerB2),
-          eloChanged: this.getPlayerEloChange(match.PlayerB2)
+          gender: this.getPlayerGender(match.PlayerB2)
         }
       ].filter(p => p.name),
       referee: { 
         name: this.getPlayerName(match.Referee), 
         elo: this.getPlayerElo(match.Referee), 
-        gender: this.getPlayerGender(match.Referee),
-        eloChanged: this.getPlayerEloChange(match.Referee)
+        gender: this.getPlayerGender(match.Referee)
       }
     };
   }
