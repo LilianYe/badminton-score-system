@@ -182,10 +182,10 @@ Page({
       
       // Create player object from current user info
       const newPlayer = {
-        name: currentUser.nickname,
-        gender: currentUser.gender || 'male',
-        avatar: currentUser.avatarUrl || '/assets/icons/user.png',
-        openid: currentUser.openid,
+        name: currentUser.Name,
+        gender: currentUser.Gender || 'male',
+        avatar: currentUser.Avatar || '/assets/icons/user.png',
+        openid: currentUser._openid,
         elo: currentUser.elo || app.globalData.defaultElo || 1500
       };
       

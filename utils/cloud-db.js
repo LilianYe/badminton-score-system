@@ -59,7 +59,8 @@ class CloudDBService {
 
   /**
    * Ensure database is initialized
-   */  static ensureInit() {
+   */
+  static ensureInit() {
     if (!db || !userCollection || !gameCollection || !matchCollection) {
       console.log('Database not initialized, initializing now...');
       const initSuccess = this.init();
@@ -71,146 +72,167 @@ class CloudDBService {
     }
   }
 
+  /**************************************************************************
+   * RAW DATABASE OPERATIONS - USER PROFILE COLLECTION
+   **************************************************************************/
+
   /**
-   * Get user profile by _openid from cloud database
-   * @param {string} openid - WeChat _openid (automatically provided by WeChat Cloud Database)
-   * @returns {Promise<Object|null>} User profile or null if not found
+   * Get user by _openid from UserProfile collection
+   * @param {string} openid - WeChat _openid
+   * @returns {Promise<Object|null>} Raw user data or null if not found
    */
   static async getUserByOpenid(openid) {
     this.ensureInit();
     
+    if (!openid) {
+      console.error('Invalid openid provided (null/undefined)');
+      return null;
+    }
+    
     try {
-      console.log('Looking for user with openid:', openid);
+      console.log('Getting user by _openid:', openid);
       
-      // Try to find by _openid (automatically set by WeChat cloud)
-      let result = await userCollection.where({
+      const result = await userCollection.where({
         _openid: openid
       }).get();
       
-      // If not found, try to find by WechatId field (manually set)
-      if (!result.data || result.data.length === 0) {
-        console.log('Not found by _openid, trying WechatId field');
-        result = await userCollection.where({
-          WechatId: openid
-        }).get();
-      }
-      
-      console.log('Database query result:', result);
-      
       if (result.data && result.data.length > 0) {
-        console.log('User found in cloud database:', result.data[0]);
-        return this.mapToUserSchema(result.data[0]);
+        const user = result.data[0];
+        console.log('User found in UserProfile:', user);
+        return user;
       }
       
-      console.log('User not found in cloud database for openid:', openid);
+      console.log('User not found in UserProfile for openid:', openid);
       return null;
     } catch (error) {
-      console.error('Error getting user from cloud database:', error);
+      console.error('Error getting user by openid:', error);
       throw error;
     }
   }
 
   /**
-   * Create new user profile in cloud database
-   * @param {Object} userData - User profile data
-   * @returns {Promise<Object>} Created user profile
-   */  static async createUser(userData) {
+   * Create new user in UserProfile collection
+   * @param {Object} userData - Raw user data to insert
+   * @returns {Promise<Object>} Created user data with _id
+   */
+  static async createUser(userData) {
     this.ensureInit();
     
     try {
-      console.log('Creating user with data:', userData);
+      console.log('Creating new user in UserProfile:', userData);
       
-      // Ensure we have a valid openid/WechatId
-      if (!userData.openid) {
-        console.error('Cannot create user: missing openid');
-        throw new Error('无效的用户ID，请重新登录');
-      }
-      
-      const userToCreate = this.mapToCloudSchema(userData);
-      
-      // Make sure WechatId is set properly
-      userToCreate.WechatId = userData.openid;
-      
-      // Add additional required fields
-      userToCreate.createdAt = new Date().toISOString();
-      userToCreate.lastLoginAt = new Date().toISOString();
-      userToCreate.updatedAt = new Date().toISOString();
-      userToCreate.elo = userData.elo || 1500;
+      // Add timestamps
+      const userToCreate = {
+        ...userData,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        lastLoginAt: new Date().toISOString()
+      };
 
-      console.log('Mapped user data for cloud:', userToCreate);
+      console.log('User data for cloud insert:', userToCreate);
 
       const result = await userCollection.add({
         data: userToCreate
       });
 
-      console.log('User created in cloud database:', result);
-      
-      // Get the created user with _openid
-      const createdUser = await this.getUserByOpenid(userData.openid);
-      return createdUser;
+      console.log('User created in UserProfile:', result);
+      return result;
     } catch (error) {
-      console.error('Error creating user in cloud database:', error);
-      console.error('Error details:', {
-        message: error.message,
-        errCode: error.errCode,
-        errMsg: error.errMsg
-      });
+      console.error('Error creating user in UserProfile:', error);
       throw error;
     }
   }
 
   /**
-   * Update existing user profile in cloud database
-   * @param {string} openid - WeChat _openid (automatically provided by WeChat Cloud Database)
-   * @param {Object} updateData - Data to update
-   * @returns {Promise<Object>} Updated user profile
+   * Update existing user in UserProfile collection
+   * @param {string} openid - WeChat _openid
+   * @param {Object} updateData - Raw data to update
+   * @returns {Promise<Object>} Update result
    */
   static async updateUser(openid, updateData) {
     this.ensureInit();
     
     try {
-      console.log('Updating user with _openid:', openid);
+      console.log('Updating user in UserProfile with openid:', openid);
       console.log('Update data:', updateData);
       
-      const updateToApply = this.mapToCloudSchema(updateData);
-      updateToApply.lastLoginAt = new Date().toISOString();
-      updateToApply.updatedAt = new Date().toISOString();
-
-      console.log('Mapped update data for cloud:', updateToApply);
+      const userToUpdate = {
+        ...updateData,
+        updatedAt: new Date().toISOString()
+      };
 
       const result = await userCollection.where({
         _openid: openid
       }).update({
-        data: updateToApply
+        data: userToUpdate
       });
 
-      console.log('User updated in cloud database:', result);
-      
-      // Get the updated user data
-      const updatedUser = await this.getUserByOpenid(openid);
-      return updatedUser;
+      console.log('User updated in UserProfile:', result);
+      return result;
     } catch (error) {
-      console.error('Error updating user in cloud database:', error);
-      console.error('Error details:', {
-        message: error.message,
-        errCode: error.errCode,
-        errMsg: error.errMsg
-      });
+      console.error('Error updating user in UserProfile:', error);
       throw error;
     }
   }
 
   /**
-   * Check if nickname is unique in cloud database
-   * @param {string} nickname - Nickname to check
-   * @param {string} excludeOpenid - _openid to exclude from check (for updates)
-   * @returns {Promise<boolean>} True if nickname is unique
+   * Check if user exists by _openid in UserProfile collection
+   * @param {string} openid - WeChat _openid
+   * @returns {Promise<boolean>} True if user exists
    */
-  static async isNicknameUnique(nickname, excludeOpenid = null) {
+  static async userExists(openid) {
+    this.ensureInit();
+    
+    if (!openid) {
+      console.error('Invalid openid provided (null/undefined)');
+      return false;
+    }
+    
+    try {
+      console.log('Checking if user exists with openid:', openid);
+      
+      const result = await userCollection.where({
+        _openid: openid
+      }).get();
+      
+      const exists = result.data && result.data.length > 0;
+      console.log(`User with openid ${openid} ${exists ? 'exists' : 'does not exist'}`);
+      return exists;
+    } catch (error) {
+      console.error('Error checking if user exists:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get all users from UserProfile collection
+   * @returns {Promise<Array>} Array of raw user data
+   */
+  static async getAllUsers() {
     this.ensureInit();
     
     try {
-      console.log('Checking nickname uniqueness:', nickname);
+      console.log('Getting all users from UserProfile collection');
+      const result = await userCollection.get();
+      console.log('Retrieved all users from UserProfile:', result.data.length);
+      return result.data;
+    } catch (error) {
+      console.error('Error getting all users from UserProfile:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Check if nickname exists in UserProfile collection
+   * @param {string} nickname - Nickname to check
+   * @param {string} excludeOpenid - _openid to exclude from check (for updates)
+   * @returns {Promise<boolean>} True if nickname exists
+   */
+  static async nicknameExists(nickname, excludeOpenid = null) {
+    this.ensureInit();
+    
+    try {
+      console.log('Checking if nickname exists:', nickname);
       console.log('Exclude _openid:', excludeOpenid);
       
       let query = userCollection.where({
@@ -224,416 +246,23 @@ class CloudDBService {
       }
 
       const result = await query.get();
-      const isUnique = result.data.length === 0;
+      const exists = result.data.length > 0;
       
-      console.log(`Nickname "${nickname}" is ${isUnique ? 'unique' : 'not unique'}`);
-      console.log('Query result:', result);
-      return isUnique;
-    } catch (error) {
-      console.error('Error checking nickname uniqueness:', error);
-      console.error('Error details:', {
-        message: error.message,
-        errCode: error.errCode,
-        errMsg: error.errMsg
-      });
-      throw error;
-    }
-  }
-
-  /**
-   * Get all users from cloud database
-   * @returns {Promise<Array>} Array of all users
-   */
-  static async getAllUsers() {
-    this.ensureInit();
-    
-    try {
-      console.log('Getting all users from cloud database');
-      const result = await userCollection.get();
-      console.log('Retrieved all users from cloud database:', result.data.length);
-      console.log('Users:', result.data);
-      return result.data.map(user => this.mapToUserSchema(user));
-    } catch (error) {
-      console.error('Error getting all users from cloud database:', error);
-      console.error('Error details:', {
-        message: error.message,
-        errCode: error.errCode,
-        errMsg: error.errMsg
-      });
-      throw error;
-    }
-  }
-
-  /**
-   * Check if user exists by _openid
-   * @param {string} openid - WeChat _openid (automatically provided by WeChat Cloud Database)
-   * @returns {Promise<boolean>} True if user exists
-   */  static async userExists(openid) {
-    this.ensureInit();
-    
-    if (!openid) {
-      console.error('Invalid openid provided (null/undefined)');
-      return false;
-    }
-    
-    try {
-      console.log('Checking if user exists with openid:', openid);
-      
-      // Try to find by _openid (automatically set by WeChat cloud)
-      let result = await userCollection.where({
-        _openid: openid
-      }).get();
-      
-      // If not found, try to find by WechatId field (manually set)
-      if (!result.data || result.data.length === 0) {
-        console.log('Not found by _openid, trying WechatId field');
-        result = await userCollection.where({
-          WechatId: openid
-        }).get();
-      }
-      
-      const exists = result.data && result.data.length > 0;
-      console.log(`User with openid ${openid} ${exists ? 'exists' : 'does not exist'}`);
+      console.log(`Nickname "${nickname}" ${exists ? 'exists' : 'does not exist'}`);
       return exists;
     } catch (error) {
-      console.error('Error checking if user exists:', error);
-      return false;
-    }
-  }
-
-  /**
-   * Login or register user (creates if doesn't exist, updates if exists)
-   * @param {string} openid - WeChat _openid (automatically provided by WeChat Cloud Database)
-   * @param {Object} userData - User profile data
-   * @returns {Promise<Object>} User profile
-   */
-  static async loginOrRegisterUser(openid, userData) {
-    this.ensureInit();
-    
-    try {
-      console.log('Login/Register user with _openid:', openid);
-      console.log('User data:', userData);
-      
-      if (openid) {
-        // Try to get existing user by _openid
-        let user = await this.getUserByOpenid(openid);
-        
-        if (user) {
-          // User exists, update last login time and any new data
-          console.log('Existing user found, updating login time');
-          user = await this.updateUser(openid, {
-            lastLoginAt: new Date().toISOString(),
-            ...userData
-          });
-          return user;
-        }
-      }
-      
-      // User doesn't exist or no _openid provided, create new user
-      console.log('New user, creating profile');
-      const user = await this.createUser({
-        ...userData
-      });
-      
-      console.log('Final user object:', user);
-      return user;
-    } catch (error) {
-      console.error('Error in loginOrRegisterUser:', error);
-      console.error('Error details:', {
-        message: error.message,
-        errCode: error.errCode,
-        errMsg: error.errMsg
-      });
+      console.error('Error checking if nickname exists:', error);
       throw error;
     }
   }
 
-  /**
-   * Update user's last login time
-   * @param {string} openid - WeChat _openid (automatically provided by WeChat Cloud Database)
-   * @returns {Promise<boolean>} Success status
-   */
-  static async updateLastLogin(openid) {
-    this.ensureInit();
-    
-    try {
-      console.log('Updating last login time for user:', openid);
-      await userCollection.where({
-        _openid: openid
-      }).update({
-        data: {
-          lastLoginAt: new Date().toISOString()
-        }
-      });
-      
-      console.log('Updated last login time for user:', openid);
-      return true;
-    } catch (error) {
-      console.error('Error updating last login time:', error);
-      return false;
-    }
-  }
-
-  /**
-   * Delete user from cloud database (for testing/cleanup)
-   * @param {string} openid - WeChat _openid (automatically provided by WeChat Cloud Database)
-   * @returns {Promise<boolean>} Success status
-   */
-  static async deleteUser(openid) {
-    this.ensureInit();
-    
-    try {
-      const result = await userCollection.where({
-        _openid: openid
-      }).remove();
-      
-      console.log('User deleted from cloud database:', result);
-      return true;
-    } catch (error) {
-      console.error('Error deleting user from cloud database:', error);
-      return false;
-    }
-  }
-
-  /**
-   * Sync local storage with cloud database (for migration)
-   * @returns {Promise<boolean>} Success status
-   */
-  static async syncLocalToCloud() {
-    this.ensureInit();
-    
-    try {
-      const localUsers = wx.getStorageSync('allUsers') || [];
-      const localUserInfo = wx.getStorageSync('userInfo');
-      
-      console.log('Syncing local data to cloud database...');
-      console.log('Local users:', localUsers);
-      console.log('Local user info:', localUserInfo);
-      
-      // Sync all users
-      for (const user of localUsers) {
-        if (user.openid) {
-          await this.loginOrRegisterUser(user.openid, user);
-        }
-      }
-      
-      // Sync current user info
-      if (localUserInfo && localUserInfo.openid) {
-        await this.loginOrRegisterUser(localUserInfo.openid, localUserInfo);
-      }
-      
-      console.log('Local to cloud sync completed');
-      return true;
-    } catch (error) {
-      console.error('Error syncing local to cloud:', error);
-      return false;
-    }
-  }
-
-  /**
-   * Read all data from UserProfile collection (for debugging and verification)
-   * @returns {Promise<Array>} Array of all user profiles in cloud database
-   */
-  static async readAllUserProfiles() {
-    this.ensureInit();
-    
-    try {
-      console.log('Reading all user profiles from cloud database...');
-      
-      // Get all documents from UserProfile collection
-      const result = await userCollection.get();
-      
-      console.log('Successfully read from UserProfile collection:');
-      console.log('Total documents:', result.data.length);
-      console.log('Raw data:', result.data);
-      
-      // Map the data to our app schema for consistency
-      const mappedProfiles = result.data.map(profile => this.mapToUserSchema(profile));
-      
-      console.log('Mapped profiles:', mappedProfiles);
-      
-      return {
-        success: true,
-        count: result.data.length,
-        rawData: result.data,
-        mappedData: mappedProfiles
-      };
-    } catch (error) {
-      console.error('Error reading from UserProfile collection:', error);
-      console.error('Error details:', {
-        message: error.message,
-        errCode: error.errCode,
-        errMsg: error.errMsg
-      });
-      
-      return {
-        success: false,
-        error: error,
-        count: 0,
-        rawData: [],
-        mappedData: []
-      };
-    }
-  }
-
-  /**
-   * Read a specific user profile by _openid
-   * @param {string} openid - WeChat _openid (automatically provided by WeChat Cloud Database)
-   * @returns {Promise<Object>} User profile or null if not found
-   */
-  static async readUserProfile(openid) {
-    this.ensureInit();
-    
-    try {
-      console.log('Reading user profile for _openid:', openid);
-      
-      const result = await userCollection.where({
-        _openid: openid
-      }).get();
-      
-      console.log('Query result for _openid', openid, ':', result);
-      
-      if (result.data && result.data.length > 0) {
-        const profile = result.data[0];
-        console.log('Found user profile:', profile);
-        
-        const mappedProfile = this.mapToUserSchema(profile);
-        console.log('Mapped profile:', mappedProfile);
-        
-        return {
-          success: true,
-          found: true,
-          rawData: profile,
-          mappedData: mappedProfile
-        };
-      } else {
-        console.log('No user profile found for _openid:', openid);
-        return {
-          success: true,
-          found: false,
-          rawData: null,
-          mappedData: null
-        };
-      }
-    } catch (error) {
-      console.error('Error reading user profile:', error);
-      console.error('Error details:', {
-        message: error.message,
-        errCode: error.errCode,
-        errMsg: error.errMsg
-      });
-      
-      return {
-        success: false,
-        error: error,
-        found: false,
-        rawData: null,
-        mappedData: null
-      };
-    }
-  }
-
-  /**
-   * Test cloud database connection and permissions
-   * @returns {Promise<boolean>} True if connection is successful
-   */
-  static async testConnection() {
-    this.ensureInit();
-    
-    try {
-      console.log('Testing cloud database connection...');
-      
-      // Try to get the collection info
-      const result = await userCollection.get();
-      console.log('Connection test successful:', result);
-      
-      return true;
-    } catch (error) {
-      console.error('Connection test failed:', error);
-      console.error('Error details:', {
-        message: error.message,
-        errCode: error.errCode,
-        errMsg: error.errMsg
-      });
-      return false;
-    }
-  }
-
-  /**
-   * Map user data to cloud database schema
-   * @param {Object} userData - User data in app format
-   * @returns {Object} User data in cloud database format
-   */  static mapToCloudSchema(userData) {
-    console.log('Mapping user data to cloud schema:', userData);
-    
-    const mapped = {
-      // Critical field for user identification
-      WechatId: userData.openid || userData.WechatId,
-      
-      // User profile fields
-      Name: userData.nickname || userData.Name,
-      nickname: userData.nickname || userData.Name, // For compatibility
-      Avatar: userData.avatarUrl || userData.Avatar || '',
-      avatarUrl: userData.avatarUrl || userData.Avatar || '', // For compatibility
-      Gender: userData.gender || userData.Gender || 'male',
-      gender: userData.gender || userData.Gender || 'male', // For compatibility
-      
-      // Timestamps
-      createdAt: userData.createdAt || new Date().toISOString(),
-      lastLoginAt: userData.lastLoginAt || new Date().toISOString(),
-      updatedAt: userData.updatedAt || new Date().toISOString(),
-      
-      // Game-related fields
-      elo: userData.elo || 1500
-    };
-    
-    console.log('Mapped to cloud schema:', mapped);
-    return mapped;
-  }
-
-  /**
-   * Map cloud database data to app schema
-   * @param {Object} cloudData - User data from cloud database
-   * @returns {Object} User data in app format
-   */  static mapToUserSchema(cloudData) {
-    console.log('Mapping cloud data to user schema:', cloudData);
-    
-    const mapped = {
-      // Use WechatId as openid if _openid doesn't exist (manual creation)
-      openid: cloudData._openid || cloudData.WechatId,
-      WechatId: cloudData.WechatId || cloudData._openid,
-      
-      // User profile fields
-      nickname: cloudData.nickname || cloudData.Name,
-      Name: cloudData.Name || cloudData.nickname,
-      avatarUrl: cloudData.avatarUrl || cloudData.Avatar || '',
-      Avatar: cloudData.Avatar || cloudData.avatarUrl || '',
-      gender: cloudData.gender || cloudData.Gender || 'male',
-      Gender: cloudData.Gender || cloudData.gender || 'male',
-      
-      // Timestamps
-      createdAt: cloudData.createdAt,
-      lastLoginAt: cloudData.lastLoginAt,
-      updatedAt: cloudData.updatedAt,
-      
-      // Game-related fields
-      elo: cloudData.elo || 1500,
-      
-      // Database identifier
-      _id: cloudData._id
-    };
-    
-    console.log('Mapped to user schema:', mapped);
-    return mapped;
-  }
-  
   /**************************************************************************
-   * GAME MANAGEMENT METHODS
+   * RAW DATABASE OPERATIONS - GAME COLLECTION
    **************************************************************************/
 
   /**
-   * Get all available games from cloud database
-   * @returns {Promise<Array>} Array of game objects
+   * Get all games from cloud database
+   * @returns {Promise<Array>} Array of raw game data
    */
   static async getAllGames() {
     this.ensureInit();
@@ -648,7 +277,7 @@ class CloudDBService {
       
       if (result.data && result.data.length > 0) {
         console.log(`Found ${result.data.length} games in cloud database`);
-        return result.data.map(game => this.mapToGameSchema(game));
+        return result.data;
       }
       
       console.log('No games found in cloud database');
@@ -662,7 +291,7 @@ class CloudDBService {
   /**
    * Get a game by its ID from cloud database
    * @param {string} gameId - The ID of the game
-   * @returns {Promise<Object|null>} Game object or null if not found
+   * @returns {Promise<Object|null>} Raw game data or null if not found
    */
   static async getGameById(gameId) {
     this.ensureInit();
@@ -675,7 +304,7 @@ class CloudDBService {
         try {
           const result = await gameCollection.doc(gameId).get();
           if (result.data) {
-            return this.mapToGameSchema(result.data);
+            return result.data;
           }
         } catch (docError) {
           console.log('Not a valid document ID, will try where clause');
@@ -689,7 +318,7 @@ class CloudDBService {
       
       if (result.data && result.data.length > 0) {
         console.log('Game found in cloud database:', result.data[0]);
-        return this.mapToGameSchema(result.data[0]);
+        return result.data[0];
       }
       
       console.log('Game not found in cloud database for ID:', gameId);
@@ -702,8 +331,8 @@ class CloudDBService {
   
   /**
    * Create a new game in cloud database
-   * @param {Object} gameData - Game data
-   * @returns {Promise<Object>} Created game
+   * @param {Object} gameData - Raw game data
+   * @returns {Promise<Object>} Created game data
    */
   static async createGame(gameData) {
     this.ensureInit();
@@ -717,23 +346,21 @@ class CloudDBService {
         throw new Error('游戏信息不完整，请提供必要的信息');
       }
       
-      const gameToCreate = this.mapToCloudGameSchema(gameData);
-      
       // Add timestamps
-      gameToCreate.createdAt = new Date().toISOString();
-      gameToCreate.updatedAt = new Date().toISOString();
+      const gameToCreate = {
+        ...gameData,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
 
-      console.log('Mapped game data for cloud:', gameToCreate);
+      console.log('Game data for cloud insert:', gameToCreate);
 
       const result = await gameCollection.add({
         data: gameToCreate
       });
 
       console.log('Game created in cloud database:', result);
-      
-      // Get the created game with _id
-      const createdGame = await this.getGameById(gameData.id);
-      return createdGame;
+      return result;
     } catch (error) {
       console.error('Error creating game in cloud database:', error);
       throw error;
@@ -743,8 +370,8 @@ class CloudDBService {
   /**
    * Update an existing game in cloud database
    * @param {string} gameId - The ID of the game
-   * @param {Object} updateData - Data to update
-   * @returns {Promise<Object>} Updated game
+   * @param {Object} updateData - Raw data to update
+   * @returns {Promise<Object>} Update result
    */
   static async updateGame(gameId, updateData) {
     this.ensureInit();
@@ -769,10 +396,11 @@ class CloudDBService {
         throw new Error('游戏文档ID不存在');
       }
       
-      const updateToApply = this.mapToCloudGameSchema(updateData);
-      updateToApply.updatedAt = new Date().toISOString();
+      const updateToApply = {
+        ...updateData,
+        updatedAt: new Date().toISOString()
+      };
       
-      console.log('Updating game document with ID:', docId);
       console.log('Update to apply:', updateToApply);
       
       const result = await gameCollection.doc(docId).update({
@@ -780,10 +408,7 @@ class CloudDBService {
       });
       
       console.log('Game updated in cloud database:', result);
-      
-      // Get the updated game
-      const updatedGame = await this.getGameById(gameId);
-      return updatedGame;
+      return result;
     } catch (error) {
       console.error('Error updating game in cloud database:', error);
       throw error;
@@ -793,7 +418,7 @@ class CloudDBService {
   /**
    * Delete a game from cloud database
    * @param {string} gameId - The ID of the game
-   * @returns {Promise<boolean>} True if successful
+   * @returns {Promise<Object>} Delete result
    */
   static async deleteGame(gameId) {
     this.ensureInit();
@@ -809,7 +434,7 @@ class CloudDBService {
         throw new Error('游戏不存在');
       }
       
-      // Use cloud _id for deletion if available
+      // Use cloud _id for delete if available
       const docId = game._id;
       
       if (!docId) {
@@ -820,380 +445,50 @@ class CloudDBService {
       const result = await gameCollection.doc(docId).remove();
       
       console.log('Game deleted from cloud database:', result);
-      return result.stats.removed === 1;
+      return result;
     } catch (error) {
       console.error('Error deleting game from cloud database:', error);
       throw error;
     }
   }
-  
-  /**
-   * Add a player to a game
-   * @param {string} gameId - The ID of the game
-   * @param {Object} playerData - Player data to add
-   * @returns {Promise<Object>} Updated game
-   */
-  static async addPlayerToGame(gameId, playerData) {
-    this.ensureInit();
-    
-    try {
-      console.log('Adding player to game with ID:', gameId);
-      console.log('Player data:', playerData);
-      
-      // Find the game by ID first
-      const game = await this.getGameById(gameId);
-      
-      if (!game) {
-        console.error('Game not found for ID:', gameId);
-        throw new Error('游戏不存在');
-      }
-      
-      // Use cloud _id for update if available
-      const docId = game._id;
-      
-      if (!docId) {
-        console.error('Game has no document ID');
-        throw new Error('游戏文档ID不存在');
-      }
-      
-      // Check if player is already in the game
-      const isAlreadySignedUp = game.players.some(player => 
-        player.openid === playerData.openid
-      );
-      
-      if (isAlreadySignedUp) {
-        console.log('Player already in game:', playerData.openid);
-        throw new Error('您已经报名参加了这个活动');
-      }
-      
-      // Add player to the game
-      const updatedPlayers = game.players.concat(playerData);
-      
-      const result = await gameCollection.doc(docId).update({
-        data: {
-          players: updatedPlayers,
-          updatedAt: new Date().toISOString()
-        }
-      });
-      
-      console.log('Player added to game in cloud database:', result);
-      
-      // Get the updated game
-      const updatedGame = await this.getGameById(gameId);
-      return updatedGame;
-    } catch (error) {
-      console.error('Error adding player to game in cloud database:', error);
-      throw error;
-    }
-  }
-  
-  /**
-   * Remove a player from a game
-   * @param {string} gameId - The ID of the game
-   * @param {number} playerIndex - Index of the player in the players array
-   * @returns {Promise<Object>} Updated game
-   */
-  static async removePlayerFromGame(gameId, playerIndex) {
-    this.ensureInit();
-    
-    try {
-      console.log('Removing player from game with ID:', gameId);
-      console.log('Player index:', playerIndex);
-      
-      // Find the game by ID first
-      const game = await this.getGameById(gameId);
-      
-      if (!game) {
-        console.error('Game not found for ID:', gameId);
-        throw new Error('游戏不存在');
-      }
-      
-      // Use cloud _id for update if available
-      const docId = game._id;
-      
-      if (!docId) {
-        console.error('Game has no document ID');
-        throw new Error('游戏文档ID不存在');
-      }
-      
-      // Check if player index is valid
-      if (playerIndex < 0 || playerIndex >= game.players.length) {
-        console.error('Invalid player index:', playerIndex);
-        throw new Error('无效的球员索引');
-      }
-      
-      // Remove player from the game
-      const updatedPlayers = game.players.slice();
-      updatedPlayers.splice(playerIndex, 1);
-      
-      const result = await gameCollection.doc(docId).update({
-        data: {
-          players: updatedPlayers,
-          updatedAt: new Date().toISOString()
-        }
-      });
-      
-      console.log('Player removed from game in cloud database:', result);
-      
-      // Get the updated game
-      const updatedGame = await this.getGameById(gameId);
-      return updatedGame;
-    } catch (error) {
-      console.error('Error removing player from game in cloud database:', error);
-      throw error;
-    }
-  }
-  
-  /**
-   * Map app game schema to cloud database schema
-   * @param {Object} gameData - Game data in app format
-   * @returns {Object} Game data in cloud format
-   */
-  static mapToCloudGameSchema(gameData) {
-    console.log('Mapping game data to cloud schema:', gameData);
-    
-    const mapped = {
-      // Game identification
-      id: gameData.id,
-      
-      // Game details
-      title: gameData.title,
-      date: gameData.date,
-      time: gameData.time,
-      location: gameData.location,
-      rules: gameData.rules,
-      matchupMethod: gameData.matchupMethod,
-      maxPlayers: gameData.maxPlayers || 10,
-      courtCount: gameData.courtCount || 2,
-      status: gameData.status || '招募中',
-      
-      // Owner info
-      owner: gameData.owner,
-      
-      // Players list
-      players: gameData.players || [],
-      
-      // Timestamps
-      createdAt: gameData.createdAt || new Date().toISOString(),
-      updatedAt: gameData.updatedAt || new Date().toISOString()
-    };
-    
-    console.log('Mapped to cloud game schema:', mapped);
-    return mapped;
-  }
-  
-  /**
-   * Map cloud database game data to app schema
-   * @param {Object} cloudData - Game data from cloud database
-   * @returns {Object} Game data in app format
-   */
-  static mapToGameSchema(cloudData) {
-    console.log('Mapping cloud data to game schema:', cloudData);
-    
-    const mapped = {
-      // Preserve cloud ID for future operations
-      _id: cloudData._id,
-      
-      // Game identification
-      id: cloudData.id,
-      
-      // Game details
-      title: cloudData.title,
-      date: cloudData.date,
-      time: cloudData.time,
-      location: cloudData.location,
-      rules: cloudData.rules,
-      matchupMethod: cloudData.matchupMethod,
-      maxPlayers: cloudData.maxPlayers || 10,
-      courtCount: cloudData.courtCount || 2,
-      status: cloudData.status || '招募中',
-      
-      // Owner info
-      owner: cloudData.owner,
-      
-      // Players list
-      players: cloudData.players || [],
-      
-      // Timestamps
-      createdAt: cloudData.createdAt,
-      updatedAt: cloudData.updatedAt
-    };
-    
-    console.log('Mapped to app game schema:', mapped);
-    return mapped;
-  }
-  
+
   /**************************************************************************
-   * MATCH MANAGEMENT METHODS
+   * RAW DATABASE OPERATIONS - MATCH COLLECTION
    **************************************************************************/
 
   /**
-   * Save generated matches to the Match collection
-   * @param {Array} matchData - Array of match data objects
-   * @param {string} sessionId - ID of the session these matches belong to
-   * @returns {Promise<Array>} - Array of match insertion results
+   * Save generated matches to cloud database
+   * @param {Array} matchData - Array of raw match data
+   * @param {string} sessionId - Session identifier
+   * @returns {Promise<Object>} Insert result
    */
   static async saveGeneratedMatches(matchData, sessionId) {
     this.ensureInit();
     
     try {
-      console.log('Saving matches to database for session:', sessionId);
+      console.log('Saving generated matches to cloud database...');
+      console.log('Session ID:', sessionId);
+      console.log('Number of matches:', matchData.length);
       
-      // Prepare promises for all match insertions
-      const insertPromises = matchData.map(async (match) => {
-        // Add creation timestamp and session ID
-        const matchToInsert = {
-          ...match,
-          SessionId: sessionId,
-          CreatedTime: new Date(),
-          UpdatedTime: new Date(),
-          // Default values for required fields
-          ScoreA: 0,
-          ScoreB: 0,
-          PlayerA1ScoreChange: 0,
-          PlayerA2ScoreChange: 0,
-          PlayerB1ScoreChange: 0,
-          PlayerB2ScoreChange: 0
-        };
-        
-        try {
-          const result = await matchCollection.add({
-            data: matchToInsert
-          });
-          
-          console.log('Match added with ID:', result._id);
-          return { success: true, _id: result._id };
-        } catch (error) {
-          console.error('Failed to add match:', error);
-          return { success: false, error };
-        }
-      });
+      const matchesToInsert = matchData.map(match => ({
+        ...match,
+        sessionId: sessionId,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      }));
       
-      // Execute all promises
+      console.log('Matches to insert:', matchesToInsert);
+      
+      const insertPromises = matchesToInsert.map(match => 
+        matchCollection.add({ data: match })
+      );
+      
       const results = await Promise.all(insertPromises);
-      console.log('All matches saved:', results);
+      
+      console.log('Successfully saved matches to cloud database:', results.length);
       return results;
     } catch (error) {
-      console.error('Error saving matches:', error);
-      throw error;
-    }
-  }
-
-  /**
-   * Fetch ELO ratings for multiple players from UserPerformance collection
-   * @param {Array} playerObjects - Array of player objects with name property
-   * @returns {Promise<Array>} - Same array with elo properties added
-   */
-  static async fetchPlayerELOs(playerObjects) {
-    this.ensureInit();
-    
-    try {
-      console.log('Fetching ELO ratings for', playerObjects.length, 'players');
-      const db = wx.cloud.database();
-      
-      // Create a promise for each player's ELO fetch
-      const fetchPlayerEloPromises = playerObjects.map(player => {
-        return new Promise((resolve) => {
-          // Query UserPerformance collection by name
-          db.collection('UserPerformance')
-            .where({
-              Name: player.name
-            })
-            .get()
-            .then(res => {
-              if (res.data && res.data.length > 0) {
-                // Update player object with latest ELO
-                player.elo = res.data[0].ELO || 1500;
-                console.log(`Fetched ELO for ${player.name}: ${player.elo}`);
-              } else {
-                // Use default ELO if not found
-                player.elo = player.elo || 1500;
-                console.log(`No ELO found for ${player.name}, using default: ${player.elo}`);
-              }
-              resolve(player);
-            })
-            .catch(error => {
-              console.error(`Error fetching ELO for ${player.name}:`, error);
-              // Use default ELO in case of error
-              player.elo = player.elo || 1500;
-              resolve(player);
-            });
-        });
-      });
-      
-      // Wait for all ELO fetches to complete
-      await Promise.all(fetchPlayerEloPromises);
-      
-      return playerObjects;
-    } catch (error) {
-      console.error('Error fetching player ELOs:', error);
-      // Return the original player objects with default ELOs in case of error
-      return playerObjects.map(player => {
-        if (!player.elo) player.elo = 1500;
-        return player;
-      });
-    }
-  }
-
-  /**
-   * Create match data objects from round data
-   * @param {Array} matchRounds - Array of match round data
-   * @param {string} gameId - ID of the game
-   * @param {Array} playerObjects - Array of player objects with ELO
-   * @returns {Object} - Object with matchDataArray and sessionId
-   */
-  static createMatchData(matchRounds, gameId, playerObjects) {
-    try {
-      console.log('Creating match data using game ID:', gameId);
-      
-      // Use the game ID as the session ID
-      const sessionId = gameId;
-      
-      // Expected start time for the first match
-      let startTime = new Date();
-      const matchDataArray = [];
-      
-      // Helper function to get player ELO from the objects
-      const getPlayerElo = (playerName) => {
-        const playerObject = playerObjects?.find(p => p.name === playerName);
-        return playerObject?.elo || 1500;
-      };
-      
-      // Helper function to ensure we have player names as strings
-      const getPlayerName = (player) => {
-        return typeof player === 'object' ? player.name : player;
-      };
-      
-      // Process each round and court
-      matchRounds.forEach((round, roundIndex) => {
-        round.courts.forEach((court, courtIndex) => {
-          // Each court has two teams (team1, team2), each team has two players
-          const team1 = court[0];
-          const team2 = court[1];
-          
-          // Create match object using gameId as the session ID
-          const matchData = {
-            MatchId: `${sessionId}-${roundIndex + 1}-${courtIndex + 1}`, // Format: gameId-round-court
-            Round: (roundIndex + 1), // Add round number
-            Court: (courtIndex + 1).toString(),
-            PlayerNameA1: getPlayerName(team1[0]),
-            PlayerNameA2: getPlayerName(team1[1]),
-            PlayerNameB1: getPlayerName(team2[0]),
-            PlayerNameB2: getPlayerName(team2[1]),
-            PlayerEloA1: getPlayerElo(getPlayerName(team1[0])),
-            PlayerEloA2: getPlayerElo(getPlayerName(team1[1])),
-            PlayerEloB1: getPlayerElo(getPlayerName(team2[0])),
-            PlayerEloB2: getPlayerElo(getPlayerName(team2[1])),
-            StartTime: new Date(startTime.getTime() + (roundIndex * 12 * 60000)), // 12 minutes per round
-          };
-          
-          matchDataArray.push(matchData);
-        });
-      });
-      
-      return { matchDataArray, sessionId };
-    } catch (error) {
-      console.error('Error creating match data:', error);
+      console.error('Error saving matches to cloud database:', error);
       throw error;
     }
   }

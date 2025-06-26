@@ -43,9 +43,9 @@ Page({
   async loadCurrentUser() {
     try {
       const currentUser = await app.getCurrentUser();
-      if (currentUser && currentUser.nickname) {
+      if (currentUser && currentUser.Name) {
         this.setData({
-          username: currentUser.nickname
+          username: currentUser.Name
         });
       }
     } catch (error) {

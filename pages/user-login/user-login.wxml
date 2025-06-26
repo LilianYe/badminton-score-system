@@ -3,87 +3,44 @@
     <view class="app-title">Badminton Score System</view>
     
     <!-- Login Step -->
-    <view wx:if="{{!showNicknameConfig}}">
+    <view wx:if="{{!showRegistration}}">
       <view class="welcome-text">Welcome! Please login with WeChat to continue.</view>
       
-      <view class="avatar-section" wx:if="{{userInfo}}">
-        <image class="avatar" src="{{userInfo.avatarUrl}}" mode="aspectFill"></image>
-        <text class="nickname">{{userInfo.nickName}}</text>
-      </view>
-      
       <view class="login-section">
-        <!-- For newer WeChat versions -->
         <button 
-          wx:if="{{canIUseGetUserProfile && !hasUserInfo}}"
-          bindtap="getUserProfile" 
-          class="wechat-login-btn" 
-          type="primary"
-          loading="{{isLoading}}"
-        >
-          <text class="wechat-icon">📱</text>
-          Login with WeChat
-        </button>
-        
-        <!-- For older WeChat versions -->
-        <button 
-          wx:if="{{!canIUseGetUserProfile && !hasUserInfo}}"
-          open-type="getUserInfo" 
-          bindgetuserinfo="getUserInfo" 
-          class="wechat-login-btn" 
-          type="primary"
-          loading="{{isLoading}}"
-        >
-          <text class="wechat-icon">📱</text>
-          Login with WeChat
-        </button>
-        
-        <!-- Continue button after getting user info -->
-        <button 
-          wx:if="{{hasUserInfo}}"
           bindtap="handleWeChatLogin" 
           class="wechat-login-btn" 
           type="primary"
           loading="{{isLoading}}"
         >
-          Continue to App
-        </button>
-        
-        <!-- Test mode button for developer tools -->
-        <button 
-          wx:if="{{isDevTools && !hasUserInfo}}"
-          bindtap="testModeLogin" 
-          class="test-login-btn" 
-          type="default"
-          loading="{{isLoading}}"
-        >
-          🧪 Test Mode Login
-        </button>
-        
-        <!-- Test Login Scenarios button -->
-        <button 
-          wx:if="{{isDevTools}}"
-          bindtap="testLoginScenarios" 
-          class="test-scenarios-btn" 
-          type="default"
-          size="mini"
-        >
-          🎭 Test Login Scenarios
+          <text class="wechat-icon">📱</text>
+          Login with WeChat
         </button>
       </view>
       
       <view class="note">
         <text>We'll use your WeChat profile to personalize your badminton experience.</text>
-        <text wx:if="{{isDevTools}}" class="dev-note">\n\n💡 Dev Tools Tip: Use "Simulate" → "User Info" to test authorization</text>
       </view>
     </view>
     
-    <!-- Nickname Configuration Step -->
-    <view wx:else class="nickname-config">
+    <!-- Registration Step -->
+    <view wx:else class="registration">
       <view class="welcome-text">Welcome to Badminton Score System!</view>
-      <view class="subtitle">You can edit your nickname below or keep your WeChat name.</view>
+      <view class="subtitle">Please complete your registration to continue.</view>
       
-      <view class="avatar-section" wx:if="{{tempUserInfo}}">
-        <image class="avatar" src="{{tempUserInfo.avatarUrl}}" mode="aspectFill"></image>
+      <view class="avatar-section" wx:if="{{wechatUserInfo}}">
+        <image class="avatar" src="{{wechatUserInfo.avatarUrl}}" mode="aspectFill"></image>
+        <text class="nickname">{{wechatUserInfo.nickName}}</text>
+      </view>
+      
+      <!-- Info Source Toggle -->
+      <view class="info-source-section">
+        <text class="info-source-title">Use WeChat Information</text>
+        <switch 
+          checked="{{useWechatInfo}}" 
+          bindchange="toggleInfoSource"
+          color="#007AFF"
+        />
       </view>
       
       <!-- Nickname Input Section -->
@@ -96,6 +53,7 @@
           placeholder="Enter your nickname"
           maxlength="20"
           focus="true"
+          disabled="{{useWechatInfo}}"
         />
         
         <!-- Availability indicator -->
@@ -129,14 +87,14 @@
         </view>
       </view>
       
-      <view class="config-actions">
+      <view class="registration-actions">
         <button 
-          bindtap="handleContinue" 
-          class="continue-btn" 
+          bindtap="handleRegister" 
+          class="register-btn" 
           type="primary"
           loading="{{isLoading}}"
         >
-          Continue to App
+          Complete Registration
         </button>
       </view>
       
