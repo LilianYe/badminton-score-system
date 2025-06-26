@@ -23,7 +23,11 @@ Page({
         showScoreInput: false,
         editingMatchId: null,
         teamAScore: '',
-        teamBScore: ''
+        teamBScore: '',
+        userStats: null,
+        showStats: true,
+        sameGenderTitle: '同性统计',
+        showMatches: true
     },
 
     onShow: function() {
@@ -35,6 +39,7 @@ Page({
         if (currentUser && currentUser.nickname) {
             this.setData({ currentUser });
             this.loadMatches(currentUser.nickname);
+            this.loadUserStats(currentUser.nickname);
         } else {
             wx.showToast({
                 title: 'Please log in first',
@@ -110,8 +115,6 @@ Page({
                 } else {
                     result = 'Referee';
                 }
-                
-                if (match.ScoreA === match.ScoreB) result = 'Draw';
 
                 return {
                     ...match,
@@ -136,6 +139,43 @@ Page({
                 icon: 'none'
             });
             this.setData({ isLoading: false });
+        }
+    },
+
+    async loadUserStats(nickname) {
+        const db = wx.cloud.database();
+        function formatPercent(val) {
+            if (typeof val !== 'number' || isNaN(val)) return '0.0';
+            return (val * 100).toFixed(1);
+        }
+        try {
+            const res = await db.collection('UserPerformance').where({ Name: nickname }).get();
+            if (res.data && res.data.length > 0) {
+                const stats = res.data[0];
+                // Determine same gender title
+                let sameGenderTitle = '同性统计';
+                if (this.data.currentUser && this.data.currentUser.gender) {
+                    if (this.data.currentUser.gender === 'male') {
+                        sameGenderTitle = '男双';
+                    } else if (this.data.currentUser.gender === 'female') {
+                        sameGenderTitle = '女双';
+                    }
+                }
+                this.setData({
+                    userStats: {
+                        ...stats,
+                        winRateDisplay: formatPercent(stats.WinRate),
+                        sameGenderWinRateDisplay: formatPercent(stats.SameGenderWinRate),
+                        mixedWinRateDisplay: formatPercent(stats.MixedWinRate)
+                    },
+                    sameGenderTitle
+                });
+            } else {
+                this.setData({ userStats: null, sameGenderTitle: '同性统计' });
+            }
+        } catch (error) {
+            console.error('Failed to load user stats:', error);
+            this.setData({ userStats: null, sameGenderTitle: '同性统计' });
         }
     },
 
@@ -278,5 +318,13 @@ Page({
         } else {
             wx.stopPullDownRefresh();
         }
+    },
+
+    toggleStats: function() {
+        this.setData({ showStats: !this.data.showStats });
+    },
+
+    toggleMatches: function() {
+        this.setData({ showMatches: !this.data.showMatches });
     }
 }); 

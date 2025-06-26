@@ -2,20 +2,65 @@
     <!-- User Profile Section -->
     <view class="profile-section">
         <view class="avatar-container">
-            <image class="avatar" src="{{currentUser.avatarUrl || '/assets/icons/user.png'}}" mode="aspectFill"></image>
+            <image class="avatar" src="{{currentUser.avatarUrl || '/images/default-avatar.png'}}" mode="aspectFill"></image>
         </view>
         <view class="user-info">
             <text class="nickname">{{currentUser.nickname || 'User'}}</text>
+            <image class="gender-icon" wx:if="{{currentUser.gender === 'male'}}" src="/assets/icons/male_24dp_0000F5.png" mode="aspectFit"></image>
+            <image class="gender-icon" wx:if="{{currentUser.gender === 'female'}}" src="/assets/icons/female_24dp_EA33F7.png" mode="aspectFit"></image>
+        </view>
+    </view>
+
+    <!-- Statistics Section -->
+    <view class="stats-section">
+        <view class="stats-header" bindtap="toggleStats">
+            <text class="stats-title">个人表现</text>
+            <text class="stats-toggle-icon">{{showStats ? '▲' : '▼'}}</text>
+        </view>
+        <view wx:if="{{showStats}}" class="stats-main">
+            <view class="elo-row">
+                <text class="stats-elo-value">{{userStats.ELO || '--'}}</text>
+            </view>
+            <view class="stats-cards">
+                <view class="stats-card main-stats-card">
+                    <view class="stats-card-title">总计</view>
+                    <view class="stats-card-row">
+                        <view class="stats-card-item"><text class="stats-label">场次</text><text class="stats-value">{{userStats.Games || 0}}</text></view>
+                        <view class="stats-card-item"><text class="stats-label">胜</text><text class="stats-value">{{userStats.Wins || 0}}</text></view>
+                        <view class="stats-card-item"><text class="stats-label">负</text><text class="stats-value">{{userStats.Losses || 0}}</text></view>
+                        <view class="stats-card-item"><text class="stats-label">胜率</text><text class="stats-value">{{userStats.winRateDisplay || '0.0'}}%</text></view>
+                    </view>
+                </view>
+                <view class="stats-card same-gender-card">
+                    <view class="stats-card-title">{{sameGenderTitle}}</view>
+                    <view class="stats-card-row">
+                        <view class="stats-card-item"><text class="stats-label">场次</text><text class="stats-value">{{userStats.SameGenderGames || 0}}</text></view>
+                        <view class="stats-card-item"><text class="stats-label">胜</text><text class="stats-value">{{userStats.SameGenderWins || 0}}</text></view>
+                        <view class="stats-card-item"><text class="stats-label">负</text><text class="stats-value">{{userStats.SameGenderLosses || 0}}</text></view>
+                        <view class="stats-card-item"><text class="stats-label">胜率</text><text class="stats-value">{{userStats.sameGenderWinRateDisplay || '0.0'}}%</text></view>
+                    </view>
+                </view>
+                <view class="stats-card mixed-card">
+                    <view class="stats-card-title">混双</view>
+                    <view class="stats-card-row">
+                        <view class="stats-card-item"><text class="stats-label">场次</text><text class="stats-value">{{userStats.MixedGames || 0}}</text></view>
+                        <view class="stats-card-item"><text class="stats-label">胜</text><text class="stats-value">{{userStats.MixedWins || 0}}</text></view>
+                        <view class="stats-card-item"><text class="stats-label">负</text><text class="stats-value">{{userStats.MixedLosses || 0}}</text></view>
+                        <view class="stats-card-item"><text class="stats-label">胜率</text><text class="stats-value">{{userStats.mixedWinRateDisplay || '0.0'}}%</text></view>
+                    </view>
+                </view>
+            </view>
         </view>
     </view>
 
     <!-- Title Section -->
-    <view class="title-section">
+    <view class="title-section" bindtap="toggleMatches" style="display: flex; align-items: center; justify-content: space-between;">
         <text class="title">比赛</text>
+        <text class="stats-toggle-icon">{{showMatches ? '▲' : '▼'}}</text>
     </view>
 
     <!-- Tab Navigation -->
-    <view class="tab-navigation">
+    <view wx:if="{{showMatches}}" class="tab-navigation">
         <view class="tab-item {{activeTab === 'upcoming' ? 'active' : ''}}" 
               bindtap="switchTab" data-tab="upcoming">
             <text>待进行</text>
@@ -27,7 +72,7 @@
     </view>
 
     <!-- Content Section -->
-    <view class="content-section">
+    <view wx:if="{{showMatches}}" class="content-section">
         <view wx:if="{{isLoading}}" class="loading-container">
             <text>Loading...</text>
         </view>

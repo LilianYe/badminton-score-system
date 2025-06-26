@@ -18,7 +18,6 @@
       <text class="elo">ELO</text>
       <text class="games">Games</text>
       <text class="wins">W</text>
-      <text class="losses">L</text>
       <text class="winrate">Win%</text>
     </view>
 
@@ -36,7 +35,6 @@
       <text class="elo">{{item.ELO}}</text>
       <text class="games">{{item.totalGames}}</text>
       <text class="wins">{{item.totalWins}}</text>
-      <text class="losses">{{item.totalLosses}}</text>
       <text class="winrate">{{item.winRateDisplay}}</text>
     </view>
   </view>

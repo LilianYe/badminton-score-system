@@ -76,8 +76,8 @@
 
 .player {
   flex: 1;
-  min-width: 120rpx;
-  padding-right: 20rpx;
+  min-width: 70rpx;
+  padding-right: 6rpx;
   font-weight: 600;
   color: #212529;
 }
@@ -86,7 +86,7 @@
   width: 80rpx;
   text-align: center;
   font-weight: bold;
-  color: #007AFF;
+  color: #212529;
   font-size: 26rpx;
 }
 
@@ -98,13 +98,6 @@
 }
 
 .wins {
-  width: 50rpx;
-  text-align: center;
-  color: #495057;
-  font-weight: 500;
-}
-
-.losses {
   width: 50rpx;
   text-align: center;
   color: #495057;

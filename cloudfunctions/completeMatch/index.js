@@ -48,28 +48,46 @@ function extractPlayerInfo(match, playerName) {
 async function updatePlayerPerformance(playerName, isWinner, eloChange, isMixed) {
   try {
     // Find the player's performance record
-    const playerRes = await db.collection('UserPerformance')
+    let playerRes = await db.collection('UserPerformance')
       .where({
         Name: playerName
       })
       .get();
 
-    if (playerRes.data.length === 0) {
-      console.log(`No performance record found for player: ${playerName}`);
-      return;
+    let playerRecord = playerRes.data[0];
+    if (!playerRecord) {
+      // Insert initial record if not found
+      playerRecord = {
+        Name: playerName,
+        ELO: 1500,
+        Games: 0,
+        Wins: 0,
+        Losses: 0,
+        WinRate: 0,
+        MixedGames: 0,
+        MixedWins: 0,
+        MixedLosses: 0,
+        MixedWinRate: 0,
+        SameGenderGames: 0,
+        SameGenderWins: 0,
+        SameGenderLosses: 0,
+        SameGenderWinRate: 0,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      };
+      const addRes = await db.collection('UserPerformance').add({ data: playerRecord });
+      playerRecord._id = addRes._id;
+      console.log(`Inserted initial UserPerformance record for ${playerName}`);
     }
 
-    const playerRecord = playerRes.data[0];
     const currentELO = playerRecord.ELO || 1500;
     const currentGames = playerRecord.Games || 0;
     const currentWins = playerRecord.Wins || 0;
     const currentLosses = playerRecord.Losses || 0;
-    
     // Mixed games stats
     const currentMixedGames = playerRecord.MixedGames || 0;
     const currentMixedWins = playerRecord.MixedWins || 0;
     const currentMixedLosses = playerRecord.MixedLosses || 0;
-    
     // Same gender games stats
     const currentSameGenderGames = playerRecord.SameGenderGames || 0;
     const currentSameGenderWins = playerRecord.SameGenderWins || 0;
@@ -81,18 +99,15 @@ async function updatePlayerPerformance(playerName, isWinner, eloChange, isMixed)
     const newLosses = isWinner ? currentLosses : currentLosses + 1;
     const newELO = currentELO + eloChange;
     const newWinRate = newGames > 0 ? newWins / newGames : 0;
-    
     // Update mixed or same gender stats
     let newMixedGames = currentMixedGames;
     let newMixedWins = currentMixedWins;
     let newMixedLosses = currentMixedLosses;
     let newMixedWinRate = currentMixedGames > 0 ? currentMixedWins / currentMixedGames : 0;
-    
     let newSameGenderGames = currentSameGenderGames;
     let newSameGenderWins = currentSameGenderWins;
     let newSameGenderLosses = currentSameGenderLosses;
     let newSameGenderWinRate = currentSameGenderGames > 0 ? currentSameGenderWins / currentSameGenderGames : 0;
-    
     if (isMixed) {
       newMixedGames = currentMixedGames + 1;
       newMixedWins = isWinner ? currentMixedWins + 1 : currentMixedWins;
@@ -104,7 +119,6 @@ async function updatePlayerPerformance(playerName, isWinner, eloChange, isMixed)
       newSameGenderLosses = isWinner ? currentSameGenderLosses : currentSameGenderLosses + 1;
       newSameGenderWinRate = newSameGenderGames > 0 ? newSameGenderWins / newSameGenderGames : 0;
     }
-
     // Update the player's performance record
     await db.collection('UserPerformance').doc(playerRecord._id).update({
       data: {
@@ -124,7 +138,6 @@ async function updatePlayerPerformance(playerName, isWinner, eloChange, isMixed)
         updatedAt: new Date()
       }
     });
-
     const matchType = isMixed ? 'Mixed' : 'Same Gender';
     console.log(`Updated ${matchType} performance for ${playerName}: Games=${newGames}, Wins=${newWins}, Losses=${newLosses}, ELO=${newELO}`);
   } catch (error) {
@@ -266,4 +279,22 @@ exports.main = async (event, context) => {
       error: error.message || 'Failed to complete match'
     };
   }
-}; 
+};
+
+function formatPercent(val) {
+    if (typeof val !== 'number' || isNaN(val)) return '0.0';
+    return (val * 100).toFixed(1);
+}
+
+// In your loadUserStats function, after getting stats:
+if (res.data && res.data.length > 0) {
+    const stats = res.data[0];
+    this.setData({
+        userStats: {
+            ...stats,
+            winRateDisplay: formatPercent(stats.WinRate),
+            sameGenderWinRateDisplay: formatPercent(stats.SameGenderWinRate),
+            mixedWinRateDisplay: formatPercent(stats.MixedWinRate)
+        }
+    });
+} 
