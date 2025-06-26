@@ -29,7 +29,7 @@ function isMixedMatch(teamAPlayers, teamBPlayers, playerGenders) {
 // Extract player information from match record
 function extractPlayerInfo(match, playerName) {
   // Check all possible player fields in the match record
-  const playerFields = ['PlayerNameA1', 'PlayerNameA2', 'PlayerNameB1', 'PlayerNameB2'];
+  const playerFields = ['PlayerA1', 'PlayerA2', 'PlayerB1', 'PlayerB2'];
   
   for (const field of playerFields) {
     if (match[field] && match[field].name === playerName) {
@@ -72,8 +72,8 @@ async function updatePlayerPerformance(playerName, isWinner, eloChange, isMixed)
         SameGenderWins: 0,
         SameGenderLosses: 0,
         SameGenderWinRate: 0,
-        createdAt: new Date(),
-        updatedAt: new Date()
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
       };
       const addRes = await db.collection('UserPerformance').add({ data: playerRecord });
       playerRecord._id = addRes._id;
@@ -135,7 +135,7 @@ async function updatePlayerPerformance(playerName, isWinner, eloChange, isMixed)
         SameGenderWins: newSameGenderWins,
         SameGenderLosses: newSameGenderLosses,
         SameGenderWinRate: newSameGenderWinRate,
-        updatedAt: new Date()
+        updatedAt: new Date().toISOString()
       }
     });
     const matchType = isMixed ? 'Mixed' : 'Same Gender';
@@ -194,8 +194,8 @@ exports.main = async (event, context) => {
     const teamAWins = scoreA > scoreB;
 
     // Get all players involved
-    const teamAPlayers = [match.PlayerNameA1?.name, match.PlayerNameA2?.name].filter(Boolean);
-    const teamBPlayers = [match.PlayerNameB1?.name, match.PlayerNameB2?.name].filter(Boolean);
+    const teamAPlayers = [match.PlayerA1?.name, match.PlayerA2?.name].filter(Boolean);
+    const teamBPlayers = [match.PlayerB1?.name, match.PlayerB2?.name].filter(Boolean);
     const allPlayers = [...teamAPlayers, ...teamBPlayers];
 
     // Extract player information directly from match record
@@ -223,22 +223,9 @@ exports.main = async (event, context) => {
     const teamAELO = teamAPlayers.reduce((sum, player) => sum + playerELOs[player], 0) / teamAPlayers.length;
     const teamBELO = teamBPlayers.reduce((sum, player) => sum + playerELOs[player], 0) / teamBPlayers.length;
 
-    // Update match record
-    await db.collection('Match').where({
-      MatchId: matchId
-    }).update({
-      data: {
-        ScoreA: scoreA,
-        ScoreB: scoreB,
-        CompleteTime: new Date(),
-        updatedAt: new Date()
-      }
-    });
-
-    console.log(`Updated match ${matchId}`);
-
     // Update performance for all players
     const updatePromises = [];
+    const playerEloChanges = {};
 
     for (const playerName of allPlayers) {
       const isTeamA = teamAPlayers.includes(playerName);
@@ -249,6 +236,9 @@ exports.main = async (event, context) => {
       const playerELO = playerELOs[playerName];
       const opponentELO = isTeamA ? teamBELO : teamAELO;
       const eloChange = calculateELOChange(playerELO, opponentELO, actualResult);
+      
+      // Store ELO change for updating match record
+      playerEloChanges[playerName] = eloChange;
 
       updatePromises.push(
         updatePlayerPerformance(playerName, isWinner, eloChange, isMixed)
@@ -257,6 +247,53 @@ exports.main = async (event, context) => {
 
     // Wait for all performance updates to complete
     await Promise.all(updatePromises);
+
+    // Update match record with ELO changes
+    const matchUpdateData = {
+      ScoreA: scoreA,
+      ScoreB: scoreB,
+      CompleteTime: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+
+    // Add ELO changes to player data
+    if (match.PlayerA1 && match.PlayerA1.name && playerEloChanges[match.PlayerA1.name] !== undefined) {
+      matchUpdateData.PlayerA1 = {
+        ...match.PlayerA1,
+        eloChanged: playerEloChanges[match.PlayerA1.name]
+      };
+      console.log(`Added ELO change for ${match.PlayerA1.name}: ${playerEloChanges[match.PlayerA1.name]}`);
+    }
+    if (match.PlayerA2 && match.PlayerA2.name && playerEloChanges[match.PlayerA2.name] !== undefined) {
+      matchUpdateData.PlayerA2 = {
+        ...match.PlayerA2,
+        eloChanged: playerEloChanges[match.PlayerA2.name]
+      };
+      console.log(`Added ELO change for ${match.PlayerA2.name}: ${playerEloChanges[match.PlayerA2.name]}`);
+    }
+    if (match.PlayerB1 && match.PlayerB1.name && playerEloChanges[match.PlayerB1.name] !== undefined) {
+      matchUpdateData.PlayerB1 = {
+        ...match.PlayerB1,
+        eloChanged: playerEloChanges[match.PlayerB1.name]
+      };
+      console.log(`Added ELO change for ${match.PlayerB1.name}: ${playerEloChanges[match.PlayerB1.name]}`);
+    }
+    if (match.PlayerB2 && match.PlayerB2.name && playerEloChanges[match.PlayerB2.name] !== undefined) {
+      matchUpdateData.PlayerB2 = {
+        ...match.PlayerB2,
+        eloChanged: playerEloChanges[match.PlayerB2.name]
+      };
+      console.log(`Added ELO change for ${match.PlayerB2.name}: ${playerEloChanges[match.PlayerB2.name]}`);
+    }
+
+    console.log('Updating match record with ELO changes:', matchUpdateData);
+
+    // Update match record with scores, completion time, and ELO changes
+    await db.collection('Match').where({
+      MatchId: matchId
+    }).update({
+      data: matchUpdateData
+    });
 
     console.log(`Successfully completed match ${matchId} and updated all player performances`);
 

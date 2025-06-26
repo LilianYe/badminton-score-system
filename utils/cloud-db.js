@@ -457,6 +457,109 @@ class CloudDBService {
    **************************************************************************/
 
   /**
+   * Get upcoming matches (CompleteTime is null) from Match collection
+   * @returns {Promise<Array>} Array of raw match data
+   */
+  static async getUpcomingMatches() {
+    this.ensureInit();
+    
+    try {
+      console.log('Getting upcoming matches from Match collection...');
+      
+      const result = await matchCollection.where({
+        CompleteTime: null
+      }).orderBy('StartTime', 'asc').get();
+      
+      console.log(`Found ${result.data.length} upcoming matches`);
+      return result.data;
+    } catch (error) {
+      console.error('Error getting upcoming matches:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get completed matches (CompleteTime is not null) from Match collection
+   * @returns {Promise<Array>} Array of raw match data
+   */
+  static async getCompletedMatches() {
+    this.ensureInit();
+    
+    try {
+      console.log('Getting completed matches from Match collection...');
+      
+      const result = await matchCollection.where({
+        CompleteTime: db.command.neq(null)
+      }).orderBy('CompleteTime', 'desc').get();
+      
+      console.log(`Found ${result.data.length} completed matches`);
+      return result.data;
+    } catch (error) {
+      console.error('Error getting completed matches:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Update match scores and completion time
+   * @param {string} matchId - Match document ID
+   * @param {number} scoreA - Team A score
+   * @param {number} scoreB - Team B score
+   * @returns {Promise<Object>} Update result
+   */
+  static async updateMatchScores(matchId, scoreA, scoreB) {
+    this.ensureInit();
+    
+    try {
+      console.log('Updating match scores:', { matchId, scoreA, scoreB });
+      
+      const now = new Date().toISOString();
+      const updateData = {
+        ScoreA: Number(scoreA),
+        ScoreB: Number(scoreB),
+        CompleteTime: now,
+        updatedAt: now
+      };
+
+      const result = await matchCollection.doc(matchId).update({
+        data: updateData
+      });
+
+      console.log('Match scores updated successfully:', result);
+      return result;
+    } catch (error) {
+      console.error('Error updating match scores:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get match by document ID
+   * @param {string} matchId - Match document ID
+   * @returns {Promise<Object|null>} Match data or null if not found
+   */
+  static async getMatchById(matchId) {
+    this.ensureInit();
+    
+    try {
+      console.log('Getting match by ID:', matchId);
+      
+      const result = await matchCollection.doc(matchId).get();
+      
+      if (result.data) {
+        console.log('Match found:', result.data);
+        return result.data;
+      }
+      
+      console.log('Match not found for ID:', matchId);
+      return null;
+    } catch (error) {
+      console.error('Error getting match by ID:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Save generated matches to cloud database
    * @param {Array} matchData - Array of raw match data
    * @param {string} sessionId - Session identifier
