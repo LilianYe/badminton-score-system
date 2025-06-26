@@ -341,7 +341,7 @@ class CloudDBService {
       console.log('Creating game with data:', gameData);
       
       // Ensure we have required fields
-      if (!gameData.id || !gameData.title || !gameData.owner || !gameData.owner.openid) {
+      if (!gameData.id || !gameData.title || !gameData.owner) {
         console.error('Cannot create game: missing required fields');
         throw new Error('游戏信息不完整，请提供必要的信息');
       }

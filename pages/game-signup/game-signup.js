@@ -251,7 +251,7 @@ Page({
       const createdGame = {
         ...newGame,
         id: gameId,
-        status: '招募中',
+        status: 'active',
         players: [],
         owner: {
           Name: currentUser.Name,

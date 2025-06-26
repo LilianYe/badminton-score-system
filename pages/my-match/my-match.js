@@ -54,7 +54,7 @@ Page({
         
         if (currentUser && game.owner) {
           // Check if current user is the owner
-          isOwner = currentUser.Name === game.owner.nickname;
+          isOwner = currentUser.Name === game.owner.Name;
           console.log('Owner check:', isOwner, currentUser.Name, game.owner.nickname);
         }
         

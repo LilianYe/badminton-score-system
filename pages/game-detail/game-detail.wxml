@@ -7,7 +7,7 @@
       <!-- Owner Info Section -->
       <view class="owner-info" wx:if="{{game.owner}}">
         <image class="owner-avatar" src="{{game.owner.avatarUrl || '/assets/icons/user.png'}}" mode="aspectFill"></image>
-        <text class="owner-name">创建者: {{game.owner.nickname || 'Unknown'}}</text>
+        <text class="owner-name">创建者: {{game.owner.Name || 'Unknown'}}</text>
         <view wx:if="{{isOwner && !isEditing}}" class="owner-actions">
           <view class="edit-button" bindtap="toggleEditMode">编辑</view>
           <view class="delete-button" bindtap="deleteGame">删除</view>
