@@ -659,17 +659,53 @@ class CloudDBService {
    * @param {Array} matchRounds - Array of match round data
    * @param {string} gameId - ID of the game
    * @param {Array} playerObjects - Array of player objects with ELO
-   * @returns {Object} - Object with matchDataArray and sessionId
+   * @returns {Promise<Object>} - Object with matchDataArray and sessionId
    */
-  static createMatchData(matchRounds, gameId, playerObjects) {
+  static async createMatchData(matchRounds, gameId, playerObjects) {
     try {
       console.log('Creating match data using game ID:', gameId);
       
       // Use the game ID as the session ID
       const sessionId = gameId;
       
-      // Expected start time for the first match
-      let startTime = new Date();
+      // Fetch the game to get its date and start time
+      const game = await this.getGameById(gameId);
+      if (!game) {
+        throw new Error(`Game with ID ${gameId} not found`);
+      }
+      
+      // Extract date and start time from the game
+      const gameDate = game.date; // Format: "YYYY/MM/DD"
+      const gameStartTime = game.startTime; // Format: "HH:MM"
+      
+      console.log(`Game date: ${gameDate}, start time: ${gameStartTime}`);
+      
+      // Create a proper Date object from game date and start time
+      let startTime;
+      try {
+        if (gameDate && gameStartTime) {
+          // Format: "YYYY/MM/DD HH:MM" 
+          const dateTimeString = `${gameDate} ${gameStartTime}`;
+          startTime = new Date(dateTimeString);
+          console.log('Constructed match start time:', startTime);
+          
+          // Validate that the date is valid
+          if (isNaN(startTime.getTime())) {
+            console.error('Invalid date constructed:', startTime);
+            // Fallback to current time if date is invalid
+            startTime = new Date();
+          }
+        } else {
+          // If game date or start time is missing, use current time
+          console.warn('Game date or start time missing, using current time');
+          startTime = new Date();
+        }
+      } catch (error) {
+        console.error('Error creating start time from game date/time:', error);
+        // Fallback to current time
+        startTime = new Date();
+      }
+      
       const matchDataArray = [];
       
       // Helper function to get player object from name
@@ -680,8 +716,7 @@ class CloudDBService {
           return {
             name: playerName.name,
             gender: playerName.gender || 'male',
-            elo: playerName.elo || 1500,
-            openid: playerName.openid || null
+            elo: playerName.elo || 1500
           };
         }
         
@@ -693,8 +728,7 @@ class CloudDBService {
           return {
             name: playerObject.name,
             gender: playerObject.gender || 'male',
-            elo: playerObject.elo || 1500,
-            openid: playerObject.openid || null
+            elo: playerObject.elo || 1500
           };
         }
         
@@ -702,8 +736,7 @@ class CloudDBService {
         return {
           name: playerName,
           gender: 'male',
-          elo: 1500,
-          openid: null
+          elo: 1500
         };
       };
       
@@ -725,6 +758,9 @@ class CloudDBService {
           const playerB1Obj = getPlayerObject(team2[0]);
           const playerB2Obj = getPlayerObject(team2[1]);
           
+          // Calculate match start time - add 12 minutes per round
+          const matchStartTime = new Date(startTime.getTime() + (roundIndex * 12 * 60000));
+          
           // Create match object using gameId as the session ID and store complete player objects
           const matchData = {
             MatchId: `${sessionId}-${roundIndex + 1}-${courtIndex + 1}`, // Format: gameId-round-court
@@ -735,7 +771,7 @@ class CloudDBService {
             PlayerA2: playerA2Obj,
             PlayerB1: playerB1Obj,
             PlayerB2: playerB2Obj,
-            StartTime: new Date(startTime.getTime() + (roundIndex * 12 * 60000)), // 12 minutes per round
+            StartTime: matchStartTime.toISOString(), // Use calculated start time for each round
           };
           
           matchDataArray.push(matchData);

@@ -422,8 +422,8 @@ Page({  data: {
       editGame: {
         title: game.title,
         date: game.date,
-        startTime: game.startTime || game.time || '', // Fall back to time for backward compatibility
-        endTime: game.endTime || '', // New field
+        startTime: game.startTime,
+        endTime: game.endTime,
         location: game.location,
         rules: game.rules,
         matchupMethod: game.matchupMethod,
