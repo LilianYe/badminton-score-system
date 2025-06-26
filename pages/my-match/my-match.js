@@ -1,4 +1,5 @@
 const app = getApp();
+const UserService = require('../../utils/user-service.js');
 
 function formatTime(dateInput) {
   if (!dateInput) return '';
@@ -35,13 +36,15 @@ Page({
     this.setData({ isLoading: true });
     const db = wx.cloud.database();
     const _ = db.command;
-    const currentUser = app.globalData.userInfo;
-    if (!currentUser || !currentUser.nickname) {
-      wx.showToast({ title: 'Please log in first', icon: 'none' });
+    
+    const currentUser = UserService.getCurrentUser();
+    if (!currentUser || !currentUser.Name) {
+      wx.showToast({ title: '请先登录', icon: 'none' });
       this.setData({ isLoading: false });
       return;
     }
-    const currentUserName = currentUser.nickname;
+    const currentUserName = currentUser.Name;
+    
     try {
       const res = await db.collection('Match').where({ CompleteTime: _.eq(null) }).get();
       const matches = res.data.filter(match =>

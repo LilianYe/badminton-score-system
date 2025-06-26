@@ -1,4 +1,5 @@
 const app = getApp();
+const UserService = require('../../utils/user-service.js');
 
 function formatTime(dateInput) {
     if (!dateInput) return '';
@@ -35,17 +36,40 @@ Page({
     },
 
     async checkUserAndLoadData() {
-        const currentUser = await app.getCurrentUser();
-        if (currentUser && currentUser.nickname) {
-            this.setData({ currentUser });
-            this.loadMatches(currentUser.nickname);
-            this.loadUserStats(currentUser.nickname);
-        } else {
+        try {
+            const currentUser = UserService.getCurrentUser();
+            if (currentUser && currentUser.Name) {
+                console.log('Current user found:', currentUser);
+                this.setData({ currentUser });
+                this.loadMatches(currentUser.Name);
+                this.loadUserStats(currentUser.Name);
+            } else {
+                console.log('No current user found, redirecting to login');
+                wx.showToast({
+                    title: '请先登录',
+                    icon: 'none'
+                });
+                this.setData({ 
+                    isLoading: false, 
+                    upcomingMatches: [], 
+                    completedMatches: [], 
+                    isEmpty: true,
+                    currentUser: null 
+                });
+                
+                // Redirect to login page
+                setTimeout(() => {
+                    wx.navigateTo({
+                        url: '/pages/user-login/user-login'
+                    });
+                }, 1500);
+            }
+        } catch (error) {
+            console.error('Error checking user:', error);
             wx.showToast({
-                title: 'Please log in first',
+                title: '登录检查失败',
                 icon: 'none'
             });
-            this.setData({ isLoading: false, upcomingMatches: [], completedMatches: [], isEmpty: true });
         }
     },
 
@@ -135,7 +159,7 @@ Page({
         } catch (error) {
             console.error('Failed to load matches:', error);
             wx.showToast({
-                title: 'Failed to load matches',
+                title: '加载比赛失败',
                 icon: 'none'
             });
             this.setData({ isLoading: false });
@@ -154,10 +178,10 @@ Page({
                 const stats = res.data[0];
                 // Determine same gender title
                 let sameGenderTitle = '同性统计';
-                if (this.data.currentUser && this.data.currentUser.gender) {
-                    if (this.data.currentUser.gender === 'male') {
+                if (this.data.currentUser && this.data.currentUser.Gender) {
+                    if (this.data.currentUser.Gender === 'male') {
                         sameGenderTitle = '男双';
-                    } else if (this.data.currentUser.gender === 'female') {
+                    } else if (this.data.currentUser.Gender === 'female') {
                         sameGenderTitle = '女双';
                     }
                 }
@@ -292,7 +316,7 @@ Page({
 
                 // Refresh the data
                 if (this.data.currentUser) {
-                    this.loadMatches(this.data.currentUser.nickname);
+                    this.loadMatches(this.data.currentUser.Name);
                 }
             } else {
                 wx.showToast({
@@ -312,7 +336,7 @@ Page({
 
     onPullDownRefresh() {
         if (this.data.currentUser) {
-            this.loadMatches(this.data.currentUser.nickname).then(() => {
+            this.loadMatches(this.data.currentUser.Name).then(() => {
                 wx.stopPullDownRefresh();
             });
         } else {

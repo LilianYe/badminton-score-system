@@ -1,4 +1,5 @@
 const app = getApp();
+const UserService = require('../../utils/user-service.js');
 
 function formatTime(dateInput) {
     if (!dateInput) return '';
@@ -25,13 +26,13 @@ Page({
     },
 
     async checkUserAndLoadHistory() {
-        const currentUser = await app.getCurrentUser();
-        if (currentUser && currentUser.nickname) {
+        const currentUser = UserService.getCurrentUser();
+        if (currentUser && currentUser.Name) {
             this.setData({ currentUser });
-            this.loadCompletedMatches(currentUser.nickname);
+            this.loadCompletedMatches(currentUser.Name);
         } else {
             wx.showToast({
-                title: 'Please log in first',
+                title: '请先登录',
                 icon: 'none'
             });
             this.setData({ isLoading: false, completedMatches: [], isEmpty: true });
@@ -100,7 +101,7 @@ Page({
     },
     onPullDownRefresh() {
         if (this.data.currentUser) {
-            this.loadCompletedMatches(this.data.currentUser.nickname).then(() => {
+            this.loadCompletedMatches(this.data.currentUser.Name).then(() => {
                 wx.stopPullDownRefresh();
             });
         } else {
