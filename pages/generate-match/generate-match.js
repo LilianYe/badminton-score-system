@@ -18,14 +18,24 @@ Page({
     processedPlayers: [], // Processed player array for rendering
     playerCount: 0, // Count of players,
     matchesSaved: false, // Flag to track if matches have been saved to database
-  },
-  
-  onLoad(options) {
+  },    onLoad(options) {
     console.log('Generate Match page loaded', options);
+    
+    // Initialize Cloud DB Service at page load
+    this.CloudDBService = require('../../utils/cloud-db.js');
+    try {
+      this.CloudDBService.ensureInit();
+      console.log('Database initialized successfully at page load');
+    } catch (error) {
+      console.error('Failed to initialize database at page load:', error);
+    }
     
     // Check if we're coming from signup page
     if (options && options.fromSignup) {
-      this.setData({ fromSignup: true });
+      this.setData({ 
+        fromSignup: true,
+        gameId: options.gameId || null // Store the game ID for session tracking
+      });
       
       // Get players from global data
       const app = getApp();
@@ -169,8 +179,7 @@ Page({
       matchRounds: [],
       matchesSaved: false
     });
-    
-    const players = this.data.playersInput.split(/\r?\n/).map(s => s.trim()).filter(Boolean);
+      const players = this.data.playersInput.split(/\r?\n/).map(s => s.trim()).filter(Boolean);
     const eloThreshold = parseInt(this.data.eloThreshold) || 100;
     const teamEloDiff = parseInt(this.data.teamEloDiff) || 300;
     const gamePerPlayer = parseInt(this.data.gamePerPlayer) || 4;
@@ -180,32 +189,72 @@ Page({
       this.setData({ result: '请填写球员列表', loading: false });
       return;
     }
-    
-    if (players.length < 4) {
+      if (players.length < 4) {
       this.setData({ result: '至少需要4名球员才能生成对阵表', loading: false });
       return;
-    }      // Get player data from app.globalData
+    }
+      
+    // Check if database is ready
+    try {
+      this.CloudDBService.ensureInit();
+    } catch (error) {
+      console.error('Database not initialized:', error);
+      this.setData({ loading: false });
+      wx.showToast({
+        title: '数据库连接失败',
+        icon: 'none',
+        duration: 2000
+      });
+      return;
+    }
+      
+    // Get player data from app.globalData
     const app = getApp();
     const playerMap = {};
     
-    // Build player map with gender and elo info
+    // Build player map with gender from signupPlayerData
     if (app.globalData && app.globalData.signupPlayerData) {
       app.globalData.signupPlayerData.forEach(player => {
-        playerMap[player.name] = player;
+        playerMap[player.name] = {
+          gender: player.gender || 'male',
+          openid: player.openid || null,
+          // Will fetch ELO from UserPerformance DB
+        };
       });
     }
-      // Create player objects with gender and ELO information from playerMap
+        // First create player objects with gender
     const playerObjects = players.map(name => ({
       name: name,
       gender: playerMap[name]?.gender || 'male',
-      elo: playerMap[name]?.elo || getApp().globalData.defaultElo || 1500
+      // Use default ELO temporarily
+      elo: getApp().globalData.defaultElo || 1500
     }));
+      // Use CloudDBService to fetch ELO ratings
+    this.CloudDBService.fetchPlayerELOs(playerObjects)
+      .then(updatedPlayerObjects => {
+        console.log('All ELO ratings fetched, generating matches with updated data');
+        this.generateMatchesWithUpdatedElo(updatedPlayerObjects, courtCount, gamePerPlayer, eloThreshold, teamEloDiff);
+      })
+      .catch(error => {
+        console.error('Error fetching ELO ratings:', error);
+        // Fall back to using the data we have
+        this.generateMatchesWithUpdatedElo(playerObjects, courtCount, gamePerPlayer, eloThreshold, teamEloDiff);
+      });
+  },
+  
+  // New method to generate matches after ELO data is updated
+  generateMatchesWithUpdatedElo(playerObjects, courtCount, gamePerPlayer, eloThreshold, teamEloDiff) {
+    // Log the player ELO data for debugging
+    console.log('Generating matches with updated ELO data:');
+    playerObjects.forEach(player => {
+      console.log(`${player.name}: ELO=${player.elo}, Gender=${player.gender}`);
+    });
     
     // Use setTimeout to allow the UI to update before starting calculation
     setTimeout(() => {
       try {
         const matchResult = util.tryGenerateRotationFull(playerObjects, courtCount, gamePerPlayer, eloThreshold, teamEloDiff, 1);
-          if (!matchResult) {
+        if (!matchResult) {
           this.setData({ 
             loading: false 
           });
@@ -238,12 +287,15 @@ Page({
             courts: courts,
             rest: restPlayers
           });
-        });
-          // Save result to global data for potential sharing or history
-        getApp().globalData.lastGeneratedMatches = {
+        });        // Save result to global data for potential sharing or history
+        const app = getApp();
+        app.globalData.lastGeneratedMatches = {
           rounds: matchRounds,
           timestamp: new Date().toISOString()
         };
+        
+        // Store player objects with updated ELO in global data for later use
+        app.globalData.currentPlayerObjects = playerObjects;
         
         this.setData({ 
           matchRounds: matchRounds,
@@ -266,17 +318,15 @@ Page({
     confirmAndSaveMatches() {
     if (this.data.loading || this.data.matchesSaved || !this.data.matchRounds.length) {
       return;
-    }
+    }      this.setData({ loading: true });
     
-    this.setData({ loading: true });
+    const app = getApp();
     
-    const app = getApp();    const CloudDBService = require('../../utils/cloud-db.js');
-    
-    // Try to initialize the database with retries
+    // Ensure the database is initialized
     try {
-      CloudDBService.ensureInit();
+      this.CloudDBService.ensureInit();
     } catch (error) {
-      console.error('Failed to initialize database:', error);
+      console.error('Database not initialized:', error);
       
       wx.showModal({
         title: '数据库连接失败',
@@ -286,7 +336,7 @@ Page({
             // Try to reinitialize
             try {
               // Reinitialize
-              CloudDBService.init();
+              this.CloudDBService.init();
               // Continue with saving if successful
               setTimeout(() => this.confirmAndSaveMatches(), 500);
             } catch (retryError) {
@@ -303,44 +353,48 @@ Page({
         }
       });
       return;
+    }// Use the game ID as the session ID for this batch of matches
+    // Reuse the app instance we already have
+    const gameId = this.data.gameId || app.globalData.currentGameId;
+    
+    if (!gameId) {
+      wx.showModal({
+        title: '错误',
+        content: '找不到游戏ID，无法保存比赛',
+        showCancel: false,
+        success: () => {
+          this.setData({ loading: false });
+        }
+      });
+      return;
     }
     
-    // Generate a session ID for this batch of matches
-    const sessionId = new Date().getFullYear().toString();
-    
-    // Create match data from the matchRounds
-    const matchDataArray = [];
-    
-    // Expected start time for the first match
-    let startTime = new Date();
-      this.data.matchRounds.forEach((round, roundIndex) => {
-      round.courts.forEach((court, courtIndex) => {
-        // Each court has two teams (team1, team2), each team has two players
-        const team1 = court[0];
-        const team2 = court[1];
-        
-        // Ensure we have player names as strings (in case of player objects)
-        const getPlayerName = (player) => {
-          return typeof player === 'object' ? player.name : player;
-        };
-        
-        // Create match object
-        const matchData = {
-          MatchId: `${roundIndex + 1}-${courtIndex + 1}`, // Format: round-court
-          Court: (courtIndex + 1).toString(),
-          PlayerNameA1: getPlayerName(team1[0]),
-          PlayerNameA2: getPlayerName(team1[1]),
-          PlayerNameB1: getPlayerName(team2[0]),
-          PlayerNameB2: getPlayerName(team2[1]),
-          StartTime: new Date(startTime.getTime() + (roundIndex * 12 * 60000)), // 12 minutes per round
-          // RefereeName will be set by whoever completes the match
-        };
-        
-        matchDataArray.push(matchData);
+    console.log('Using game ID as session ID:', gameId);
+      // Use CloudDBService to create match data
+    let matchDataArray, sessionId;
+    try {
+      const result = this.CloudDBService.createMatchData(
+        this.data.matchRounds, 
+        gameId, 
+        app.globalData.currentPlayerObjects
+      );
+      
+      matchDataArray = result.matchDataArray;
+      sessionId = result.sessionId;
+    } catch (error) {
+      console.error('Failed to create match data:', error);
+      wx.showToast({
+        title: '创建比赛数据失败',
+        icon: 'none',
+        duration: 2000
       });
-    });
-      // Save matches to database
-    try {      CloudDBService.saveGeneratedMatches(matchDataArray, sessionId)
+      this.setData({ loading: false });
+      return;
+    }
+    
+    // Save matches to database
+    try {
+      this.CloudDBService.saveGeneratedMatches(matchDataArray, sessionId)
         .then(results => {
           console.log('Matches saved successfully:', results);
           

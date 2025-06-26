@@ -1078,6 +1078,125 @@ class CloudDBService {
       throw error;
     }
   }
+
+  /**
+   * Fetch ELO ratings for multiple players from UserPerformance collection
+   * @param {Array} playerObjects - Array of player objects with name property
+   * @returns {Promise<Array>} - Same array with elo properties added
+   */
+  static async fetchPlayerELOs(playerObjects) {
+    this.ensureInit();
+    
+    try {
+      console.log('Fetching ELO ratings for', playerObjects.length, 'players');
+      const db = wx.cloud.database();
+      
+      // Create a promise for each player's ELO fetch
+      const fetchPlayerEloPromises = playerObjects.map(player => {
+        return new Promise((resolve) => {
+          // Query UserPerformance collection by name
+          db.collection('UserPerformance')
+            .where({
+              Name: player.name
+            })
+            .get()
+            .then(res => {
+              if (res.data && res.data.length > 0) {
+                // Update player object with latest ELO
+                player.elo = res.data[0].ELO || 1500;
+                console.log(`Fetched ELO for ${player.name}: ${player.elo}`);
+              } else {
+                // Use default ELO if not found
+                player.elo = player.elo || 1500;
+                console.log(`No ELO found for ${player.name}, using default: ${player.elo}`);
+              }
+              resolve(player);
+            })
+            .catch(error => {
+              console.error(`Error fetching ELO for ${player.name}:`, error);
+              // Use default ELO in case of error
+              player.elo = player.elo || 1500;
+              resolve(player);
+            });
+        });
+      });
+      
+      // Wait for all ELO fetches to complete
+      await Promise.all(fetchPlayerEloPromises);
+      
+      return playerObjects;
+    } catch (error) {
+      console.error('Error fetching player ELOs:', error);
+      // Return the original player objects with default ELOs in case of error
+      return playerObjects.map(player => {
+        if (!player.elo) player.elo = 1500;
+        return player;
+      });
+    }
+  }
+
+  /**
+   * Create match data objects from round data
+   * @param {Array} matchRounds - Array of match round data
+   * @param {string} gameId - ID of the game
+   * @param {Array} playerObjects - Array of player objects with ELO
+   * @returns {Object} - Object with matchDataArray and sessionId
+   */
+  static createMatchData(matchRounds, gameId, playerObjects) {
+    try {
+      console.log('Creating match data using game ID:', gameId);
+      
+      // Use the game ID as the session ID
+      const sessionId = gameId;
+      
+      // Expected start time for the first match
+      let startTime = new Date();
+      const matchDataArray = [];
+      
+      // Helper function to get player ELO from the objects
+      const getPlayerElo = (playerName) => {
+        const playerObject = playerObjects?.find(p => p.name === playerName);
+        return playerObject?.elo || 1500;
+      };
+      
+      // Helper function to ensure we have player names as strings
+      const getPlayerName = (player) => {
+        return typeof player === 'object' ? player.name : player;
+      };
+      
+      // Process each round and court
+      matchRounds.forEach((round, roundIndex) => {
+        round.courts.forEach((court, courtIndex) => {
+          // Each court has two teams (team1, team2), each team has two players
+          const team1 = court[0];
+          const team2 = court[1];
+          
+          // Create match object using gameId as the session ID
+          const matchData = {
+            MatchId: `${sessionId}-${roundIndex + 1}-${courtIndex + 1}`, // Format: gameId-round-court
+            Round: (roundIndex + 1), // Add round number
+            Court: (courtIndex + 1).toString(),
+            PlayerNameA1: getPlayerName(team1[0]),
+            PlayerNameA2: getPlayerName(team1[1]),
+            PlayerNameB1: getPlayerName(team2[0]),
+            PlayerNameB2: getPlayerName(team2[1]),
+            PlayerEloA1: getPlayerElo(getPlayerName(team1[0])),
+            PlayerEloA2: getPlayerElo(getPlayerName(team1[1])),
+            PlayerEloB1: getPlayerElo(getPlayerName(team2[0])),
+            PlayerEloB2: getPlayerElo(getPlayerName(team2[1])),
+            StartTime: new Date(startTime.getTime() + (roundIndex * 12 * 60000)), // 12 minutes per round
+          };
+          
+          matchDataArray.push(matchData);
+        });
+      });
+      
+      return { matchDataArray, sessionId };
+    } catch (error) {
+      console.error('Error creating match data:', error);
+      throw error;
+    }
+  }
 }
 
 // Export for use in other files

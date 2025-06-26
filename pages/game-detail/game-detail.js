@@ -378,17 +378,20 @@ Page({
       });
       app.globalData.femalePlayerSet = femalePlayers;
       console.log('Female players:', femalePlayers);
-      
-      // Store court count for match generation
+        // Store court count for match generation
       app.globalData.courtCount = game.courtCount || 2;
       console.log('Court count:', app.globalData.courtCount);
+      
+      // Store game ID for match generation and session tracking
+      app.globalData.currentGameId = game.id;
+      console.log('Game ID for matches:', app.globalData.currentGameId);
       
       console.log('App global data after setup:', JSON.stringify(app.globalData));
       
       // Navigate to match generation page
       console.log('Attempting to navigate to generate-match page...');
       wx.navigateTo({
-        url: '/pages/generate-match/generate-match?fromSignup=true',
+        url: '/pages/generate-match/generate-match?fromSignup=true&gameId=' + game.id,
         success: function(res) {
           console.log('Navigation successful:', res);
         },
