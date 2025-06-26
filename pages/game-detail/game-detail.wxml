@@ -2,7 +2,7 @@
   <!-- Game Info Card -->
   <block wx:if="{{game}}">
     <view class="game-card">
-      <view class="status-badge">{{game.status || '招募中'}}</view>
+      <view class="status-badge">{{game.status}}</view>
       
       <!-- Owner Info Section -->
       <view class="owner-info" wx:if="{{game.owner}}">

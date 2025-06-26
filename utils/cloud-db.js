@@ -762,8 +762,7 @@ class CloudDBService {
         // Update the game with matchGenerated flag
       const updateData = {
         matchGenerated: true,
-        matchGeneratedTime: new Date(),
-        matchSessionId: gameId // Ensure matchSessionId is set to track the generated matches
+        matchGeneratedTime: new Date().toISOString()
       };
       
       // Use updateGame method to update the game
@@ -847,10 +846,10 @@ class CloudDBService {
       console.log(`Deleted ${deleteResult.stats.removed} matches for game ${gameId}`);
       
       // Also update the game to show matches are no longer generated
-      if (deleteResult.stats.removed > 0) {        await this.updateGame(gameId, {
+      if (deleteResult.stats.removed > 0) {        
+        await this.updateGame(gameId, {
           matchGenerated: false,
-          matchGeneratedTime: null,
-          matchSessionId: null // Also remove the matchSessionId
+          matchGeneratedTime: null
         });
         console.log(`Updated game ${gameId} to show matches are no longer generated`);
       }

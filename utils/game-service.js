@@ -171,7 +171,7 @@ class GameService {
       }
       
       // Check if game is active
-      if (game.status !== 'active') {
+      if (game.status == 'playing' || game.status == 'finished') {
         throw new Error('游戏已结束，无法加入');
       }
       
@@ -197,12 +197,27 @@ class GameService {
       // Add the player to the game
       const updatedPlayers = [...game.players, playerData];
 
-      // Update game in database
-      await CloudDBService.updateGame(gameId, {
-        players: updatedPlayers,
-        // Update playerCount for consistency
-        playerCount: updatedPlayers.length
-      });
+      // Delete any generated matches if they exist
+      if (game.status === 'matched') {
+        console.log('Deleting generated matches as a new player has been added');
+        await CloudDBService.deleteMatchesForGame(gameId);
+        
+        // Update game in database with added player, reset status, and reset match data
+        await CloudDBService.updateGame(gameId, {
+          players: updatedPlayers,
+          playerCount: updatedPlayers.length,
+          status: 'active',
+          matches: [],
+          matchGenerated: false
+        });
+      } else {
+        // If no matches were generated, just update player list
+        await CloudDBService.updateGame(gameId, {
+          players: updatedPlayers,
+          playerCount: updatedPlayers.length
+        });
+      }
+      
       // Get updated game
       const updatedGame = await this.getGameById(gameId);
       console.log('Player added successfully:', updatedGame);
@@ -230,6 +245,10 @@ class GameService {
         throw new Error('游戏不存在');
       }
       
+      if (game.status == 'playing') {
+        throw new Error('游戏正在进行中，无法移除玩家');
+      }
+
       // Check if players array exists
       if (!game.players || !Array.isArray(game.players)) {
         throw new Error('游戏玩家数据格式错误');
@@ -249,12 +268,27 @@ class GameService {
       const updatedPlayers = [...game.players];
       updatedPlayers.splice(playerIndex, 1);
       
-      // Update game in database
-      await CloudDBService.updateGame(gameId, {
-        players: updatedPlayers,
-        // Update playerCount for consistency
-        playerCount: updatedPlayers.length
-      });
+      // Delete any generated matches if they exist
+      if (game.status === 'matched') {
+        console.log('Deleting generated matches as player roster has changed');
+        await CloudDBService.deleteMatchesForGame(gameId);
+        
+        // Update game in database with removed player, reset status, and reset match data
+        await CloudDBService.updateGame(gameId, {
+          players: updatedPlayers,
+          playerCount: updatedPlayers.length,
+          status: 'active',
+          matches: [],
+          matchGenerated: false
+        });
+      } else {
+        // If no matches were generated, just update player list
+        await CloudDBService.updateGame(gameId, {
+          players: updatedPlayers,
+          playerCount: updatedPlayers.length
+        });
+      }
+      
       const updatedGame = await this.getGameById(gameId);
       console.log('Player removed successfully:', updatedGame);
       return updatedGame;
@@ -292,7 +326,7 @@ class GameService {
       // Update game with matches
       await CloudDBService.updateGame(gameId, {
         matches: matches,
-        status: 'matches_generated'
+        status: 'matched'
       });
       const updatedGame = await this.getGameById(gameId);
       console.log('Matches saved successfully:', updatedGame);
@@ -310,7 +344,7 @@ class GameService {
    */
   static isGameOwner(game) {
     const currentUser = UserService.getCurrentUser();
-    return currentUser && game.owner && game.owner.openid === currentUser._openid;
+    return currentUser && game.owner && game.owner.Name === currentUser.Name;
   }
 
   /**
@@ -323,24 +357,6 @@ class GameService {
     return `game_${timestamp}_${randomStr}`;
   }
 
-  /**
-   * Get games created by current user
-   * @returns {Promise<Array>} Array of games created by current user
-   */
-  static async getMyGames() {
-    try {
-      console.log('Getting games created by current user...');
-      
-      const allGames = await this.getAllGames();
-      const myGames = allGames.filter(game => this.isGameOwner(game));
-      
-      console.log(`Found ${myGames.length} games created by current user`);
-      return myGames;
-    } catch (error) {
-      console.error('Error getting my games:', error);
-      throw error;
-    }
-  }
 
   /**
    * Get games joined by current user
@@ -369,4 +385,4 @@ class GameService {
   }
 }
 
-module.exports = GameService; 
+module.exports = GameService;
