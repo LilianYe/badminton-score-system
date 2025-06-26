@@ -170,7 +170,7 @@ Page({  data: {
       
       // Check if current user is already signed up for this game
       const isAlreadySignedUp = game.players.some(player => 
-        player.openid === currentUser.openid
+        player.name === currentUser.Name
       );
       
       if (isAlreadySignedUp) {
@@ -180,24 +180,19 @@ Page({  data: {
         });
         return;
       }
-      
-      // Create player object from current user info
+        // Create player object from current user info
       const newPlayer = {
         name: currentUser.Name,
         gender: currentUser.Gender || 'male',
         avatar: currentUser.Avatar || '/assets/icons/user.png',
-        openid: currentUser._openid,
         elo: currentUser.elo || app.globalData.defaultElo || 1500
       };
       
-      // Import the CloudDBService
-      const CloudDBService = require('../../utils/cloud-db.js');
+      // Import the GameService
+      const GameService = require('../../utils/game-service.js');
       
-      // Ensure cloud database is initialized
-      CloudDBService.ensureInit();
-      
-      // Add player to game in cloud database
-      const updatedGame = await CloudDBService.addPlayerToGame(game.id, newPlayer);
+      // Add player to game using GameService directly
+      const updatedGame = await GameService.addPlayerToGame(game.id, newPlayer);
       
       if (updatedGame) {
         // Update local state with the updated game
@@ -233,7 +228,8 @@ Page({  data: {
       this.setData({ isLoading: false });
     }
   },
-  
+
+
   removePlayer: async function(e) {
     // Set loading state
     this.setData({ isLoading: true });
@@ -260,21 +256,24 @@ Page({  data: {
       }
       
       const playerToRemove = game.players[index];
-      
+      let updatedGame = null; // Initialize the variable here
+
       // Only allow removal if:
       // 1. User is the owner of the game, OR
       // 2. User is removing themselves
-      if (isOwner || (playerToRemove.openid === currentUser.openid)) {
-        // Import the CloudDBService
-        const CloudDBService = require('../../utils/cloud-db.js');
+      if (isOwner || (playerToRemove.name === currentUser.Name)) {
+        // Import the GameService
+        const GameService = require('../../utils/game-service.js');
+        updatedGame = await GameService.removePlayerFromGame(game.id, index);
+      } else {
+        wx.showToast({
+            title: "您没有权限移除其他球员",
+            icon: 'none'
+        });
+        return; // Add return statement to exit early
+      }
         
-        // Ensure cloud database is initialized
-        CloudDBService.ensureInit();
-        
-        // Remove player from game in cloud database
-        const updatedGame = await CloudDBService.removePlayerFromGame(game.id, index);
-        
-        if (updatedGame) {
+      if (updatedGame) {
           // Update local state with the updated game
           this.setData({
             game: updatedGame
@@ -291,18 +290,12 @@ Page({  data: {
             title: '已退出活动',
             icon: 'success'
           });
-        } else {
+      } else {
           wx.showToast({
             title: '操作失败',
             icon: 'error'
           });
-        }
-      } else {
-        wx.showToast({
-          title: '您没有权限移除其他球员',
-          icon: 'none'
-        });
-      }
+      }       
     } catch (error) {
       console.error('Error removing player from game:', error);
       wx.showToast({
@@ -322,7 +315,8 @@ Page({  data: {
       icon: 'none'
     });
   },
-    // Navigate to match generation or view existing matches
+  
+  // Navigate to match generation or view existing matches
   navigateToGenerate: function() {
     console.log('navigateToGenerate function called, hasGeneratedMatches:', this.data.hasGeneratedMatches);
     const { game, isOwner } = this.data;
@@ -504,7 +498,8 @@ Page({  data: {
       CloudDBService.ensureInit();
       
       // Update game in cloud database
-      const updatedGame = await CloudDBService.updateGame(game.id, editGame);
+      await CloudDBService.updateGame(game.id, editGame);
+      const updatedGame = await this.getGameById(game.id);
       
       if (updatedGame) {
         // Update local state

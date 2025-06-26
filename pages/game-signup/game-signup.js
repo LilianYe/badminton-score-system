@@ -254,7 +254,6 @@ Page({
         status: '招募中',
         players: [],
         owner: {
-          openid: currentUser._openid,
           Name: currentUser.Name,
           Avatar: currentUser.Avatar
         }

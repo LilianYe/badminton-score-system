@@ -122,40 +122,6 @@ class GameService {
     }
   }
 
-  /**
-   * Update game
-   * @param {string} gameId - Game ID
-   * @param {Object} updateData - Data to update
-   * @returns {Promise<Object>} Updated game object
-   */
-  static async updateGame(gameId, updateData) {
-    try {
-      console.log('Updating game with ID:', gameId);
-      console.log('Update data:', updateData);
-      
-      // Check if user is game owner
-      const game = await this.getGameById(gameId);
-      if (!game) {
-        throw new Error('游戏不存在');
-      }
-      
-      if (!this.isGameOwner(game)) {
-        throw new Error('只有游戏创建者可以修改游戏信息');
-      }
-      
-      // Update game in database
-      await CloudDBService.updateGame(gameId, updateData);
-      
-      // Get updated game
-      const updatedGame = await this.getGameById(gameId);
-      
-      console.log('Game updated successfully:', updatedGame);
-      return updatedGame;
-    } catch (error) {
-      console.error('Error updating game:', error);
-      throw error;
-    }
-  }
 
   /**
    * Delete game
@@ -188,19 +154,15 @@ class GameService {
   }
 
   /**
-   * Join game
+   * Add player to game
    * @param {string} gameId - Game ID
+   * @param {Object} playerData - Player data object
    * @returns {Promise<Object>} Updated game object
    */
-  static async joinGame(gameId) {
+  static async addPlayerToGame(gameId, playerData) {
     try {
-      console.log('Joining game with ID:', gameId);
-      
-      // Get current user
-      const currentUser = UserService.getCurrentUser();
-      if (!currentUser) {
-        throw new Error('用户未登录');
-      }
+      console.log('Adding player to game with ID:', gameId);
+      console.log('Player data:', playerData);
       
       // Get game
       const game = await this.getGameById(gameId);
@@ -213,54 +175,54 @@ class GameService {
         throw new Error('游戏已结束，无法加入');
       }
       
-      // Check if user is already in the game
-      if (game.players && game.players.some(player => player.openid === currentUser._openid)) {
-        throw new Error('您已经加入了此游戏');
+      // Initialize players array if it doesn't exist
+      if (!game.players) {
+        game.players = [];
+      } else if (!Array.isArray(game.players)) {
+        throw new Error('游戏玩家数据格式错误');
+      }
+      
+      // Check if player with same name already exists
+      const existingPlayerIndex = game.players.findIndex(p => p.name === playerData.name);
+      if (existingPlayerIndex >= 0) {
+        throw new Error('该玩家已经报名参加了这个活动');
       }
       
       // Check if game is full
-      if (game.players && game.players.length >= game.maxPlayers) {
-        throw new Error('游戏人数已满');
+      const maxPlayers = game.maxPlayers;
+      if (game.players.length >= maxPlayers) {
+        throw new Error('报名人数已满');
       }
       
-      // Add user to game
-      const playerData = {
-        openid: currentUser._openid,
-        Name: currentUser.Name,
-        Avatar: currentUser.Avatar,
-        Gender: currentUser.Gender,
-        joinedAt: new Date().toISOString()
-      };
-      
-      const updatedPlayers = game.players ? [...game.players, playerData] : [playerData];
-      
-      // Update game
-      const updatedGame = await this.updateGame(gameId, {
-        players: updatedPlayers
+      // Add the player to the game
+      const updatedPlayers = [...game.players, playerData];
+
+      // Update game in database
+      await CloudDBService.updateGame(gameId, {
+        players: updatedPlayers,
+        // Update playerCount for consistency
+        playerCount: updatedPlayers.length
       });
-      
-      console.log('Successfully joined game:', updatedGame);
+      // Get updated game
+      const updatedGame = await this.getGameById(gameId);
+      console.log('Player added successfully:', updatedGame);
       return updatedGame;
     } catch (error) {
-      console.error('Error joining game:', error);
+      console.error('Error adding player to game:', error);
       throw error;
     }
   }
 
+  
   /**
-   * Leave game
+   * Remove player from game by index
    * @param {string} gameId - Game ID
+   * @param {number} playerIndex - Index of the player in the players array
    * @returns {Promise<Object>} Updated game object
    */
-  static async leaveGame(gameId) {
+  static async removePlayerFromGame(gameId, playerIndex) {
     try {
-      console.log('Leaving game with ID:', gameId);
-      
-      // Get current user
-      const currentUser = UserService.getCurrentUser();
-      if (!currentUser) {
-        throw new Error('用户未登录');
-      }
+      console.log(`Removing player at index ${playerIndex} from game ${gameId}`);
       
       // Get game
       const game = await this.getGameById(gameId);
@@ -268,23 +230,36 @@ class GameService {
         throw new Error('游戏不存在');
       }
       
-      // Check if user is in the game
-      if (!game.players || !game.players.some(player => player.openid === currentUser._openid)) {
-        throw new Error('您未加入此游戏');
+      // Check if players array exists
+      if (!game.players || !Array.isArray(game.players)) {
+        throw new Error('游戏玩家数据格式错误');
       }
       
-      // Remove user from game
-      const updatedPlayers = game.players.filter(player => player.openid !== currentUser._openid);
+      // Check if playerIndex is valid
+      if (playerIndex < 0 || playerIndex >= game.players.length) {
+        throw new Error('玩家索引无效');
+      }
       
-      // Update game
-      const updatedGame = await this.updateGame(gameId, {
-        players: updatedPlayers
+      // Check if current user is game owner
+      if (!this.isGameOwner(game) && game.players[playerIndex].name !== UserService.getCurrentUser().Name) {
+        throw new Error('普通玩家只能移除自己');
+      }
+      
+      // Create new players array without the player at the specified index
+      const updatedPlayers = [...game.players];
+      updatedPlayers.splice(playerIndex, 1);
+      
+      // Update game in database
+      await CloudDBService.updateGame(gameId, {
+        players: updatedPlayers,
+        // Update playerCount for consistency
+        playerCount: updatedPlayers.length
       });
-      
-      console.log('Successfully left game:', updatedGame);
+      const updatedGame = await this.getGameById(gameId);
+      console.log('Player removed successfully:', updatedGame);
       return updatedGame;
     } catch (error) {
-      console.error('Error leaving game:', error);
+      console.error('Error removing player from game:', error);
       throw error;
     }
   }
@@ -315,11 +290,11 @@ class GameService {
       await CloudDBService.saveGeneratedMatches(matches, gameId);
       
       // Update game with matches
-      const updatedGame = await this.updateGame(gameId, {
+      await CloudDBService.updateGame(gameId, {
         matches: matches,
         status: 'matches_generated'
       });
-      
+      const updatedGame = await this.getGameById(gameId);
       console.log('Matches saved successfully:', updatedGame);
       return updatedGame;
     } catch (error) {

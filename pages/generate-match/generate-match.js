@@ -22,7 +22,8 @@ Page({
     gamePerPlayer: '4',
     courtCount: '2',
     result: '',    
-    loading: false,    fromSignup: false,
+    loading: false,    
+    fromSignup: false,
     fromExisting: false, // Flag to track if matches were loaded from existing data
     showAdvanced: false, // Toggle for advanced settings
     showPlayerEdit: false, // Toggle for player list editing
@@ -323,12 +324,10 @@ Page({
       app.globalData.signupPlayerData.forEach(player => {
         playerMap[player.name] = {
           gender: player.gender || 'male',
-          openid: player.openid || null,
-          // Will fetch ELO from UserPerformance DB
         };
       });
     }
-        // First create player objects with gender
+    // First create player objects with gender
     const playerObjects = players.map(name => ({
       name: name,
       gender: playerMap[name]?.gender || 'male',
