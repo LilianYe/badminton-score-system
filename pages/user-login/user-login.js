@@ -13,7 +13,8 @@ Page({
     checkingAvailability: false,
     wechatUserInfo: null,
     openid: null,
-    useWechatInfo: true
+    avatarUrl: '',
+    isEditingAvatar: false
   },
   
   onLoad: function() {
@@ -27,8 +28,8 @@ Page({
       const currentUser = UserService.getCurrentUser();
       if (currentUser) {
         console.log('User already logged in:', currentUser);
-        this.redirectToMainPage();
-        return;
+          this.redirectToMainPage();
+          return;
       }
     } catch (error) {
       console.error('Error checking existing login:', error);
@@ -42,41 +43,39 @@ Page({
     try {
       console.log('Starting WeChat login process...');
       
-      // Step 1: Get WeChat user info
-      const userInfo = await this.getWeChatUserInfo();
-      console.log('WeChat user info received:', userInfo);
-      
-      // Step 2: Get WeChat openid
+      // Step 1: Get WeChat openid for user identification
       const openid = await this.getWeChatOpenid();
       console.log('WeChat openid obtained:', openid);
       
-      // Step 3: Try to login with WeChat
+      // Step 2: Try to login with WeChat
       const loginResult = await UserService.loginWithWeChat();
       
       if (loginResult.success) {
         // Existing user - login successful
         console.log('Existing user logged in:', loginResult.user);
-        
-        wx.showToast({
+          
+          wx.showToast({
           title: '欢迎回来，' + loginResult.user.Name + '！',
-          icon: 'success'
-        });
-        
-        // Redirect to main page
-        setTimeout(() => {
-          this.redirectToMainPage();
-        }, 1500);
-      } else {
+            icon: 'success'
+          });
+          
+          // Redirect to main page
+          setTimeout(() => {
+            this.redirectToMainPage();
+          }, 1500);
+        } else {
         // New user - show registration page
         console.log('New user, showing registration page');
         
         this.setData({
           showRegistration: true,
-          wechatUserInfo: userInfo,
           openid: openid,
-          nickname: userInfo.nickName || '',
+          nickname: '',
+          avatarUrl: '',
           isLoading: false
         });
+        
+        console.log('Registration page ready for new user');
         
         wx.showToast({
           title: '欢迎新用户！',
@@ -102,28 +101,11 @@ Page({
     }
   },
   
-  // Get WeChat user info
-  async getWeChatUserInfo() {
-    return new Promise((resolve, reject) => {
-      wx.getUserProfile({
-        desc: '用于完善用户资料',
-        success: (res) => {
-          console.log('getUserProfile success:', res);
-          resolve(res.userInfo);
-        },
-        fail: (err) => {
-          console.error('getUserProfile failed:', err);
-          reject(err);
-        }
-      });
-    });
-  },
-  
   // Get WeChat openid
   async getWeChatOpenid() {
     return new Promise((resolve, reject) => {
       wx.login({
-        success: (res) => {
+      success: (res) => {
           console.log('wx.login success:', res);
           if (res.code) {
             // Call cloud function to get openid
@@ -135,7 +117,7 @@ Page({
                   const openid = result.result.openid;
                   console.log('WeChat openid obtained:', openid);
                   resolve(openid);
-                } else {
+    } else {
                   console.error('Cloud function returned error:', result.result);
                   reject(new Error('Failed to get openid from cloud function'));
                 }
@@ -213,23 +195,21 @@ Page({
     }, 500); // 500ms delay
   },
   
-  // Toggle between WeChat info and custom info
-  toggleInfoSource: function() {
-    const useWechatInfo = !this.data.useWechatInfo;
-    this.setData({
-      useWechatInfo: useWechatInfo,
-      nickname: useWechatInfo ? (this.data.wechatUserInfo?.nickName || '') : this.data.nickname
-    });
-  },
-  
   // Handle registration button click
   async handleRegister() {
-    const { nickname, gender, wechatUserInfo, openid, useWechatInfo } = this.data;
+    const { nickname, gender, openid, avatarUrl } = this.data;
     
     // Validate input
     if (!nickname.trim()) {
       wx.showToast({
         title: '请输入昵称',
+        icon: 'none'
+      });
+      return;
+    }
+    if (!avatarUrl) {
+      wx.showToast({
+        title: '请上传头像',
         icon: 'none'
       });
       return;
@@ -253,7 +233,7 @@ Page({
       // Prepare user data
       const userData = {
         Name: nickname.trim(),
-        Avatar: useWechatInfo ? wechatUserInfo.avatarUrl : wechatUserInfo.avatarUrl, // For now, always use WeChat avatar
+        Avatar: avatarUrl,
         Gender: gender
       };
       
@@ -281,6 +261,80 @@ Page({
       wx.showToast({
         title: error.message || '注册失败',
         icon: 'none'
+      });
+    }
+  },
+  
+  // Handle avatar selection
+  async chooseAvatar() {
+    try {
+      const res = await wx.chooseImage({
+        count: 1,
+        sizeType: ['compressed'],
+        sourceType: ['album', 'camera']
+      });
+      
+      if (res.tempFilePaths && res.tempFilePaths.length > 0) {
+        const tempFilePath = res.tempFilePaths[0];
+        
+        // Upload to cloud storage
+        wx.showLoading({ title: '上传中...' });
+        
+        const cloudPath = `avatars/${this.data.openid}_${Date.now()}.jpg`;
+        const uploadRes = await wx.cloud.uploadFile({
+          cloudPath: cloudPath,
+          filePath: tempFilePath
+        });
+        
+        wx.hideLoading();
+        
+        if (uploadRes.fileID) {
+          this.setData({
+            avatarUrl: uploadRes.fileID,
+            isEditingAvatar: false
+          });
+          
+          wx.showToast({
+            title: '头像上传成功',
+            icon: 'success'
+          });
+        } else {
+          throw new Error('Upload failed');
+        }
+      }
+    } catch (error) {
+      wx.hideLoading();
+      console.error('Avatar selection failed:', error);
+      wx.showToast({
+        title: '头像选择失败',
+        icon: 'none'
+      });
+    }
+  },
+
+  // Toggle avatar editing
+  toggleAvatarEdit() {
+    this.setData({
+      isEditingAvatar: !this.data.isEditingAvatar
+    });
+  },
+
+  // Handle avatar load success
+  onAvatarLoad(e) {
+    console.log('Avatar loaded successfully:', e.detail);
+  },
+
+  // Handle avatar load error
+  onAvatarError(e) {
+    console.error('Avatar failed to load:', e.detail);
+    console.log('Current avatar URL:', this.data.avatarUrl);
+    console.log('WeChat avatar URL:', this.data.wechatUserInfo?.avatarUrl);
+    
+    // Set a fallback avatar if the WeChat avatar fails to load
+    if (!this.data.avatarUrl && this.data.wechatUserInfo?.avatarUrl) {
+      console.log('Setting fallback avatar due to load error');
+      this.setData({
+        avatarUrl: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgdmlld0JveD0iMCAwIDEwMCAxMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIxMDAiIGhlaWdodD0iMTAwIiBmaWxsPSIjRjBGMEYwIi8+CjxjaXJjbGUgY3g9IjUwIiBjeT0iMzUiIHI9IjE1IiBmaWxsPSIjQ0NDIi8+CjxwYXRoIGQ9Ik0yMCA3NUMyMCA2NS4wNTc2IDI4LjA1NzYgNTcgMzggNTdINjJDNzEuOTQyNCA1NyA4MCA2NS4wNTc2IDgwIDc1VjgwSDIwVjc1WiIgZmlsbD0iI0NDQyIvPgo8L3N2Zz4K'
       });
     }
   },

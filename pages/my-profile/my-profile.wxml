@@ -74,12 +74,12 @@
     <!-- Content Section -->
     <view wx:if="{{showMatches}}" class="content-section">
         <view wx:if="{{isLoading}}" class="loading-container">
-            <text>Loading...</text>
+            <text>加载中...</text>
         </view>
         
         <view wx:elif="{{isEmpty}}" class="empty-container">
-            <text wx:if="{{activeTab === 'upcoming'}}">No upcoming matches</text>
-            <text wx:else>No completed matches</text>
+            <text wx:if="{{activeTab === 'upcoming'}}">没有待进行的比赛</text>
+            <text wx:else>没有已完成的比赛，请继续加油</text>
         </view>
         
         <block wx:else>
@@ -88,19 +88,36 @@
                 <view wx:for="{{upcomingMatches}}" wx:key="MatchId" class="match-card">
                     <view class="match-header">
                         <text class="match-time">{{item.formattedStartTime}}</text>
+                        <text class="match-round">Round: {{item.Round}}</text>
                         <view class="match-status">Upcoming</view>
                     </view>
                     <view class="teams-container">
                         <view class="team">
-                            <text class="player-name">{{item.PlayerNameA1.name}}</text>
-                            <text wx:if="{{item.PlayerNameA2}}" class="player-name">{{item.PlayerNameA2.name}}</text>
+                            <view class="player-row">
+                                <text class="player-name">{{item.PlayerA1.name}}</text>
+                                <image wx:if="{{item.PlayerA1.gender === 'male'}}" class="gender-icon-small" src="/assets/icons/male_24dp_0000F5.png" mode="aspectFit"></image>
+                                <image wx:if="{{item.PlayerA1.gender === 'female'}}" class="gender-icon-small" src="/assets/icons/female_24dp_EA33F7.png" mode="aspectFit"></image>
+                            </view>
+                            <view wx:if="{{item.PlayerA2}}" class="player-row">
+                                <text class="player-name">{{item.PlayerA2.name}}</text>
+                                <image wx:if="{{item.PlayerA2.gender === 'male'}}" class="gender-icon-small" src="/assets/icons/male_24dp_0000F5.png" mode="aspectFit"></image>
+                                <image wx:if="{{item.PlayerA2.gender === 'female'}}" class="gender-icon-small" src="/assets/icons/female_24dp_EA33F7.png" mode="aspectFit"></image>
+                            </view>
                         </view>
                         <view class="score">
                             <text>{{item.ScoreA || 0}} - {{item.ScoreB || 0}}</text>
                         </view>
                         <view class="team">
-                            <text class="player-name">{{item.PlayerNameB1.name}}</text>
-                            <text wx:if="{{item.PlayerNameB2}}" class="player-name">{{item.PlayerNameB2.name}}</text>
+                            <view class="player-row">
+                                <text class="player-name">{{item.PlayerB1.name}}</text>
+                                <image wx:if="{{item.PlayerB1.gender === 'male'}}" class="gender-icon-small" src="/assets/icons/male_24dp_0000F5.png" mode="aspectFit"></image>
+                                <image wx:if="{{item.PlayerB1.gender === 'female'}}" class="gender-icon-small" src="/assets/icons/female_24dp_EA33F7.png" mode="aspectFit"></image>
+                            </view>
+                            <view wx:if="{{item.PlayerB2}}" class="player-row">
+                                <text class="player-name">{{item.PlayerB2.name}}</text>
+                                <image wx:if="{{item.PlayerB2.gender === 'male'}}" class="gender-icon-small" src="/assets/icons/male_24dp_0000F5.png" mode="aspectFit"></image>
+                                <image wx:if="{{item.PlayerB2.gender === 'female'}}" class="gender-icon-small" src="/assets/icons/female_24dp_EA33F7.png" mode="aspectFit"></image>
+                            </view>
                         </view>
                     </view>
                     <view class="match-footer">
@@ -115,19 +132,36 @@
                 <view wx:for="{{completedMatches}}" wx:key="MatchId" class="match-card">
                     <view class="match-header">
                         <text class="match-time">{{item.formattedCompleteTime}}</text>
+                        <text class="match-round">Round: {{item.Round}}</text>
                         <view class="result-badge {{item.result}}">{{item.result}}</view>
                     </view>
                     <view class="teams-container">
                         <view class="team">
-                            <text class="player-name">{{item.PlayerNameA1.name}}</text>
-                            <text wx:if="{{item.PlayerNameA2}}" class="player-name">{{item.PlayerNameA2.name}}</text>
+                            <view class="player-row">
+                                <text class="player-name">{{item.PlayerA1.name}}</text>
+                                <image wx:if="{{item.PlayerA1.gender === 'male'}}" class="gender-icon-small" src="/assets/icons/male_24dp_0000F5.png" mode="aspectFit"></image>
+                                <image wx:if="{{item.PlayerA1.gender === 'female'}}" class="gender-icon-small" src="/assets/icons/female_24dp_EA33F7.png" mode="aspectFit"></image>
+                            </view>
+                            <view wx:if="{{item.PlayerA2}}" class="player-row">
+                                <text class="player-name">{{item.PlayerA2.name}}</text>
+                                <image wx:if="{{item.PlayerA2.gender === 'male'}}" class="gender-icon-small" src="/assets/icons/male_24dp_0000F5.png" mode="aspectFit"></image>
+                                <image wx:if="{{item.PlayerA2.gender === 'female'}}" class="gender-icon-small" src="/assets/icons/female_24dp_EA33F7.png" mode="aspectFit"></image>
+                            </view>
                         </view>
                         <view class="score">
                             <text>{{item.ScoreA}} - {{item.ScoreB}}</text>
                         </view>
                         <view class="team">
-                            <text class="player-name">{{item.PlayerNameB1.name}}</text>
-                            <text wx:if="{{item.PlayerNameB2}}" class="player-name">{{item.PlayerNameB2.name}}</text>
+                            <view class="player-row">
+                                <text class="player-name">{{item.PlayerB1.name}}</text>
+                                <image wx:if="{{item.PlayerB1.gender === 'male'}}" class="gender-icon-small" src="/assets/icons/male_24dp_0000F5.png" mode="aspectFit"></image>
+                                <image wx:if="{{item.PlayerB1.gender === 'female'}}" class="gender-icon-small" src="/assets/icons/female_24dp_EA33F7.png" mode="aspectFit"></image>
+                            </view>
+                            <view wx:if="{{item.PlayerB2}}" class="player-row">
+                                <text class="player-name">{{item.PlayerB2.name}}</text>
+                                <image wx:if="{{item.PlayerB2.gender === 'male'}}" class="gender-icon-small" src="/assets/icons/male_24dp_0000F5.png" mode="aspectFit"></image>
+                                <image wx:if="{{item.PlayerB2.gender === 'female'}}" class="gender-icon-small" src="/assets/icons/female_24dp_EA33F7.png" mode="aspectFit"></image>
+                            </view>
                         </view>
                     </view>
                     <view class="match-footer">

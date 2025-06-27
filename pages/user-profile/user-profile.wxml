@@ -9,11 +9,41 @@
     </view>
     
     <view class="avatar-section">
-      <image 
-        class="avatar" 
-        src="{{userInfo.avatarUrl || '/assets/icons/default-avatar.png'}}" 
-        mode="aspectFill"
-      ></image>
+      <view class="avatar-container">
+        <image 
+          class="avatar" 
+          src="{{tempAvatarUrl || userInfo.Avatar || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgdmlld0JveD0iMCAwIDEwMCAxMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIxMDAiIGhlaWdodD0iMTAwIiBmaWxsPSIjRjBGMEYwIi8+CjxjaXJjbGUgY3g9IjUwIiBjeT0iMzUiIHI9IjE1IiBmaWxsPSIjQ0NDIi8+CjxwYXRoIGQ9Ik0yMCA3NUMyMCA2NS4wNTc2IDI4LjA1NzYgNTcgMzggNTdINjJDNzEuOTQyNCA1NyA4MCA2NS4wNTc2IDgwIDc1VjgwSDIwVjc1WiIgZmlsbD0iI0NDQyIvPgo8L3N2Zz4K'}}" 
+          mode="aspectFill"
+        ></image>
+        <view class="avatar-edit-btn" bindtap="toggleAvatarEdit">
+          <text class="edit-icon">✏️</text>
+        </view>
+      </view>
+    </view>
+    
+    <!-- Avatar Selection Modal -->
+    <view wx:if="{{isEditingAvatar}}" class="avatar-modal">
+      <view class="avatar-modal-overlay" bindtap="toggleAvatarEdit"></view>
+      <view class="avatar-modal-content">
+        <view class="avatar-modal-header">
+          <text class="avatar-modal-title">选择头像</text>
+        </view>
+        <view class="avatar-options">
+          <view class="avatar-option" bindtap="useOriginalAvatar">
+            <image class="option-avatar" src="{{userInfo.Avatar || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgdmlld0JveD0iMCAwIDEwMCAxMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIxMDAiIGhlaWdodD0iMTAwIiBmaWxsPSIjRjBGMEYwIi8+CjxjaXJjbGUgY3g9IjUwIiBjeT0iMzUiIHI9IjE1IiBmaWxsPSIjQ0NDIi8+CjxwYXRoIGQ9Ik0yMCA3NUMyMCA2NS4wNTc2IDI4LjA1NzYgNTcgMzggNTdINjJDNzEuOTQyNCA1NyA4MCA2NS4wNTc2IDgwIDc1VjgwSDIwVjc1WiIgZmlsbD0iI0NDQyIvPgo8L3N2Zz4K'}}" mode="aspectFill"></image>
+            <text class="option-text">使用原头像</text>
+          </view>
+          <view class="avatar-option" bindtap="chooseAvatar">
+            <view class="option-avatar-placeholder">
+              <text class="placeholder-icon">📷</text>
+            </view>
+            <text class="option-text">从相册选择</text>
+          </view>
+        </view>
+        <view class="avatar-modal-actions">
+          <button class="cancel-btn" bindtap="toggleAvatarEdit">取消</button>
+        </view>
+      </view>
     </view>
     
     <view class="profile-info">

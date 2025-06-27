@@ -255,7 +255,7 @@ class CloudDBService {
       throw error;
     }
   }
-
+  
   /**************************************************************************
    * RAW DATABASE OPERATIONS - GAME COLLECTION
    **************************************************************************/
@@ -451,7 +451,7 @@ class CloudDBService {
       throw error;
     }
   }
-
+  
   /**************************************************************************
    * RAW DATABASE OPERATIONS - MATCH COLLECTION
    **************************************************************************/
@@ -502,7 +502,7 @@ class CloudDBService {
 
   /**
    * Update match scores and completion time
-   * @param {string} matchId - Match document ID
+   * @param {string} matchId - Match ID (MatchId field value)
    * @param {number} scoreA - Team A score
    * @param {number} scoreB - Team B score
    * @returns {Promise<Object>} Update result
@@ -521,7 +521,10 @@ class CloudDBService {
         updatedAt: now
       };
 
-      const result = await matchCollection.doc(matchId).update({
+      // Use where clause with MatchId field instead of doc() with _id
+      const result = await matchCollection.where({
+        MatchId: matchId
+      }).update({
         data: updateData
       });
 
@@ -532,29 +535,32 @@ class CloudDBService {
       throw error;
     }
   }
-
+  
   /**
-   * Get match by document ID
-   * @param {string} matchId - Match document ID
+   * Get match by MatchId field
+   * @param {string} matchId - Match ID (MatchId field value)
    * @returns {Promise<Object|null>} Match data or null if not found
    */
   static async getMatchById(matchId) {
     this.ensureInit();
     
     try {
-      console.log('Getting match by ID:', matchId);
+      console.log('Getting match by MatchId:', matchId);
       
-      const result = await matchCollection.doc(matchId).get();
+      // Use where clause with MatchId field instead of doc() with _id
+      const result = await matchCollection.where({
+        MatchId: matchId
+      }).get();
       
-      if (result.data) {
-        console.log('Match found:', result.data);
-        return result.data;
+      if (result.data && result.data.length > 0) {
+        console.log('Match found:', result.data[0]);
+        return result.data[0];
       }
       
-      console.log('Match not found for ID:', matchId);
+      console.log('Match not found for MatchId:', matchId);
       return null;
     } catch (error) {
-      console.error('Error getting match by ID:', error);
+      console.error('Error getting match by MatchId:', error);
       throw error;
     }
   }
@@ -580,7 +586,7 @@ class CloudDBService {
         ...match,
         SessionId: sessionId, // Make sure to use the standard property name
         createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
+          updatedAt: new Date().toISOString()
       }));
       
       console.log('Matches to insert:', matchesToInsert);
@@ -598,7 +604,7 @@ class CloudDBService {
       throw error;
     }
   }
-
+  
   /**
    * Fetch ELO ratings for multiple players from UserPerformance collection
    * @param {Array} playerObjects - Array of player objects with name property
@@ -875,8 +881,105 @@ class CloudDBService {
       }
       
       return deleteResult;
-    } catch (error) {
+        } catch (error) {
       console.error('Failed to delete matches for game:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get completed matches for a user by name
+   * @param {string} userName
+   * @returns {Promise<Array>} Array of completed matches for the user
+   */
+  static async getCompletedMatchesByUserName(userName) {
+    this.ensureInit();
+    try {
+      const result = await matchCollection.where({
+        CompleteTime: db.command.neq(null),
+        $or: [
+          { 'PlayerA1.name': userName },
+          { 'PlayerA2.name': userName },
+          { 'PlayerB1.name': userName },
+          { 'PlayerB2.name': userName },
+          { 'Referee.name': userName }
+        ]
+      }).orderBy('CompleteTime', 'desc').get();
+      return result.data;
+    } catch (error) {
+      console.error('Error getting completed matches by user name:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get upcoming matches for a user by name
+   * @param {string} userName
+   * @returns {Promise<Array>} Array of upcoming matches for the user
+   */
+  static async getUpcomingMatchesByUserName(userName) {
+    this.ensureInit();
+    try {
+      const result = await matchCollection.where({
+        CompleteTime: null,
+        $or: [
+          { 'PlayerA1.name': userName },
+          { 'PlayerA2.name': userName },
+          { 'PlayerB1.name': userName },
+          { 'PlayerB2.name': userName },
+          { 'Referee.name': userName }
+        ]
+      }).orderBy('StartTime', 'asc').get();
+      return result.data;
+    } catch (error) {
+      console.error('Error getting upcoming matches by user name:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Create default UserPerformance record for new user
+   * @param {string} userName - User's name
+   * @param {string} openid - User's openid
+   * @param {string} gender - User's gender
+   * @returns {Promise<Object>} Created performance record
+   */
+  static async createDefaultUserPerformance(userName, openid, gender) {
+    this.ensureInit();
+    
+    try {
+      console.log('Creating default UserPerformance record for:', userName, 'Gender:', gender);
+      
+      const defaultPerformance = {
+        Name: userName,
+        Gender: gender,
+        ELO: 1500, // Default starting ELO
+        Games: 0,
+        Wins: 0,
+        Losses: 0,
+        WinRate: 0,
+        MixedGames: 0,
+        MixedWins: 0,
+        MixedLosses: 0,
+        MixedWinRate: 0,
+        SameGenderGames: 0,
+        SameGenderWins: 0,
+        SameGenderLosses: 0,
+        SameGenderWinRate: 0,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+
+      console.log('Default performance data:', defaultPerformance);
+
+      const result = await db.collection('UserPerformance').add({
+        data: defaultPerformance
+      });
+
+      console.log('Default UserPerformance record created:', result);
+      return result;
+    } catch (error) {
+      console.error('Error creating default UserPerformance record:', error);
       throw error;
     }
   }

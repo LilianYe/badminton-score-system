@@ -172,10 +172,24 @@
     flex: 1;
 }
 
+.player-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 8rpx;
+}
+
 .player-name {
     font-size: 28rpx;
     color: #333;
-    margin-bottom: 8rpx;
+    margin-bottom: 0;
+}
+
+.gender-icon-small {
+    width: 16rpx;
+    height: 16rpx;
+    margin-left: 8rpx;
+    vertical-align: middle;
 }
 
 .score {

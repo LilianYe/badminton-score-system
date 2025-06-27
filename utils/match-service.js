@@ -124,16 +124,13 @@ class MatchService {
       const processedMatch = {
         ...match,
         formattedStartTime: this.formatTime(match.StartTime),
-        formattedCompleteTime: this.formatTime(match.CompleteTime)
+        formattedCompleteTime: this.formatTime(match.CompleteTime),
+        PlayerA1: match.PlayerA1,
+        PlayerA2: match.PlayerA2,
+        PlayerB1: match.PlayerB1,
+        PlayerB2: match.PlayerB2,
+        Referee: match.Referee
       };
-
-      // Add player names for display - provide both object and name properties
-      processedMatch.PlayerNameA1 = match.PlayerA1;
-      processedMatch.PlayerNameA2 = match.PlayerA2;
-      processedMatch.PlayerNameB1 = match.PlayerB1;
-      processedMatch.PlayerNameB2 = match.PlayerB2;
-      processedMatch.RefereeName = match.Referee;
-
       return processedMatch;
     });
   }
@@ -176,20 +173,12 @@ class MatchService {
   static async getCompletedMatchesForUser() {
     try {
       console.log('Getting completed matches for current user...');
-      
-      // Get current user
       const currentUser = UserService.getCurrentUser();
       if (!currentUser || !currentUser.Name) {
         throw new Error('用户未登录');
       }
-      
-      // Get all completed matches from database
-      const allMatches = await CloudDBService.getCompletedMatches();
-      
-      // Filter matches for current user
-      const userMatches = this.filterMatchesByUser(allMatches, currentUser.Name);
-      
-      // Process matches and add result information
+      // Use the new optimized query
+      const userMatches = await CloudDBService.getCompletedMatchesByUserName(currentUser.Name);
       const processedMatches = userMatches.map(match => {
         let result = '';
         const isPlayerA = [
@@ -200,7 +189,6 @@ class MatchService {
           this.getPlayerName(match.PlayerB1), 
           this.getPlayerName(match.PlayerB2)
         ].includes(currentUser.Name);
-
         if (isPlayerA) {
           result = match.ScoreA > match.ScoreB ? 'Win' : 'Loss';
         } else if (isPlayerB) {
@@ -208,23 +196,18 @@ class MatchService {
         } else {
           result = 'Referee';
         }
-
         const processedMatch = {
           ...match,
           formattedCompleteTime: this.formatTime(match.CompleteTime),
-          result: result
+          result: result,
+          PlayerA1: match.PlayerA1,
+          PlayerA2: match.PlayerA2,
+          PlayerB1: match.PlayerB1,
+          PlayerB2: match.PlayerB2,
+          Referee: match.Referee
         };
-
-        // Add player names for display - provide both object and name properties
-        processedMatch.PlayerNameA1 = match.PlayerA1;
-        processedMatch.PlayerNameA2 = match.PlayerA2;
-        processedMatch.PlayerNameB1 = match.PlayerB1;
-        processedMatch.PlayerNameB2 = match.PlayerB2;
-        processedMatch.RefereeName = match.Referee;
-
         return processedMatch;
       });
-      
       console.log(`Found ${processedMatches.length} completed matches for user`);
       return processedMatches;
     } catch (error) {
@@ -235,14 +218,17 @@ class MatchService {
 
   /**
    * Update match scores
-   * @param {string} matchId - Match document ID
+   * @param {string} matchId - Match ID (MatchId field value)
    * @param {number} scoreA - Team A score
    * @param {number} scoreB - Team B score
    * @returns {Promise<Object>} Update result
    */
   static async updateMatchScores(matchId, scoreA, scoreB) {
     try {
-      console.log('Updating match scores:', { matchId, scoreA, scoreB });
+      console.log('=== MATCH SERVICE UPDATE DEBUG ===');
+      console.log('MatchService received matchId:', matchId, 'type:', typeof matchId);
+      console.log('MatchService received scoreA:', scoreA, 'type:', typeof scoreA);
+      console.log('MatchService received scoreB:', scoreB, 'type:', typeof scoreB);
       
       // Validate scores
       if (scoreA === scoreB) {
@@ -253,11 +239,26 @@ class MatchService {
         throw new Error('Scores cannot be negative.');
       }
       
-      // Update match in database
-      const result = await CloudDBService.updateMatchScores(matchId, scoreA, scoreB);
+      // Call the cloud function to complete the match
+      const result = await wx.cloud.callFunction({
+        name: 'completeMatch',
+        data: {
+          matchId: matchId,
+          scoreA: Number(scoreA),
+          scoreB: Number(scoreB)
+        }
+      });
       
-      console.log('Match scores updated successfully');
-      return result;
+      console.log('Cloud function result:', result);
+      
+      if (result.result && result.result.success) {
+        console.log('Match completed successfully via cloud function');
+        return result.result;
+      } else {
+        const errorMessage = result.result?.error || 'Failed to complete match';
+        console.error('Cloud function failed:', errorMessage);
+        throw new Error(errorMessage);
+      }
     } catch (error) {
       console.error('Error updating match scores:', error);
       throw error;

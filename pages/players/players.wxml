@@ -1,8 +1,4 @@
 <view class="container">
-  <view class="header">
-    <text class="title">Player Rankings</text>
-  </view>
-
   <view wx:if="{{isLoading}}" class="loading-container">
     <text>Loading rankings...</text>
   </view>
@@ -27,11 +23,14 @@
       wx:for-index="index" 
       wx:key="_id" 
       class="player-item" 
-      bindtap="onPlayerTap"
       data-name="{{item.Name}}"
     >
       <text class="rank">{{item.rank}}</text>
-      <text class="player">{{item.Name}}</text>
+      <view class="player-info">
+        <image wx:if="{{item.Gender === 'male'}}" class="gender-icon-small" src="/assets/icons/male_24dp_0000F5.png" mode="aspectFit"></image>
+        <image wx:if="{{item.Gender === 'female'}}" class="gender-icon-small" src="/assets/icons/female_24dp_EA33F7.png" mode="aspectFit"></image>
+        <text class="player">{{item.Name}}</text>
+      </view>
       <text class="elo">{{item.ELO}}</text>
       <text class="games">{{item.totalGames}}</text>
       <text class="wins">{{item.totalWins}}</text>
