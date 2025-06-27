@@ -268,22 +268,25 @@ class CloudDBService {
     this.ensureInit();
     
     try {
-      console.log('Getting all games from cloud database...');
+      console.log('Getting all active games from cloud database...');
       
-      // Get all games, ordered by date (newest first)
+      // Get all active games (not 'completed'), ordered by date (newest first)
       const result = await gameCollection
+        .where({
+          status: db.command.neq('completed')  // Exclude games with 'completed' status
+        })
         .orderBy('date', 'desc')  // Most recent games first
         .get();
       
       if (result.data && result.data.length > 0) {
-        console.log(`Found ${result.data.length} games in cloud database`);
+        console.log(`Found ${result.data.length} active games in cloud database`);
         return result.data;
       }
       
-      console.log('No games found in cloud database');
+      console.log('No active games found in cloud database');
       return [];
     } catch (error) {
-      console.error('Error getting games from cloud database:', error);
+      console.error('Error getting active games from cloud database:', error);
       throw error;
     }
   }

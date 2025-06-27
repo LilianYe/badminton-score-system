@@ -13,7 +13,6 @@ Page({  data: {
       endTime: '',
       location: '',
       rules: '',
-      matchupMethod: '',
       maxPlayers: 0,
       courtCount: 0
     }
@@ -95,7 +94,6 @@ Page({  data: {
             time: game.time,
             location: game.location,
             rules: game.rules,
-            matchupMethod: game.matchupMethod,
             maxPlayers: game.maxPlayers,
             courtCount: game.courtCount
           }
@@ -432,7 +430,6 @@ Page({  data: {
         endTime: game.endTime,
         location: game.location,
         rules: game.rules,
-        matchupMethod: game.matchupMethod,
         maxPlayers: game.maxPlayers,
         courtCount: game.courtCount
       },
@@ -562,7 +559,6 @@ Page({  data: {
         time: game.time,
         location: game.location,
         rules: game.rules,
-        matchupMethod: game.matchupMethod,
         maxPlayers: game.maxPlayers,
         courtCount: game.courtCount
       }
