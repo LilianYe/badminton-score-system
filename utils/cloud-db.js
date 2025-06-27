@@ -655,13 +655,14 @@ class CloudDBService {
     }
   }
   /**
-   * Create match data objects from round data
-   * @param {Array} matchRounds - Array of match round data
+   * Create match data for saving to database
+   * @param {Array} matchRounds - Array of match rounds
    * @param {string} gameId - ID of the game
    * @param {Array} playerObjects - Array of player objects with ELO
+   * @param {Array} courtDetails - Optional array of court numbers/details
    * @returns {Promise<Object>} - Object with matchDataArray and sessionId
    */
-  static async createMatchData(matchRounds, gameId, playerObjects) {
+  static async createMatchData(matchRounds, gameId, playerObjects, courtDetails) {
     try {
       console.log('Creating match data using game ID:', gameId);
       
@@ -721,18 +722,13 @@ class CloudDBService {
         }
         
         // Find the player object by name
-        const playerObject = playerObjects?.find(p => p.name === playerName);
+        const playerObj = playerObjects?.find(p => p.name === playerName);
         
-        // If found, return a clean object with required properties
-        if (playerObject) {
-          return {
-            name: playerObject.name,
-            gender: playerObject.gender || 'male',
-            elo: playerObject.elo || 1500
-          };
+        if (playerObj) {
+          return playerObj;
         }
         
-        // If not found, create a default object
+        // Fallback to creating a basic player object
         return {
           name: playerName,
           gender: 'male',
@@ -740,42 +736,39 @@ class CloudDBService {
         };
       };
       
-      // Helper function to get player name
-      const getPlayerName = (player) => {
-        return typeof player === 'object' ? player.name : player;
-      };
-      
       // Process each round and court
       matchRounds.forEach((round, roundIndex) => {
         round.courts.forEach((court, courtIndex) => {
-          // Each court has two teams (team1, team2), each team has two players
-          const team1 = court[0];
-          const team2 = court[1];
-          
+          // Get the court number from court object or courtDetails array
+          const courtNumber = court.courtNumber;
+            
+          // Get teams from the court object's teams property
+          const team1 = court.teams[0];
+          const team2 = court.teams[1];
+            
           // Get player objects for all players in the match
           const playerA1Obj = getPlayerObject(team1[0]);
           const playerA2Obj = getPlayerObject(team1[1]);
           const playerB1Obj = getPlayerObject(team2[0]);
           const playerB2Obj = getPlayerObject(team2[1]);
-          
+            
           // Calculate match start time - add 12 minutes per round
           const matchStartTime = new Date(startTime.getTime() + (roundIndex * 12 * 60000));
-          
+            
           // Create match object using gameId as the session ID and store complete player objects
           const matchData = {
-            MatchId: `${sessionId}-${roundIndex + 1}-${courtIndex + 1}`, // Format: gameId-round-court
+            MatchId: `${sessionId}-${roundIndex + 1}-${courtNumber}`, // Format: gameId-round-court
             Round: (roundIndex + 1), // Add round number
-            Court: (courtIndex + 1).toString(),
+            Court: courtNumber,
             // Store full player objects 
             PlayerA1: playerA1Obj,
             PlayerA2: playerA2Obj,
             PlayerB1: playerB1Obj,
             PlayerB2: playerB2Obj,
             StartTime: matchStartTime.toISOString(), // Use calculated start time for each round
-          };
-          
+          }; 
           matchDataArray.push(matchData);
-        });
+        }); 
       });
       
       return { matchDataArray, sessionId };
