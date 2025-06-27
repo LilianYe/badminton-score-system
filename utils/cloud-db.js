@@ -746,7 +746,7 @@ class CloudDBService {
       matchRounds.forEach((round, roundIndex) => {
         round.courts.forEach((court, courtIndex) => {
           // Get the court number from court object or courtDetails array
-          const courtNumber = court.courtNumber;
+          const courtId = court.courtId;
             
           // Get teams from the court object's teams property
           const team1 = court.teams[0];
@@ -763,16 +763,16 @@ class CloudDBService {
             
           // Create match object using gameId as the session ID and store complete player objects
           const matchData = {
-            MatchId: `${sessionId}-${roundIndex + 1}-${courtNumber}`, // Format: gameId-round-court
+            MatchId: `${sessionId}-${roundIndex + 1}-${courtId}`, // Format: gameId-round-court
             Round: (roundIndex + 1), // Add round number
-            Court: courtNumber,
+            Court: courtId,
             // Store full player objects 
             PlayerA1: playerA1Obj,
             PlayerA2: playerA2Obj,
             PlayerB1: playerB1Obj,
             PlayerB2: playerB2Obj,
             StartTime: matchStartTime.toISOString(), // Use calculated start time for each round
-          }; 
+          };
           matchDataArray.push(matchData);
         }); 
       });
