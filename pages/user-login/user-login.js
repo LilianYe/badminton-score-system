@@ -13,7 +13,9 @@ Page({
     checkingAvailability: false,
     wechatUserInfo: null,
     openid: null,
-    useWechatInfo: true
+    useWechatInfo: true,
+    avatarUrl: '',
+    isEditingAvatar: false
   },
   
   onLoad: function() {
@@ -75,6 +77,7 @@ Page({
           wechatUserInfo: userInfo,
           openid: openid,
           nickname: userInfo.nickName || '',
+          avatarUrl: userInfo.avatarUrl || '',
           isLoading: false
         });
         
@@ -224,7 +227,7 @@ Page({
   
   // Handle registration button click
   async handleRegister() {
-    const { nickname, gender, wechatUserInfo, openid, useWechatInfo } = this.data;
+    const { nickname, gender, wechatUserInfo, openid, useWechatInfo, avatarUrl } = this.data;
     
     // Validate input
     if (!nickname.trim()) {
@@ -253,7 +256,7 @@ Page({
       // Prepare user data
       const userData = {
         Name: nickname.trim(),
-        Avatar: useWechatInfo ? wechatUserInfo.avatarUrl : wechatUserInfo.avatarUrl, // For now, always use WeChat avatar
+        Avatar: avatarUrl || wechatUserInfo.avatarUrl, // Use selected avatar or WeChat avatar as fallback
         Gender: gender
       };
       
@@ -283,6 +286,75 @@ Page({
         icon: 'none'
       });
     }
+  },
+  
+  // Handle avatar selection
+  async chooseAvatar() {
+    try {
+      const res = await wx.chooseImage({
+        count: 1,
+        sizeType: ['compressed'],
+        sourceType: ['album', 'camera']
+      });
+      
+      if (res.tempFilePaths && res.tempFilePaths.length > 0) {
+        const tempFilePath = res.tempFilePaths[0];
+        
+        // Upload to cloud storage
+        wx.showLoading({ title: '上传中...' });
+        
+        const cloudPath = `avatars/${this.data.openid}_${Date.now()}.jpg`;
+        const uploadRes = await wx.cloud.uploadFile({
+          cloudPath: cloudPath,
+          filePath: tempFilePath
+        });
+        
+        wx.hideLoading();
+        
+        if (uploadRes.fileID) {
+          this.setData({
+            avatarUrl: uploadRes.fileID,
+            isEditingAvatar: false
+          });
+          
+          wx.showToast({
+            title: '头像上传成功',
+            icon: 'success'
+          });
+        } else {
+          throw new Error('Upload failed');
+        }
+      }
+    } catch (error) {
+      wx.hideLoading();
+      console.error('Avatar selection failed:', error);
+      wx.showToast({
+        title: '头像选择失败',
+        icon: 'none'
+      });
+    }
+  },
+
+  // Use WeChat avatar
+  useWeChatAvatar() {
+    if (this.data.wechatUserInfo && this.data.wechatUserInfo.avatarUrl) {
+      this.setData({
+        avatarUrl: this.data.wechatUserInfo.avatarUrl,
+        isEditingAvatar: false
+      });
+      
+      wx.showToast({
+        title: '使用微信头像',
+        icon: 'success'
+      });
+    }
+  },
+
+  // Toggle avatar editing
+  toggleAvatarEdit() {
+    this.setData({
+      isEditingAvatar: !this.data.isEditingAvatar
+    });
   },
   
   // Redirect to main page

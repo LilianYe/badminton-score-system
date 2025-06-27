@@ -13,35 +13,13 @@ function calculateELOChange(playerELO, opponentELO, actualResult, kFactor = 32) 
   return Math.round(kFactor * (actualScore - expectedScore));
 }
 
-// Determine if a match is mixed (has both male and female players)
-function isMixedMatch(teamAPlayers, teamBPlayers, playerGenders) {
-  // Get genders for each team
-  const teamAGenders = teamAPlayers.map(player => playerGenders[player]).filter(Boolean);
-  const teamBGenders = teamBPlayers.map(player => playerGenders[player]).filter(Boolean);
+// Determine if a team is mixed (has both male and female players)
+function isTeamMixed(teamPlayers, playerGenders) {
+  // Get genders for the team
+  const teamGenders = teamPlayers.map(player => playerGenders[player]).filter(Boolean);
   
-  // Check if either team has both male and female players
-  const teamAHasBoth = teamAGenders.includes('male') && teamAGenders.includes('female');
-  const teamBHasBoth = teamBGenders.includes('male') && teamBGenders.includes('female');
-  
-  return teamAHasBoth || teamBHasBoth;
-}
-
-// Extract player information from match record
-function extractPlayerInfo(match, playerName) {
-  // Check all possible player fields in the match record
-  const playerFields = ['PlayerA1', 'PlayerA2', 'PlayerB1', 'PlayerB2'];
-  
-  for (const field of playerFields) {
-    if (match[field] && match[field].name === playerName) {
-      return {
-        name: match[field].name,
-        gender: match[field].gender,
-        elo: match[field].elo
-      };
-    }
-  }
-  
-  return null;
+  // Check if team has both male and female players
+  return teamGenders.includes('male') && teamGenders.includes('female');
 }
 
 // Update a single player's performance stats
@@ -175,6 +153,67 @@ async function updatePlayerPerformance(playerName, isWinner, eloChange, isMixed)
   }
 }
 
+// Update session status based on match completion
+async function updateSessionStatus(sessionId) {
+  try {
+    console.log(`=== UPDATING SESSION STATUS FOR SESSION ${sessionId} ===`);
+    
+    // First, get the session record
+    const sessionRes = await db.collection('Session').where({
+      id: sessionId
+    }).get();
+    
+    if (!sessionRes.data || sessionRes.data.length === 0) {
+      console.log(`Session ${sessionId} not found`);
+      return;
+    }
+    
+    const session = sessionRes.data[0];
+    console.log('Current session status:', session.status);
+    
+    // If session is "matched", update to "playing"
+    if (session.status === 'matched') {
+      console.log(`Updating session ${sessionId} status from "matched" to "playing"`);
+      await db.collection('Session').where({
+        id: sessionId
+      }).update({
+        data: {
+          status: 'playing',
+          updatedAt: new Date().toISOString()
+        }
+      });
+      console.log(`Session ${sessionId} status updated to "playing"`);
+    }
+    
+    // Check if there are any remaining upcoming matches for this session
+    const upcomingMatchesRes = await db.collection('Match').where({
+      SessionId: sessionId,
+      CompleteTime: null
+    }).get();
+    
+    console.log(`Found ${upcomingMatchesRes.data.length} upcoming matches for session ${sessionId}`);
+    
+    // If no upcoming matches remain, update session to "completed"
+    if (upcomingMatchesRes.data.length === 0) {
+      console.log(`No upcoming matches found for session ${sessionId}, updating status to "completed"`);
+      await db.collection('Session').where({
+        id: sessionId
+      }).update({
+        data: {
+          status: 'completed',
+          updatedAt: new Date().toISOString()
+        }
+      });
+      console.log(`Session ${sessionId} status updated to "completed"`);
+    }
+    
+    console.log(`=== END UPDATING SESSION STATUS FOR SESSION ${sessionId} ===`);
+  } catch (error) {
+    console.error(`Error updating session status for ${sessionId}:`, error);
+    throw error;
+  }
+}
+
 // Main cloud function
 exports.main = async (event, context) => {
   const { matchId, scoreA, scoreB } = event;
@@ -193,8 +232,11 @@ exports.main = async (event, context) => {
       error: 'Scores cannot be equal. Badminton matches must have a winner.'
     };
   }
-
+  
   try {
+    console.log('=== COMPLETING MATCH ===');
+    console.log('Input parameters:', { matchId, scoreA, scoreB });
+    
     // Get the match details
     const matchRes = await db.collection('Match').where({
       MatchId: matchId
@@ -209,6 +251,14 @@ exports.main = async (event, context) => {
     }
 
     const match = matchRes.data[0];
+    console.log('Match found:', match.MatchId);
+    console.log('Match player data:', {
+      PlayerA1: match.PlayerA1,
+      PlayerA2: match.PlayerA2,
+      PlayerB1: match.PlayerB1,
+      PlayerB2: match.PlayerB2
+    });
+    
     // Determine winner (Team A wins if scoreA > scoreB)
     const teamAWins = scoreA > scoreB;
 
@@ -217,23 +267,23 @@ exports.main = async (event, context) => {
     const teamBPlayers = [match.PlayerB1?.name, match.PlayerB2?.name].filter(Boolean);
     const allPlayers = [...teamAPlayers, ...teamBPlayers];
 
-    console.log('=== PLAYER EXTRACTION DEBUG ===');
+    console.log('=== PLAYER EXTRACTION ===');
     console.log('Team A players:', teamAPlayers);
     console.log('Team B players:', teamBPlayers);
     console.log('All players:', allPlayers);
-    console.log('Match player data:', {
-      PlayerA1: match.PlayerA1,
-      PlayerA2: match.PlayerA2,
-      PlayerB1: match.PlayerB1,
-      PlayerB2: match.PlayerB2
-    });
 
     // Extract player information directly from match record
     const playerGenders = {};
     const playerELOs = {};
     
     for (const playerName of allPlayers) {
-      const playerInfo = extractPlayerInfo(match, playerName);
+      // Find player info in match record
+      let playerInfo = null;
+      if (match.PlayerA1?.name === playerName) playerInfo = match.PlayerA1;
+      else if (match.PlayerA2?.name === playerName) playerInfo = match.PlayerA2;
+      else if (match.PlayerB1?.name === playerName) playerInfo = match.PlayerB1;
+      else if (match.PlayerB2?.name === playerName) playerInfo = match.PlayerB2;
+      
       if (playerInfo) {
         playerGenders[playerName] = playerInfo.gender;
         playerELOs[playerName] = playerInfo.elo || 1500;
@@ -244,26 +294,34 @@ exports.main = async (event, context) => {
         playerELOs[playerName] = 1500;
       }
     }
-    console.log('=== END PLAYER EXTRACTION DEBUG ===');
-
-    // Determine if this is a mixed match
-    const isMixed = isMixedMatch(teamAPlayers, teamBPlayers, playerGenders);
-    console.log(`Match type: ${isMixed ? 'Mixed' : 'Same Gender'}`);
     console.log('Player genders:', playerGenders);
+    console.log('Player ELOs:', playerELOs);
+
+    // Determine if each team is mixed
+    const teamAIsMixed = isTeamMixed(teamAPlayers, playerGenders);
+    const teamBIsMixed = isTeamMixed(teamBPlayers, playerGenders);
+    
+    console.log(`Team A is mixed: ${teamAIsMixed}`);
+    console.log(`Team B is mixed: ${teamBIsMixed}`);
 
     // Calculate average ELO for each team
     const teamAELO = teamAPlayers.reduce((sum, player) => sum + playerELOs[player], 0) / teamAPlayers.length;
     const teamBELO = teamBPlayers.reduce((sum, player) => sum + playerELOs[player], 0) / teamBPlayers.length;
 
+    console.log('Team ELOs:', { teamA: teamAELO, teamB: teamBELO });
+
     // Update performance for all players
     const updatePromises = [];
     const playerEloChanges = {};
 
-    console.log('=== PERFORMANCE UPDATE LOOP DEBUG ===');
+    console.log('=== PERFORMANCE UPDATE LOOP ===');
     for (const playerName of allPlayers) {
       const isTeamA = teamAPlayers.includes(playerName);
       const isWinner = isTeamA ? teamAWins : !teamAWins;
       const actualResult = isWinner ? 1 : 0;
+      
+      // Determine if this player's team is mixed
+      const isMixed = isTeamA ? teamAIsMixed : teamBIsMixed;
       
       // Calculate ELO change
       const playerELO = playerELOs[playerName];
@@ -273,13 +331,13 @@ exports.main = async (event, context) => {
       // Store ELO change for updating match record
       playerEloChanges[playerName] = eloChange;
 
-      console.log(`Processing ${playerName}: TeamA=${isTeamA}, Winner=${isWinner}, ELO=${playerELO}, OpponentELO=${opponentELO}, ELOChange=${eloChange}`);
+      console.log(`Processing ${playerName}: TeamA=${isTeamA}, Winner=${isWinner}, ELO=${playerELO}, OpponentELO=${opponentELO}, ELOChange=${eloChange}, TeamMixed=${isMixed}`);
 
       updatePromises.push(
         updatePlayerPerformance(playerName, isWinner, eloChange, isMixed)
       );
     }
-    console.log('=== END PERFORMANCE UPDATE LOOP DEBUG ===');
+    console.log('=== END PERFORMANCE UPDATE LOOP ===');
 
     // Wait for all performance updates to complete
     console.log('Waiting for all performance updates to complete...');
@@ -294,34 +352,42 @@ exports.main = async (event, context) => {
       updatedAt: new Date().toISOString()
     };
 
-    // Add ELO changes to player data
+    // Add ELO changes and updated ELO scores to player data
     if (match.PlayerA1 && match.PlayerA1.name && playerEloChanges[match.PlayerA1.name] !== undefined) {
+      const newELO = (match.PlayerA1.elo || 1500) + playerEloChanges[match.PlayerA1.name];
       matchUpdateData.PlayerA1 = {
         ...match.PlayerA1,
+        elo: newELO,
         eloChanged: playerEloChanges[match.PlayerA1.name]
       };
-      console.log(`Added ELO change for ${match.PlayerA1.name}: ${playerEloChanges[match.PlayerA1.name]}`);
+      console.log(`Updated ${match.PlayerA1.name}: ELO ${match.PlayerA1.elo || 1500} -> ${newELO} (change: ${playerEloChanges[match.PlayerA1.name]})`);
     }
     if (match.PlayerA2 && match.PlayerA2.name && playerEloChanges[match.PlayerA2.name] !== undefined) {
+      const newELO = (match.PlayerA2.elo || 1500) + playerEloChanges[match.PlayerA2.name];
       matchUpdateData.PlayerA2 = {
         ...match.PlayerA2,
+        elo: newELO,
         eloChanged: playerEloChanges[match.PlayerA2.name]
       };
-      console.log(`Added ELO change for ${match.PlayerA2.name}: ${playerEloChanges[match.PlayerA2.name]}`);
+      console.log(`Updated ${match.PlayerA2.name}: ELO ${match.PlayerA2.elo || 1500} -> ${newELO} (change: ${playerEloChanges[match.PlayerA2.name]})`);
     }
     if (match.PlayerB1 && match.PlayerB1.name && playerEloChanges[match.PlayerB1.name] !== undefined) {
+      const newELO = (match.PlayerB1.elo || 1500) + playerEloChanges[match.PlayerB1.name];
       matchUpdateData.PlayerB1 = {
         ...match.PlayerB1,
+        elo: newELO,
         eloChanged: playerEloChanges[match.PlayerB1.name]
       };
-      console.log(`Added ELO change for ${match.PlayerB1.name}: ${playerEloChanges[match.PlayerB1.name]}`);
+      console.log(`Updated ${match.PlayerB1.name}: ELO ${match.PlayerB1.elo || 1500} -> ${newELO} (change: ${playerEloChanges[match.PlayerB1.name]})`);
     }
     if (match.PlayerB2 && match.PlayerB2.name && playerEloChanges[match.PlayerB2.name] !== undefined) {
+      const newELO = (match.PlayerB2.elo || 1500) + playerEloChanges[match.PlayerB2.name];
       matchUpdateData.PlayerB2 = {
         ...match.PlayerB2,
+        elo: newELO,
         eloChanged: playerEloChanges[match.PlayerB2.name]
       };
-      console.log(`Added ELO change for ${match.PlayerB2.name}: ${playerEloChanges[match.PlayerB2.name]}`);
+      console.log(`Updated ${match.PlayerB2.name}: ELO ${match.PlayerB2.elo || 1500} -> ${newELO} (change: ${playerEloChanges[match.PlayerB2.name]})`);
     }
 
     console.log('Updating match record with ELO changes:', matchUpdateData);
@@ -333,7 +399,15 @@ exports.main = async (event, context) => {
       data: matchUpdateData
     });
 
+    // Update session status
+    if (match.SessionId) {
+      await updateSessionStatus(match.SessionId);
+    } else {
+      console.log('No SessionId found in match record, skipping session status update');
+    }
+
     console.log(`Successfully completed match ${matchId} and updated all player performances`);
+    console.log('=== END COMPLETING MATCH ===');
 
     return {
       success: true,
@@ -343,7 +417,8 @@ exports.main = async (event, context) => {
         scoreA,
         scoreB,
         playersUpdated: allPlayers.length,
-        isMixed: isMixed
+        teamAIsMixed: teamAIsMixed,
+        teamBIsMixed: teamBIsMixed
       }
     };
 
@@ -354,22 +429,4 @@ exports.main = async (event, context) => {
       error: error.message || 'Failed to complete match'
     };
   }
-};
-
-function formatPercent(val) {
-    if (typeof val !== 'number' || isNaN(val)) return '0.0';
-    return (val * 100).toFixed(1);
-}
-
-// In your loadUserStats function, after getting stats:
-if (res.data && res.data.length > 0) {
-    const stats = res.data[0];
-    this.setData({
-        userStats: {
-            ...stats,
-            winRateDisplay: formatPercent(stats.WinRate),
-            sameGenderWinRateDisplay: formatPercent(stats.SameGenderWinRate),
-            mixedWinRateDisplay: formatPercent(stats.MixedWinRate)
-        }
-    });
-} 
+}; 

@@ -200,6 +200,59 @@ Page({
             });
             return;
         }
+
+        // Badminton score validation
+        const maxScore = Math.max(scoreA, scoreB);
+        const minScore = Math.min(scoreA, scoreB);
+        const scoreDiff = maxScore - minScore;
+
+        // Check if at least one team reaches 21
+        if (maxScore < 21) {
+            wx.showToast({
+                title: '至少有一队需要达到21分',
+                icon: 'none'
+            });
+            return;
+        }
+
+        // Check if maximum score is 30
+        if (maxScore > 30) {
+            wx.showToast({
+                title: '单局最高分为30分',
+                icon: 'none'
+            });
+            return;
+        }
+
+        // Check win margin rules
+        if (maxScore === 21) {
+            // If winner reaches exactly 21, they must win by at least 2 points
+            if (scoreDiff < 2) {
+                wx.showToast({
+                    title: '达到21分时需领先至少2分',
+                    icon: 'none'
+                });
+                return;
+            }
+        } else if (maxScore > 21 && maxScore < 30) {
+            // If winner reaches 22-29, they must win by exactly 2 points
+            if (scoreDiff !== 2) {
+                wx.showToast({
+                    title: '22-29分时需领先恰好2分',
+                    icon: 'none'
+                });
+                return;
+            }
+        } else if (maxScore === 30) {
+            // If winner reaches 30, they win regardless of margin
+            if (scoreDiff < 1) {
+                wx.showToast({
+                    title: '达到30分时需领先至少1分',
+                    icon: 'none'
+                });
+                return;
+            }
+        }
         
         this.completeMatch(editingMatchId, scoreA, scoreB);
     },
@@ -215,17 +268,9 @@ Page({
     },
 
     async completeMatch(matchId, scoreA, scoreB) {
-        try {
-            console.log('=== MY-PROFILE COMPLETE MATCH DEBUG ===');
-            console.log('my-profile received matchId:', matchId, 'type:', typeof matchId);
-            console.log('my-profile received scoreA:', scoreA, 'type:', typeof scoreA);
-            console.log('my-profile received scoreB:', scoreB, 'type:', typeof scoreB);
-            
+        try {            
             // Use MatchService to update match scores
-            await MatchService.updateMatchScores(matchId, scoreA, scoreB);
-            
-            console.log('=== END MY-PROFILE COMPLETE MATCH DEBUG ===');
-            
+            await MatchService.updateMatchScores(matchId, scoreA, scoreB);            
             wx.showToast({
                 title: '比赛完成',
                 icon: 'success'
@@ -238,9 +283,12 @@ Page({
                 teamBScore: ''
             });
             
-            // Reload matches to reflect changes
+            // Reload matches and user stats to reflect changes
             if (this.data.currentUser) {
-                await this.loadMatches(this.data.currentUser.Name);
+                await Promise.all([
+                    this.loadMatches(this.data.currentUser.Name),
+                    this.loadUserStats(this.data.currentUser.Name)
+                ]);
             }
         } catch (error) {
             console.error('Error completing match:', error);

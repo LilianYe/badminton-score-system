@@ -20,18 +20,68 @@ Page({
     const db = wx.cloud.database();
 
     try {
-      const res = await db.collection('UserPerformance')
-        .orderBy('ELO', 'desc')
-        .get();
+      // Get total count first
+      const countResult = await db.collection('UserPerformance').count();
+      const totalCount = countResult.total;
+      console.log(`Total players in database: ${totalCount}`);
 
-      const processedPlayers = res.data.map((player, index) => {
+      // Load top 50 players using pagination
+      const allPlayers = [];
+      const maxPlayers = 50; // Limit to top 50 players
+      const batchSize = 20; // WeChat cloud database limit
+      const totalBatches = Math.ceil(Math.min(maxPlayers, totalCount) / batchSize);
+
+      for (let batch = 0; batch < totalBatches; batch++) {
+        const skip = batch * batchSize;
+        const limit = Math.min(batchSize, maxPlayers - (batch * batchSize));
+        console.log(`Loading batch ${batch + 1}/${totalBatches} (skip: ${skip}, limit: ${limit})`);
+        
+        const res = await db.collection('UserPerformance')
+          .orderBy('ELO', 'desc')
+          .skip(skip)
+          .limit(limit)
+          .get();
+
+        allPlayers.push(...res.data);
+      }
+
+      console.log(`Loaded ${allPlayers.length} top players (max: ${maxPlayers})`);
+
+      // Fetch gender information for all players
+      const playerNames = allPlayers.map(player => player.Name);
+      const genderPromises = playerNames.map(name => 
+        db.collection('UserProfile').where({ Name: name }).get()
+      );
+      
+      const genderResults = await Promise.all(genderPromises);
+      const genderMap = {};
+      
+      genderResults.forEach((result, index) => {
+        if (result.data && result.data.length > 0) {
+          const userProfile = result.data[0];
+          console.log(`UserProfile for ${playerNames[index]}:`, userProfile);
+          
+          // Try different possible field names for gender
+          const gender = userProfile.Gender || userProfile.gender || 'male';
+          genderMap[playerNames[index]] = gender;
+          console.log(`Set gender for ${playerNames[index]} to: ${gender}`);
+        } else {
+          genderMap[playerNames[index]] = 'male'; // default to male if not found
+          console.log(`No UserProfile found for ${playerNames[index]}, defaulting to male`);
+        }
+      });
+
+      console.log('Gender map:', genderMap);
+
+      const processedPlayers = allPlayers.map((player, index) => {
         // Calculate win rate percentage
         const winRate = player.WinRate ? (player.WinRate * 100).toFixed(1) : '0.0';
         const mixedWinRate = player.MixedWinRate ? (player.MixedWinRate * 100).toFixed(1) : '0.0';
         const sameGenderWinRate = player.SameGenderWinRate ? (player.SameGenderWinRate * 100).toFixed(1) : '0.0';
         
-        return {
+        const processedPlayer = {
           ...player,
+          Gender: genderMap[player.Name] || 'male', // Add gender information
           rank: index + 1,
           winRateDisplay: `${winRate}%`,
           mixedWinRateDisplay: `${mixedWinRate}%`,
@@ -40,7 +90,16 @@ Page({
           totalWins: player.Wins || 0,
           totalLosses: player.Losses || 0
         };
+        
+        // Debug log for first few players
+        if (index < 5) {
+          console.log(`Player ${index + 1}: ${processedPlayer.Name} - Gender: ${processedPlayer.Gender}`);
+        }
+        
+        return processedPlayer;
       });
+
+      console.log('First 3 processed players:', processedPlayers.slice(0, 3));
 
       this.setData({
         players: processedPlayers,
@@ -61,22 +120,7 @@ Page({
       });
     }
   },
-  
-  addPlayer: function() {
-    wx.navigateTo({
-      url: '/pages/add-player/add-player'
-    });
-  },
-  
-  onPlayerTap: function(e) {
-    const playerName = e.currentTarget.dataset.name;
     
-    // Navigate to player details page
-    wx.navigateTo({
-      url: `/pages/player-detail/player-detail?name=${encodeURIComponent(playerName)}`
-    });
-  },
-  
   onPullDownRefresh() {
     this.loadUserPerformance().then(() => {
       wx.stopPullDownRefresh();

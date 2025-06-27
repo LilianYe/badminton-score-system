@@ -11,7 +11,9 @@ Page({
     genderOptions: ['male', 'female'],
     genderIndex: 0,
     nicknameAvailable: null,
-    checkingAvailability: false
+    checkingAvailability: false,
+    isEditingAvatar: false,
+    tempAvatarUrl: ''
   },
 
   onLoad: function() {
@@ -33,9 +35,10 @@ Page({
       if (userInfo) {
         this.setData({
           userInfo: userInfo,
-          tempNickname: userInfo.nickname || '',
-          tempGender: userInfo.gender || 'male',
-          genderIndex: userInfo.gender === 'female' ? 1 : 0,
+          tempNickname: userInfo.Name || '',
+          tempGender: userInfo.Gender || 'male',
+          genderIndex: userInfo.Gender === 'female' ? 1 : 0,
+          tempAvatarUrl: userInfo.Avatar || '',
           isLoading: false
         });
       } else {
@@ -82,11 +85,11 @@ Page({
     
     // Set new timeout for debouncing
     this.availabilityTimeout = setTimeout(async () => {
-      if (nickname.trim() && nickname.trim() !== this.data.userInfo.nickname) {
+      if (nickname.trim() && nickname.trim() !== this.data.userInfo.Name) {
         this.setData({ checkingAvailability: true });
         
         try {
-          const isAvailable = await app.isNicknameUnique(nickname.trim(), this.data.userInfo.openid);
+          const isAvailable = await app.isNicknameUnique(nickname.trim(), this.data.userInfo._openid);
           this.setData({
             nicknameAvailable: isAvailable,
             checkingAvailability: false
@@ -120,7 +123,7 @@ Page({
 
   // Save profile changes
   async saveProfile() {
-    const { tempNickname, tempGender, userInfo } = this.data;
+    const { tempNickname, tempGender, tempAvatarUrl, userInfo } = this.data;
     
     // Validate nickname
     if (!tempNickname.trim()) {
@@ -140,8 +143,8 @@ Page({
     }
     
     // Check if nickname changed and is unique using WechatId
-    if (tempNickname.trim() !== userInfo.nickname) {
-      const isUnique = await app.isNicknameUnique(tempNickname.trim(), userInfo.openid);
+    if (tempNickname.trim() !== userInfo.Name) {
+      const isUnique = await app.isNicknameUnique(tempNickname.trim(), userInfo._openid);
       if (!isUnique) {
         wx.showToast({
           title: 'Nickname already taken',
@@ -157,8 +160,9 @@ Page({
       // Update user profile
       const updatedUserInfo = {
         ...userInfo,
-        nickname: tempNickname.trim(),
-        gender: tempGender,
+        Name: tempNickname.trim(),
+        Gender: tempGender,
+        Avatar: tempAvatarUrl,
         updatedAt: new Date().toISOString()
       };
       
@@ -194,9 +198,9 @@ Page({
   cancelEdit: function() {
     this.setData({
       isEditing: false,
-      tempNickname: this.data.userInfo.nickname,
-      tempGender: this.data.userInfo.gender,
-      genderIndex: this.data.userInfo.gender === 'female' ? 1 : 0,
+      tempNickname: this.data.userInfo.Name,
+      tempGender: this.data.userInfo.Gender,
+      genderIndex: this.data.userInfo.Gender === 'female' ? 1 : 0,
       nicknameAvailable: null
     });
   },
@@ -237,5 +241,72 @@ Page({
       console.error('Error syncing to cloud:', error);
     } finally {
       wx.hideLoading();
-    }  }
+    }  },
+
+  // Toggle avatar editing
+  toggleAvatarEdit() {
+    this.setData({
+      isEditingAvatar: !this.data.isEditingAvatar
+    });
+  },
+
+  // Handle avatar selection
+  async chooseAvatar() {
+    try {
+      const res = await wx.chooseImage({
+        count: 1,
+        sizeType: ['compressed'],
+        sourceType: ['album', 'camera']
+      });
+      
+      if (res.tempFilePaths && res.tempFilePaths.length > 0) {
+        const tempFilePath = res.tempFilePaths[0];
+        
+        // Upload to cloud storage
+        wx.showLoading({ title: '上传中...' });
+        
+        const cloudPath = `avatars/${this.data.userInfo._openid}_${Date.now()}.jpg`;
+        const uploadRes = await wx.cloud.uploadFile({
+          cloudPath: cloudPath,
+          filePath: tempFilePath
+        });
+        
+        wx.hideLoading();
+        
+        if (uploadRes.fileID) {
+          this.setData({
+            tempAvatarUrl: uploadRes.fileID,
+            isEditingAvatar: false
+          });
+          
+          wx.showToast({
+            title: '头像上传成功',
+            icon: 'success'
+          });
+        } else {
+          throw new Error('Upload failed');
+        }
+      }
+    } catch (error) {
+      wx.hideLoading();
+      console.error('Avatar selection failed:', error);
+      wx.showToast({
+        title: '头像选择失败',
+        icon: 'none'
+      });
+    }
+  },
+
+  // Use original avatar
+  useOriginalAvatar() {
+    this.setData({
+      tempAvatarUrl: this.data.userInfo.Avatar || '',
+      isEditingAvatar: false
+    });
+    
+    wx.showToast({
+      title: '使用原头像',
+      icon: 'success'
+    });
+  }
 }); 

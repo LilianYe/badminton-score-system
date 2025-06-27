@@ -5,7 +5,6 @@
     "pages/game-signup/game-signup",
     "pages/game-detail/game-detail",
     "pages/players/players",
-    "pages/player-detail/player-detail",
     "pages/user-profile/user-profile",
     "pages/my-match/my-match",
     "pages/my-profile/my-profile"
@@ -36,8 +35,8 @@
       {
         "pagePath": "pages/my-profile/my-profile",
         "text": "我的",
-        "iconPath": "assets/icons/history.png",
-        "selectedIconPath": "assets/icons/history-active.png"
+        "iconPath": "assets/icons/home.png",
+        "selectedIconPath": "assets/icons/home-active.png"
       }
     ]
   },

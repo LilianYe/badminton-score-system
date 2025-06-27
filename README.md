@@ -17,8 +17,9 @@ A WeChat Mini Program for managing badminton matches, ELO-based player rankings,
 ```
 assets/           # Icons and images
 components/       # Reusable UI components (e.g., player-selector)
-pages/            # Main app pages (add-player, players, newGame, history, player-detail, user-login)
-utils/            # Utility scripts (e.g., migrateToCloud.js)
+pages/            # Main app pages (user-login, game-signup, game-detail, players, player-detail, user-profile, my-match, my-profile, generate-match)
+utils/            # Utility scripts and services
+cloudfunctions/   # Cloud functions for backend operations
 app.js            # App entry, cloud init, global config
 app.json          # App routing and config
 README.md         # Project documentation (this file)
@@ -35,30 +36,35 @@ README.md         # Project documentation (this file)
 
 3. **Configure Cloud Environment**
    - Enable Cloud Development in WeChat DevTools.
-   - Set up your cloud environment and database collections for `players` and `matches`.
-   - (Optional) Use `utils/migrateToCloud.js` to migrate existing local data.
+   - Set up your cloud environment and database collections for `UserProfile`, `UserPerformance`, `Game`, `Match`, and `Session`.
+   - Deploy cloud functions in the `cloudfunctions/` directory.
 
 4. **Run the App**
    - Use the WeChat DevTools to preview and test the app on your device or simulator.
 
 5. **User Onboarding**
-   - On first launch, users are prompted to enter their name.
-   - User info is stored locally and used for match filtering and history.
+   - On first launch, users login with WeChat and complete their profile.
+   - User info is stored in cloud database and used for match filtering and history.
 
 ## Key Pages & Components
 
-- **/pages/players/**: Player list, stats, and management
-- **/pages/add-player/**: Add new players
-- **/pages/newGame/**: Record a new match, update ELO
-- **/pages/history/**: View match history, filter by date
-- **/pages/player-detail/**: Player stats and match history
-- **/pages/user-login/**: User login and onboarding
+- **/pages/user-login/**: WeChat login and user registration
+- **/pages/game-signup/**: Create and join badminton games
+- **/pages/game-detail/**: View game details and manage players
+- **/pages/players/**: Player rankings and performance stats
+- **/pages/user-profile/**: User profile management and avatar editing
+- **/pages/my-match/**: User's upcoming and completed matches
+- **/pages/my-profile/**: User's personal match history and stats
+- **/pages/generate-match/**: Generate matches from game participants
 - **/components/player-selector/**: Custom dropdown for player selection
 
 ## Cloud Database Collections
 
-- `players`: Stores player info (name, gender, stats, ELO, etc.)
-- `matches`: Stores match records (players, scores, date, etc.)
+- `UserProfile`: Stores user info (name, gender, avatar, etc.)
+- `UserPerformance`: Stores player performance stats (ELO, win rates, etc.)
+- `Game`: Stores game sessions (title, date, location, max players, etc.)
+- `Match`: Stores match records (players, scores, ELO changes, etc.)
+- `Session`: Stores session management data
 
 ## ELO System
 
@@ -73,7 +79,7 @@ README.md         # Project documentation (this file)
 ## Customization
 
 - Update icons in `assets/icons/` as needed.
-- Adjust ELO calculation logic in `pages/newGame/newGame.js` if you want to tweak ranking behavior.
+- Adjust ELO calculation logic in cloud functions if you want to tweak ranking behavior.
 - Extend player or match data models in the cloud database as needed.
 
 ## Contributing

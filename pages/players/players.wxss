@@ -82,6 +82,14 @@
   color: #212529;
 }
 
+.player-info {
+  flex: 1;
+  min-width: 70rpx;
+  padding-right: 6rpx;
+  display: flex;
+  align-items: center;
+}
+
 .elo {
   width: 80rpx;
   text-align: center;
@@ -200,4 +208,11 @@
 .female-player {
   background-color: rgba(255, 192, 203, 0.1); /* Very light pink background */
   border-left: 3px solid #ff69b4; /* Hot pink border */
+}
+
+.gender-icon-small {
+  width: 16rpx;
+  height: 16rpx;
+  margin-right: 8rpx;
+  vertical-align: middle;
 }
