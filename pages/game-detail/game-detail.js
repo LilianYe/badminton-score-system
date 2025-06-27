@@ -330,7 +330,7 @@ Page({  data: {
       return;
     }
 
-    // If matches aren't generated and user is not owner, show error and return
+    // If matches aren't generated and user is not owner, show reminder but don't navigate
     if (!hasGeneratedMatches && !isOwner) {
       console.log('Permission denied: Not owner and trying to generate matches');
       wx.showToast({
