@@ -19,13 +19,15 @@ const GameService = require('../../utils/game-service.js');
 Page({
   data: {
     playersInput: '',
-    eloThreshold: '100',
+    eloThreshold: '80',
     teamEloDiff: '300',
     gamePerPlayer: '4',
     courtCount: '2',
     courtDetails: '', // Add this line for court details input (e.g., "2,5")
     maxOpponentFrequency: '4', // Add this line for the new parameter
     maxConsecutiveRounds: '4', // Add this line for the new parameter
+    ignoreGender: false,      // Add this line for gender balance toggle
+    femaleEloDiff: '100',     // Add this line for female ELO adjustment
     result: '',    
     loading: false,    
     fromSignup: false,
@@ -170,6 +172,18 @@ Page({
     this.setData({ maxConsecutiveRounds: e.detail.value });
   },
   
+  onIgnoreGenderChange(e) {
+    this.setData({
+      ignoreGender: e.detail.value
+    });
+  },
+  
+  onFemaleEloDiffInput(e) {
+    this.setData({
+      femaleEloDiff: e.detail.value
+    });
+  },
+
   regenerateMatches() {
     // Ask for confirmation before regenerating
     if (this.data.matchRounds && this.data.matchRounds.length > 0) {
@@ -231,12 +245,14 @@ Page({
       matchesSaved: false
     });
     const players = this.data.playersInput.split(/\r?\n/).map(s => s.trim()).filter(Boolean);
-    const eloThreshold = parseInt(this.data.eloThreshold) || 100;
+    const eloThreshold = parseInt(this.data.eloThreshold) || 80;
     const teamEloDiff = parseInt(this.data.teamEloDiff) || 300;
     const gamePerPlayer = parseInt(this.data.gamePerPlayer) || 4;
     const courtCount = parseInt(this.data.courtCount) || 2;
     const maxOpponentFrequency = parseInt(this.data.maxOpponentFrequency) || 4;
     const maxConsecutiveRounds = parseInt(this.data.maxConsecutiveRounds) || 4;
+    const ignoreGender = this.data.ignoreGender;
+    const femaleEloDiff = parseInt(this.data.femaleEloDiff) || 100;
     
     // Process court details (e.g. "2,5" -> [2,5])
     let courtDetails = [];
@@ -317,17 +333,37 @@ Page({
     this.CloudDBService.fetchPlayerELOs(playerObjects)
       .then(updatedPlayerObjects => {
         console.log('All ELO ratings fetched, generating matches with updated data');
-        this.generateMatchesWithUpdatedElo(updatedPlayerObjects, courtCount, gamePerPlayer, eloThreshold, teamEloDiff, maxOpponentFrequency, maxConsecutiveRounds);
+        this.generateMatchesWithUpdatedElo(
+          updatedPlayerObjects, 
+          courtCount, 
+          gamePerPlayer, 
+          eloThreshold, 
+          teamEloDiff, 
+          maxOpponentFrequency, 
+          maxConsecutiveRounds, 
+          ignoreGender,
+          femaleEloDiff
+        );
       })
       .catch(error => {
         console.error('Error fetching ELO ratings:', error);
         // Fall back to using the data we have
-        this.generateMatchesWithUpdatedElo(playerObjects, courtCount, gamePerPlayer, eloThreshold, teamEloDiff, maxOpponentFrequency, maxConsecutiveRounds);
+        this.generateMatchesWithUpdatedElo(
+          playerObjects, 
+          courtCount, 
+          gamePerPlayer, 
+          eloThreshold, 
+          teamEloDiff, 
+          maxOpponentFrequency, 
+          maxConsecutiveRounds,
+          ignoreGender,
+          femaleEloDiff
+        );
       });
   },
   
   // New method to generate matches after ELO data is updated
-  generateMatchesWithUpdatedElo(playerObjects, courtCount, gamePerPlayer, eloThreshold, teamEloDiff, maxOpponentFrequency, maxConsecutiveRounds) {
+  generateMatchesWithUpdatedElo(playerObjects, courtCount, gamePerPlayer, eloThreshold, teamEloDiff, maxOpponentFrequency, maxConsecutiveRounds, ignoreGender, femaleEloDiff) {
     // Log the player ELO data for debugging
     console.log('Generating matches with updated ELO data:');
     playerObjects.forEach(player => {
@@ -337,7 +373,18 @@ Page({
     // Use setTimeout to allow the UI to update before starting calculation
     setTimeout(() => {
       try {
-        const matchResult = util.tryGenerateRotationFull(playerObjects, courtCount, gamePerPlayer, eloThreshold, teamEloDiff, maxOpponentFrequency, maxConsecutiveRounds);
+        const matchResult = util.tryGenerateRotationFull(
+          playerObjects, 
+          courtCount, 
+          gamePerPlayer, 
+          eloThreshold, 
+          teamEloDiff, 
+          maxOpponentFrequency, 
+          maxConsecutiveRounds,
+          ignoreGender,
+          femaleEloDiff
+        );
+        
         if (!matchResult) {
           this.setData({ 
             loading: false 
