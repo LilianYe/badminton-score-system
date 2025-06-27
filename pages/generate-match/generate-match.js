@@ -24,6 +24,7 @@ Page({
     gamePerPlayer: '4',
     courtCount: '2',
     courtDetails: '', // Add this line for court details input (e.g., "2,5")
+    maxOpponentFrequency: '4', // Add this line for the new parameter
     result: '',    
     loading: false,    
     fromSignup: false,
@@ -66,14 +67,6 @@ Page({
       if (gameId) {
         console.log('Setting gameId in data:', gameId);
         this.checkExistingMatches(gameId);
-      } else {
-        // If no gameId provided in options, try to get it from globalData
-        const appGameId = getApp().globalData?.currentGameId;
-        if (appGameId) {
-          console.log('Using gameId from globalData:', appGameId);
-          this.setData({ gameId: appGameId });
-          this.checkExistingMatches(appGameId);
-        }
       }
       
       // Get players from global data
@@ -166,6 +159,11 @@ Page({
     this.setData({ courtDetails: e.detail.value });
   },
   
+  // Add handler for maxOpponentFrequency input
+  onMaxOpponentFrequencyInput(e) {
+    this.setData({ maxOpponentFrequency: e.detail.value });
+  },
+  
   regenerateMatches() {
     // Ask for confirmation before regenerating
     if (this.data.matchRounds && this.data.matchRounds.length > 0) {
@@ -231,6 +229,7 @@ Page({
     const teamEloDiff = parseInt(this.data.teamEloDiff) || 300;
     const gamePerPlayer = parseInt(this.data.gamePerPlayer) || 4;
     const courtCount = parseInt(this.data.courtCount) || 2;
+    const maxOpponentFrequency = parseInt(this.data.maxOpponentFrequency) || 4; // Add this line
     
     // Process court details (e.g. "2,5" -> [2,5])
     let courtDetails = [];
@@ -311,17 +310,17 @@ Page({
     this.CloudDBService.fetchPlayerELOs(playerObjects)
       .then(updatedPlayerObjects => {
         console.log('All ELO ratings fetched, generating matches with updated data');
-        this.generateMatchesWithUpdatedElo(updatedPlayerObjects, courtCount, gamePerPlayer, eloThreshold, teamEloDiff);
+        this.generateMatchesWithUpdatedElo(updatedPlayerObjects, courtCount, gamePerPlayer, eloThreshold, teamEloDiff, maxOpponentFrequency);
       })
       .catch(error => {
         console.error('Error fetching ELO ratings:', error);
         // Fall back to using the data we have
-        this.generateMatchesWithUpdatedElo(playerObjects, courtCount, gamePerPlayer, eloThreshold, teamEloDiff);
+        this.generateMatchesWithUpdatedElo(playerObjects, courtCount, gamePerPlayer, eloThreshold, teamEloDiff, maxOpponentFrequency);
       });
   },
   
   // New method to generate matches after ELO data is updated
-  generateMatchesWithUpdatedElo(playerObjects, courtCount, gamePerPlayer, eloThreshold, teamEloDiff) {
+  generateMatchesWithUpdatedElo(playerObjects, courtCount, gamePerPlayer, eloThreshold, teamEloDiff, maxOpponentFrequency) {
     // Log the player ELO data for debugging
     console.log('Generating matches with updated ELO data:');
     playerObjects.forEach(player => {
@@ -331,7 +330,7 @@ Page({
     // Use setTimeout to allow the UI to update before starting calculation
     setTimeout(() => {
       try {
-        const matchResult = util.tryGenerateRotationFull(playerObjects, courtCount, gamePerPlayer, eloThreshold, teamEloDiff, 1);
+        const matchResult = util.tryGenerateRotationFull(playerObjects, courtCount, gamePerPlayer, eloThreshold, teamEloDiff, maxOpponentFrequency);
         if (!matchResult) {
           this.setData({ 
             loading: false 
@@ -360,11 +359,11 @@ Page({
             const team2 = court.slice(2, 4).map(player => typeof player === 'object' ? player.name : player);
             
             // Use court number from courtDetails
-            const courtNumber = courtDetails[courtIndex];
+            const courtId = courtDetails[courtIndex];
             
             courts.push({
               teams: [team1, team2],
-              courtNumber: courtNumber
+              courtId: courtId
             });
           });
           
@@ -588,11 +587,11 @@ Page({
               team2 = [match.PlayerB1, match.PlayerB2];
             } 
             
-            const courtNumber = match.CourtNumber || match.courtNumber || roundsMap[round].courts.length + 1;
-            courtDetailsSet.add(courtNumber);
+            const courtId = match.Court;
+            courtDetailsSet.add(courtId);
             roundsMap[round].courts.push({
               teams: [team1, team2],
-              courtNumber: courtNumber
+              courtId: courtId
             });
           });
           
@@ -606,6 +605,7 @@ Page({
           
           // Save court details to app.globalData
           const courtDetails = Array.from(courtDetailsSet).sort((a, b) => a - b);
+          const app = getApp();
           app.globalData.courtDetails = courtDetails;
 
           // Update our data with the loaded matches
@@ -627,36 +627,6 @@ Page({
               playerMap[match.PlayerA2.name] = match.PlayerA2;
               playerMap[match.PlayerB1.name] = match.PlayerB1;
               playerMap[match.PlayerB2.name] = match.PlayerB2;
-            } else {
-              // Using legacy format with separate name and ELO fields
-              if (match.PlayerNameA1 && match.PlayerEloA1) {
-                playerMap[match.PlayerNameA1] = {
-                  name: match.PlayerNameA1,
-                  elo: match.PlayerEloA1,
-                  gender: 'male' // Default gender if not available
-                };
-              }
-              if (match.PlayerNameA2 && match.PlayerEloA2) {
-                playerMap[match.PlayerNameA2] = {
-                  name: match.PlayerNameA2,
-                  elo: match.PlayerEloA2,
-                  gender: 'male'
-                };
-              }
-              if (match.PlayerNameB1 && match.PlayerEloB1) {
-                playerMap[match.PlayerNameB1] = {
-                  name: match.PlayerNameB1,
-                  elo: match.PlayerEloB1,
-                  gender: 'male'
-                };
-              }
-              if (match.PlayerNameB2 && match.PlayerEloB2) {
-                playerMap[match.PlayerNameB2] = {
-                  name: match.PlayerNameB2,
-                  elo: match.PlayerEloB2,
-                  gender: 'male'
-                };
-              }
             }
           });
           
