@@ -319,20 +319,10 @@ Page({  data: {
   // Navigate to match generation or view existing matches
   navigateToGenerate: function() {
     console.log('navigateToGenerate function called, hasGeneratedMatches:', this.data.hasGeneratedMatches);
-    const { game, isOwner } = this.data;
+    const { game, isOwner, hasGeneratedMatches } = this.data;
     
     console.log('Current game:', game);
     console.log('Is owner:', isOwner);
-    
-    // Check if current user is the owner
-    if (!isOwner) {
-      console.log('User is not the owner, showing toast');
-      wx.showToast({
-        title: '只有创建者可以生成对阵',
-        icon: 'none'
-      });
-      return;
-    }
     
     if (!game || game.players.length < 2) {
       console.log('Not enough players:', game?.players?.length);
@@ -342,7 +332,19 @@ Page({  data: {
       });
       return;
     }
-      // Set loading state
+
+    // If matches aren't generated and user is not owner, show error and return
+    if (!hasGeneratedMatches && !isOwner) {
+      console.log('Permission denied: Not owner and trying to generate matches');
+      wx.showToast({
+        title: '只有活动创建者可以生成对阵表',
+        icon: 'none',
+        duration: 2000
+      });
+      return;
+    }
+    
+    // Set loading state
     this.setData({ isNavigating: true });
     console.log('Setting isNavigating to true, hasGeneratedMatches:', this.data.hasGeneratedMatches);
     
@@ -371,7 +373,8 @@ Page({  data: {
       });
       app.globalData.femalePlayerSet = femalePlayers;
       console.log('Female players:', femalePlayers);
-        // Store court count for match generation
+      
+      // Store court count for match generation
       app.globalData.courtCount = game.courtCount || 2;
       console.log('Court count:', app.globalData.courtCount);
       
@@ -380,11 +383,12 @@ Page({  data: {
       console.log('Game ID for matches:', app.globalData.currentGameId);
       
       console.log('App global data after setup:', JSON.stringify(app.globalData));
-        // Determine which page to navigate to based on whether matches exist
-      const targetUrl = this.data.hasGeneratedMatches
+      
+      // Determine which page to navigate to based on whether matches exist
+      const targetUrl = hasGeneratedMatches
         ? '/pages/my-match/my-match?gameId=' + game.id  // Navigate to my-match page for viewing existing matches
         : '/pages/generate-match/generate-match?fromSignup=true&gameId=' + game.id;  // Navigate to generate-match page for creating new matches
-      
+    
       console.log('Navigating to: ' + targetUrl);
       
       wx.navigateTo({
@@ -404,12 +408,15 @@ Page({  data: {
     } catch (e) {
       console.error('Error navigating to generate page:', e);
       wx.showToast({
-        title: '导航错误',
-        icon: 'error'
+        title: '发生错误，请重试',
+        icon: 'none',
+        duration: 2000
       });
     } finally {
-      console.log('Setting isNavigating back to false');
-      this.setData({ isNavigating: false });
+      // Reset navigating state
+      setTimeout(() => {
+        this.setData({ isNavigating: false });
+      }, 500);
     }
   },
   
