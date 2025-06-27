@@ -4,7 +4,6 @@
     "pages/generate-match/generate-match",
     "pages/game-signup/game-signup",
     "pages/game-detail/game-detail",
-    "pages/newGame/newGame",
     "pages/players/players",
     "pages/player-detail/player-detail",
     "pages/user-profile/user-profile",
