@@ -97,7 +97,6 @@ The application has been refactored to follow a clean layered architecture that 
 - `leaveGame(gameId)` - Leave game
 - `saveMatches(gameId, matches)` - Save generated matches
 - `isGameOwner(game)` - Check if current user is game owner
-- `getMyGames()` - Get games created by current user
 - `getJoinedGames()` - Get games joined by current user
 
 **Characteristics**:

@@ -14,6 +14,8 @@ try {
   };
 }
 
+const GameService = require('../../utils/game-service.js');
+
 Page({
   data: {
     playersInput: '',
@@ -22,7 +24,8 @@ Page({
     gamePerPlayer: '4',
     courtCount: '2',
     result: '',    
-    loading: false,    fromSignup: false,
+    loading: false,    
+    fromSignup: false,
     fromExisting: false, // Flag to track if matches were loaded from existing data
     showAdvanced: false, // Toggle for advanced settings
     showPlayerEdit: false, // Toggle for player list editing
@@ -30,7 +33,9 @@ Page({
     processedPlayers: [], // Processed player array for rendering
     playerCount: 0, // Count of players,
     matchesSaved: false, // Flag to track if matches have been saved to database
-  },    onLoad(options) {
+  },    
+  
+  onLoad(options) {
     console.log('Generate Match page loaded', options);
       // Initialize Cloud DB Service at page load
     try {
@@ -110,7 +115,8 @@ Page({
     togglePlayerEdit() {
     this.setData({ showPlayerEdit: !this.data.showPlayerEdit });
   },
-    removePlayer(e) {    
+
+  removePlayer(e) {    
         const index = e.currentTarget.dataset.index;
     const players = this.data.playersInput.split('\n');
     const removedPlayer = players[index];
@@ -121,7 +127,8 @@ Page({
       this.processPlayersInput();
     });
   },
-    onShow() {
+    
+  onShow() {
     console.log('Generate Match page shown');
     
     // Check if matches exist for the current game every time the page is shown
@@ -132,7 +139,9 @@ Page({
     } else {
       console.log('No game ID available to check for existing matches');
     }
-  },onPlayersInput(e) {
+  },
+  
+  onPlayersInput(e) {
     this.setData({ playersInput: e.detail.value }, () => {
       this.processPlayersInput();
     });
@@ -151,31 +160,9 @@ Page({
   },
     onCourtCountInput(e) {
     this.setData({ courtCount: e.detail.value });
-  },  regenerateMatches() {
-    // If matches have been saved, ask for confirmation with a warning about database deletion
-    if (this.data.matchesSaved) {
-      wx.showModal({
-        title: '警告',
-        content: '对阵已保存到数据库。重新生成将删除已存在的比赛记录并创建新的对阵表。确定要继续吗？',
-        confirmText: '继续',
-        confirmColor: '#FF0000',
-        cancelText: '取消',
-        success: (res) => {
-          if (res.confirm) {
-            // Delete existing matches from database before regenerating
-            this.deleteExistingMatches(() => {              // Reset saved state and allow regenerating
-              this.setData({ 
-                matchesSaved: false,
-                matchRounds: [] // Clear existing match rounds to allow checking again
-              });
-              this.onGenerate();
-            });
-          }
-        }
-      });
-      return;
-    }
-    
+  },  
+  
+  regenerateMatches() {
     // Ask for confirmation before regenerating
     if (this.data.matchRounds && this.data.matchRounds.length > 0) {
       wx.showModal({
@@ -191,59 +178,7 @@ Page({
       this.onGenerate();
     }
   },
-    // Delete existing matches from database
-  deleteExistingMatches(callback) {
-    const app = getApp();
-    const gameId = this.data.gameId || app.globalData.currentGameId;
-    
-    if (!gameId) {
-      wx.showToast({
-        title: '无法确定游戏ID',
-        icon: 'none',
-        duration: 2000
-      });
-      return;
-    }
-    
-    this.setData({ loading: true });
-    
-    // Use our new function to delete matches
-    this.CloudDBService.deleteMatchesForGame(gameId)
-      .then(result => {
-        console.log('Successfully deleted matches:', result);
-        wx.showToast({
-          title: '已删除比赛记录',
-          icon: 'success',
-          duration: 1500
-        });
-        
-        this.setData({ loading: false });
-        
-        // Clear the current session ID from global data
-        app.globalData.currentSessionId = null;
-        
-        // Call the callback if provided
-        if (typeof callback === 'function') {
-          callback();
-        }
-      })
-      .catch(error => {
-        console.error('Failed to delete matches:', error);
-        wx.showToast({
-          title: '删除比赛记录失败',
-          icon: 'none',
-          duration: 2000
-        });
-        
-        this.setData({ loading: false });
-        
-        // Still call the callback if provided
-        if (typeof callback === 'function') {
-          callback();
-        }
-      });
-  },
-  
+   
   // Process players from input string to array for rendering
   processPlayersInput() {
     // Split by newlines and filter empty lines
@@ -277,7 +212,9 @@ Page({
       processedPlayers: processedPlayers,
       playerCount: processedPlayers.length
     });
-  },    onGenerate() {
+  },    
+  
+  onGenerate() {
     // Reset saved state whenever generating new matches
     this.setData({ 
       loading: true, 
@@ -323,12 +260,10 @@ Page({
       app.globalData.signupPlayerData.forEach(player => {
         playerMap[player.name] = {
           gender: player.gender || 'male',
-          openid: player.openid || null,
-          // Will fetch ELO from UserPerformance DB
         };
       });
     }
-        // First create player objects with gender
+    // First create player objects with gender
     const playerObjects = players.map(name => ({
       name: name,
       gender: playerMap[name]?.gender || 'male',
@@ -421,10 +356,12 @@ Page({
       }
     }, 100);
   },
-    confirmAndSaveMatches() {
+
+  async confirmAndSaveMatches() {
     if (this.data.loading || this.data.matchesSaved || !this.data.matchRounds.length) {
       return;
-    }      this.setData({ loading: true });
+    }      
+    this.setData({ loading: true });
     
     const app = getApp();
     
@@ -459,7 +396,9 @@ Page({
         }
       });
       return;
-    }// Use the game ID as the session ID for this batch of matches
+    }
+    
+    // Use the game ID as the session ID for this batch of matches
     // Reuse the app instance we already have
     const gameId = this.data.gameId || app.globalData.currentGameId;
     
@@ -476,86 +415,72 @@ Page({
     }
     
     console.log('Using game ID as session ID:', gameId);
-      // Use CloudDBService to create match data
-    let matchDataArray;
+    
     try {
-      const result = this.CloudDBService.createMatchData(
-        this.data.matchRounds, 
-        gameId, 
-        app.globalData.currentPlayerObjects
-      );
+      // Get the game first to check its status
+      const game = await this.CloudDBService.getGameById(gameId);
       
-      matchDataArray = result.matchDataArray;
-    } catch (error) {
-      console.error('Failed to create match data:', error);
-      wx.showToast({
-        title: '创建比赛数据失败',
-        icon: 'none',
-        duration: 2000
-      });
-      this.setData({ loading: false });
-      return;
-    }
-      // Save matches to database
-    try {
-      this.CloudDBService.saveGeneratedMatches(matchDataArray, gameId)
-        .then(results => {
-          console.log('Matches saved successfully:', results);
-          
-          // Check if all were successful
-          const allSuccess = results.every(result => result.success);
-          
-          if (allSuccess) {
-            this.setData({ 
-              matchesSaved: true,
-              loading: false 
-            });
-            
-            wx.showToast({
-              title: '比赛已保存',
-              icon: 'success',
-              duration: 2000
-            });
-            // Mark the game as having generated matches
-            this.CloudDBService.markGameMatchesGenerated(gameId)
-              .then(() => {
-                console.log('Game marked as having generated matches');
-              })
-              .catch(error => {
-                console.error('Failed to mark game as having generated matches:', error);
-                // Non-critical error, don't show to user
-              });
-          } else {
-            throw new Error('Some matches failed to save');
-          }
-        })
-        .catch(error => {
-          console.error('Failed to save matches:', error);
-          this.setData({ loading: false });
-          
-          wx.showModal({
-            title: '保存失败',
-            content: '是否重试保存？',
-            success: (res) => {
-              if (res.confirm) {
-                // Try again
-                setTimeout(() => this.confirmAndSaveMatches(), 500);
-              }
-            }
-          });
+      // Check if the game already has matches generated
+      if (game && game.matchGenerated) {
+        console.log('Deleting generated matches before saving new ones');
+        await this.CloudDBService.deleteMatchesForGame(gameId);
+        
+        // Update game in database to reset status
+        console.log('Resetting game status');
+        await this.CloudDBService.updateGame(gameId, {
+          status: 'active',
+          matchGenerated: false
         });
+    }
+
+    // Use CloudDBService to create match data
+    this.CloudDBService.createMatchData(
+      this.data.matchRounds, 
+      gameId, 
+      app.globalData.currentPlayerObjects
+    )
+      .then(result => {
+        const matchDataArray = result.matchDataArray;
+        
+        // Save matches to database
+        return GameService.saveMatches(gameId, matchDataArray);
+      })
+      .then(updatedGame => {
+        console.log('Matches saved successfully to game:', updatedGame);
+        
+        this.setData({ 
+          matchesSaved: true,
+          loading: false 
+        });
+        
+        wx.showToast({
+          title: '比赛已保存',
+          icon: 'success',
+          duration: 2000
+        });
+      })
+      .catch(error => {
+        console.error('Failed to create or save match data:', error);
+        this.setData({ loading: false });
+        
+        wx.showToast({
+          title: '创建比赛数据失败',
+          icon: 'none',
+          duration: 2000
+        });
+      });
     } catch (error) {
-      console.error('Exception when trying to save matches:', error);
+      console.error('Error in confirmAndSaveMatches:', error);
       this.setData({ loading: false });
-      
       wx.showToast({
-        title: '保存失败，请检查网络连接',
+        title: '保存比赛时发生错误',
         icon: 'none',
         duration: 2000
       });
     }
   },
-    // Check if the game already has generated matches
+    
+  // Check if the game already has generated matches
   checkExistingMatches(gameId) {
     if (!gameId) return;
     
@@ -572,60 +497,8 @@ Page({
       .then(game => {
         if (game && game.matchGenerated) {
           console.log('This game already has generated matches: ', gameId);
-            // Show a notification to the user
-          wx.showModal({
-            title: '已生成比赛',
-            content: '此游戏已经生成过比赛对阵表。是否查看？',
-            confirmText: '查看',
-            cancelText: '重新生成',
-            success: (res) => {
-              if (res.confirm) {                // User chose to view existing matches
-                this.loadExistingMatches(gameId);
-              } else {
-                // User chose to regenerate matches - show a confirmation dialog
-                wx.showModal({
-                  title: '确认重新生成',
-                  content: '重新生成将删除已存在的比赛记录。确定要继续吗？',
-                  confirmText: '删除并重新生成',
-                  confirmColor: '#FF0000',
-                  cancelText: '取消',
-                  success: (confirmRes) => {
-                    if (confirmRes.confirm) {
-                      // Delete existing matches and reset the state
-                      this.CloudDBService.deleteMatchesForGame(gameId)
-                        .then(result => {
-                          console.log('Successfully deleted matches:', result);
-                          wx.showToast({
-                            title: '已删除比赛记录',
-                            icon: 'success',
-                            duration: 1500
-                          });
-                          
-                          this.setData({ 
-                            loading: false,
-                            matchesSaved: false
-                          });
-                          
-                          // Clear the currentSessionId
-                          getApp().globalData.currentSessionId = null;
-                        })
-                        .catch(error => {
-                          console.error('Failed to delete matches:', error);
-                          wx.showToast({
-                            title: '删除比赛记录失败',
-                            icon: 'none',
-                            duration: 2000
-                          });
-                          this.setData({ loading: false });
-                        });
-                    } else {
-                      this.setData({ loading: false });
-                    }
-                  }
-                });
-              }
-            }
-          });
+          // Directly load existing matches without showing a modal
+          this.loadExistingMatches(gameId);
         } else {
           // No matches generated yet, continue as normal
           this.setData({ loading: false });
@@ -761,7 +634,8 @@ Page({
         });
       });
   },
-    // Navigate back to signup page
+    
+  // Navigate back to signup page
   navigateBack: function() {
     wx.navigateBack({
       delta: 1

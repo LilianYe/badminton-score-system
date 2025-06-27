@@ -251,10 +251,9 @@ Page({
       const createdGame = {
         ...newGame,
         id: gameId,
-        status: '招募中',
+        status: 'active',
         players: [],
         owner: {
-          openid: currentUser._openid,
           Name: currentUser.Name,
           Avatar: currentUser.Avatar
         }

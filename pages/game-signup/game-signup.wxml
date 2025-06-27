@@ -19,7 +19,7 @@
         >          <view class="game-list-title">{{item.title}}</view>
           <view class="game-list-info">{{item.date}} {{item.startTime}}-{{item.endTime}} · {{item.location}}</view>
           <view class="game-list-info-row">
-            <view class="game-list-status">{{item.status || '招募中'}}</view>
+            <view class="game-list-status">{{item.status}}</view>
             <view class="game-list-players">已报名: {{item.players.length}}/{{item.maxPlayers}}</view>
           </view>
           <view class="game-list-arrow">></view>
