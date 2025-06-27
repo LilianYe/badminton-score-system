@@ -222,7 +222,7 @@ Page({
       matchRounds: [],
       matchesSaved: false
     });
-      const players = this.data.playersInput.split(/\r?\n/).map(s => s.trim()).filter(Boolean);
+    const players = this.data.playersInput.split(/\r?\n/).map(s => s.trim()).filter(Boolean);
     const eloThreshold = parseInt(this.data.eloThreshold) || 100;
     const teamEloDiff = parseInt(this.data.teamEloDiff) || 300;
     const gamePerPlayer = parseInt(this.data.gamePerPlayer) || 4;

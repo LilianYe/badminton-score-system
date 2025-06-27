@@ -171,8 +171,16 @@
   
   <!-- Bottom Action Buttons -->
   <view class="action-buttons" wx:if="{{game}}">
-    <button class="action-button share" bindtap="shareGame" disabled="{{isNavigating}}">分享</button>    <button class="action-button {{hasGeneratedMatches ? 'view-existing' : 'primary'}}{{isNavigating ? ' isNavigating' : ''}}" bindtap="navigateToGenerate" wx:if="{{isOwner && game.players.length > 0}}" disabled="{{isNavigating}}">
+    <button class="action-button share" bindtap="shareGame" disabled="{{isNavigating}}">分享</button>    
+    <button 
+      class="action-button {{hasGeneratedMatches ? 'view-existing' : 'primary'}}{{isNavigating ? ' isNavigating' : ''}}" 
+      bindtap="navigateToGenerate" 
+      wx:if="{{game.players.length > 0 && (hasGeneratedMatches || isOwner)}}" 
+      disabled="{{isNavigating}}">
       {{isNavigating ? '正在加载...' : (hasGeneratedMatches ? '查看已生成对阵表' : '生成对阵表')}}
     </button>
+    <view class="action-button-placeholder" wx:if="{{game.players.length > 0 && !hasGeneratedMatches && !isOwner}}">
+      <text class="disabled-message">只有活动创建者可以生成对阵表</text>
+    </view>
   </view>
 </view>

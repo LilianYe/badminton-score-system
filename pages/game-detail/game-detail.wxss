@@ -346,6 +346,25 @@
   font-size: 30rpx;
 }
 
+.action-button-placeholder {
+  flex: 1;
+  margin: 0 10rpx;
+  height: 80rpx;
+  line-height: 80rpx;
+  border-radius: 40rpx;
+  font-size: 26rpx;
+  background-color: #f5f5f5;
+  color: #999;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.disabled-message {
+  padding: 0 15rpx;
+}
+
 .share {
   background-color: #f0f0f0;
   color: #666;
