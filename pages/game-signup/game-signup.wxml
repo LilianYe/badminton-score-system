@@ -60,7 +60,7 @@
         <scroll-view scroll-y="true" style="max-height: 600rpx;">
           <view class="form-group">
             <label>活动名称</label>
-            <input placeholder="输入活动名称" bindinput="onNewGameInput" data-field="title" value="{{newGame.title}}"/>
+            <input type="text" placeholder="输入活动名称" bindinput="onNewGameInput" data-field="title" value="{{newGame.title}}"/>
           </view>
           
           <view class="form-group">
@@ -91,7 +91,7 @@
           
           <view class="form-group">
             <label>地点</label>
-            <input placeholder="输入活动地点" bindinput="onNewGameInput" data-field="location" value="{{newGame.location}}"/>
+            <input type="text" placeholder="输入活动地点" bindinput="onNewGameInput" data-field="location" value="{{newGame.location}}"/>
           </view>
           
           <view class="form-group">

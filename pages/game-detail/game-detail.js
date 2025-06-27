@@ -91,7 +91,8 @@ Page({  data: {
           editGame: {
             title: game.title,
             date: game.date,
-            time: game.time,
+            startTime: game.startTime,
+            endTime: game.endTime,
             location: game.location,
             rules: game.rules,
             maxPlayers: game.maxPlayers,
@@ -502,7 +503,7 @@ Page({  data: {
       
       // Update game in cloud database
       await CloudDBService.updateGame(game.id, editGame);
-      const updatedGame = await this.getGameById(game.id);
+      const updatedGame = await CloudDBService.getGameById(game.id);
       
       if (updatedGame) {
         // Update local state
@@ -556,7 +557,8 @@ Page({  data: {
       editGame: {
         title: game.title,
         date: game.date,
-        time: game.time,
+        startTime: game.startTime,
+        endTime: game.endTime,
         location: game.location,
         rules: game.rules,
         maxPlayers: game.maxPlayers,

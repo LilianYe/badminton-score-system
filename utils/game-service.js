@@ -206,13 +206,12 @@ class GameService {
         await CloudDBService.updateGame(gameId, {
           players: updatedPlayers,
           status: 'active',
-          matches: [],
           matchGenerated: false
         });
       } else {
         // If no matches were generated, just update player list
         await CloudDBService.updateGame(gameId, {
-          players: updatedPlayers,
+          players: updatedPlayers
         });
       }
       
@@ -275,7 +274,6 @@ class GameService {
         await CloudDBService.updateGame(gameId, {
           players: updatedPlayers,
           status: 'active',
-          matches: [],
           matchGenerated: false
         });
       } else {
@@ -321,7 +319,6 @@ class GameService {
       
       // Update game with matches
       await CloudDBService.updateGame(gameId, {
-        matches: matches,
         status: 'matched',
         matchGenerated: true
       });

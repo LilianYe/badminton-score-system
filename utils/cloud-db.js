@@ -878,6 +878,7 @@ class CloudDBService {
       if (deleteResult.stats.removed > 0) {        
         await this.updateGame(gameId, {
           matchGenerated: false,
+          status: 'active',
           matchGeneratedTime: null
         });
         console.log(`Updated game ${gameId} to show matches are no longer generated`);
