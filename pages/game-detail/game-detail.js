@@ -184,8 +184,7 @@ Page({  data: {
       const newPlayer = {
         name: currentUser.Name,
         gender: currentUser.Gender || 'male',
-        avatar: currentUser.Avatar || '/assets/icons/user.png',
-        elo: currentUser.elo || app.globalData.defaultElo || 1500
+        avatar: currentUser.Avatar || '/assets/icons/user.png'
       };
       
       // Import the GameService

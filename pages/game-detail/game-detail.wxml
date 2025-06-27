@@ -67,15 +67,6 @@
             场地数: {{game.courtCount || '2'}}
           </view>
         </view>
-
-        <view class="info-row">
-          <view class="info-icon">
-            <text class="cuIcon">对</text>
-          </view>
-          <view class="info-content">
-            对阵: {{game.matchupMethod || '系统优化轮转'}}
-          </view>
-        </view>
       </view>
       
       <!-- Edit Mode -->
@@ -111,11 +102,6 @@
         <view class="form-group">
           <view class="form-label">赛制</view>
           <input class="form-input" type="text" value="{{editGame.rules}}" bindinput="onEditInputChange" data-field="rules" placeholder="输入赛制" />
-        </view>
-        
-        <view class="form-group">
-          <view class="form-label">对阵方法</view>
-          <input class="form-input" type="text" value="{{editGame.matchupMethod}}" bindinput="onEditInputChange" data-field="matchupMethod" placeholder="输入对阵方法" />
         </view>
         
         <view class="form-group">

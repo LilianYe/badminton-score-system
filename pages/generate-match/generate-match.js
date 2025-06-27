@@ -23,6 +23,7 @@ Page({
     teamEloDiff: '300',
     gamePerPlayer: '4',
     courtCount: '2',
+    courtDetails: '', // Add this line for court details input (e.g., "2,5")
     result: '',    
     loading: false,    
     fromSignup: false,
@@ -161,6 +162,9 @@ Page({
     onCourtCountInput(e) {
     this.setData({ courtCount: e.detail.value });
   },  
+  onCourtDetailsInput(e) {
+    this.setData({ courtDetails: e.detail.value });
+  },
   
   regenerateMatches() {
     // Ask for confirmation before regenerating
@@ -228,11 +232,39 @@ Page({
     const gamePerPlayer = parseInt(this.data.gamePerPlayer) || 4;
     const courtCount = parseInt(this.data.courtCount) || 2;
     
+    // Process court details (e.g. "2,5" -> [2,5])
+    let courtDetails = [];
+    if (this.data.courtDetails.trim()) {
+      courtDetails = this.data.courtDetails.split(',')
+        .map(c => c.trim())
+        .filter(c => c)
+        .map(c => parseInt(c) || c); // Convert to number if possible, keep string if not
+    
+      // If courtDetails length doesn't match courtCount, log a warning but continue
+      if (courtDetails.length !== courtCount) {
+        console.warn(`Court details count (${courtDetails.length}) does not match court count (${courtCount})`);
+        // Pad with default values if needed
+        while (courtDetails.length < courtCount) {
+          courtDetails.push(courtDetails.length + 1);
+        }
+        // Truncate if too many values provided
+        if (courtDetails.length > courtCount) {
+          courtDetails = courtDetails.slice(0, courtCount);
+        }
+      }
+    } else {
+      // Default court numbers if not specified
+      courtDetails = Array.from({length: courtCount}, (_, i) => i + 1);
+    }
+    
+    console.log('Using court details:', courtDetails);
+    
     if (!players.length) {
       this.setData({ result: '请填写球员列表', loading: false });
       return;
     }
-      if (players.length < 4) {
+    
+    if (players.length < 4) {
       this.setData({ result: '至少需要4名球员才能生成对阵表', loading: false });
       return;
     }
@@ -263,6 +295,7 @@ Page({
         };
       });
     }
+
     // First create player objects with gender
     const playerObjects = players.map(name => ({
       name: name,
@@ -270,7 +303,11 @@ Page({
       // Use default ELO temporarily
       elo: getApp().globalData.defaultElo || 1500
     }));
-      // Use CloudDBService to fetch ELO ratings
+
+    // Store courtDetails in app.globalData for later use
+    app.globalData.courtDetails = courtDetails;
+    
+    // Use CloudDBService to fetch ELO ratings
     this.CloudDBService.fetchPlayerELOs(playerObjects)
       .then(updatedPlayerObjects => {
         console.log('All ELO ratings fetched, generating matches with updated data');
@@ -307,16 +344,28 @@ Page({
           });
           return;
         }
-          // Format the structured match data for display
+        
+        // Format the structured match data for display
         const matchRounds = [];
+        const app = getApp();
+        // Use provided courtDetails parameter instead of accessing from app.globalData
+        const courtDetails = app.globalData.courtDetails || Array.from({length: courtCount}, (_, i) => i + 1);
+
         matchResult.roundsLineups.forEach((round, i) => {
           const courts = [];
-          round.forEach(court => {
+          round.forEach((court, courtIndex) => {
             // Each court has two teams
             // Extract just the player names for display
             const team1 = court.slice(0, 2).map(player => typeof player === 'object' ? player.name : player);
             const team2 = court.slice(2, 4).map(player => typeof player === 'object' ? player.name : player);
-            courts.push([team1, team2]);
+            
+            // Use court number from courtDetails
+            const courtNumber = courtDetails[courtIndex];
+            
+            courts.push({
+              teams: [team1, team2],
+              courtNumber: courtNumber
+            });
           });
           
           // Also ensure rest players are displayed by name only
@@ -328,8 +377,9 @@ Page({
             courts: courts,
             rest: restPlayers
           });
-        });        // Save result to global data for potential sharing or history
-        const app = getApp();
+        });
+        
+        // Save result to global data for potential sharing or history
         app.globalData.lastGeneratedMatches = {
           rounds: matchRounds,
           timestamp: new Date().toISOString()
@@ -437,7 +487,8 @@ Page({
     this.CloudDBService.createMatchData(
       this.data.matchRounds, 
       gameId, 
-      app.globalData.currentPlayerObjects
+      app.globalData.currentPlayerObjects,
+      app.globalData.courtDetails // Add court details
     )
       .then(result => {
         const matchDataArray = result.matchDataArray;
@@ -519,6 +570,7 @@ Page({
             // Process matches into same format as match generation
           // Group matches by round
           const roundsMap = {};
+          const courtDetailsSet = new Set();
           matches.forEach(match => {
             const round = match.Round;
             if (!roundsMap[round]) {
@@ -528,20 +580,20 @@ Page({
             }
             
             // Add this match to the appropriate round
-            // Check if we have full player objects or just names
+            // Check if we have full player objects
             let team1, team2;
-            
             if (match.PlayerA1 && typeof match.PlayerA1 === 'object') {
               // We have full player objects
               team1 = [match.PlayerA1, match.PlayerA2];
               team2 = [match.PlayerB1, match.PlayerB2];
-            } else {
-              // We have the old format with just names
-              team1 = [match.PlayerA1, match.PlayerA2];
-              team2 = [match.PlayerB1, match.PlayerB2];
-            }
+            } 
             
-            roundsMap[round].courts.push([team1, team2]);
+            const courtNumber = match.CourtNumber || match.courtNumber || roundsMap[round].courts.length + 1;
+            courtDetailsSet.add(courtNumber);
+            roundsMap[round].courts.push({
+              teams: [team1, team2],
+              courtNumber: courtNumber
+            });
           });
           
           // Convert map to array similar to our matchRounds structure
@@ -551,12 +603,18 @@ Page({
               rest: [] // We don't have rest info from saved matches
             };
           });
-            // Update our data with the loaded matches
+          
+          // Save court details to app.globalData
+          const courtDetails = Array.from(courtDetailsSet).sort((a, b) => a - b);
+          app.globalData.courtDetails = courtDetails;
+
+          // Update our data with the loaded matches
           this.setData({
             matchRounds: matchRounds,
             matchesSaved: true, // Mark as saved since they are already in DB
             loading: false,
-            fromExisting: true // Flag to indicate these are existing matches
+            fromExisting: true, // Flag to indicate these are existing matches
+            courtDetails: courtDetails.join(',')
           });
           
           // Also retrieve players' ELO from the matches

@@ -25,6 +25,10 @@
         <text>场地数：</text>
         <input type="number" value="{{courtCount}}" placeholder="如 2" bindinput="onCourtCountInput" />
       </view>
+      <view class="parameter">
+        <text>场地编号：</text>
+        <input type="text" value="{{courtDetails}}" placeholder="如 2,5 (用逗号分隔)" bindinput="onCourtDetailsInput" />
+      </view>
     </view>
     <view class="parameter-group advanced-settings {{showAdvanced ? 'show' : ''}}">
       <view class="parameter" wx:if="{{showAdvanced}}">
@@ -54,8 +58,10 @@
     <view wx:for="{{matchRounds}}" wx:key="index" class="match-round">      <view class="round-header">第 {{index+1}} 轮</view>
       
       <view wx:for="{{item.courts}}" wx:for-item="court" wx:for-index="courtIndex" wx:key="courtIndex" class="match-court">
-        <view class="court-number">场地 {{courtIndex+1}}</view>        <view class="team">          <view class="team-players">
-            <block wx:for="{{court[0]}}" wx:key="index">
+        <view class="court-number">场地 {{court.courtNumber || (courtIndex+1)}}</view>
+        <view class="team">
+          <view class="team-players">
+            <block wx:for="{{court.teams[0]}}" wx:key="index">
               <view class="player">
                 <!-- Use object detection without typeof -->
                 <block wx:if="{{item.name}}">{{item.name}}</block>
@@ -65,8 +71,9 @@
           </view>
         </view>
         <view class="versus">VS</view>
-          <view class="team">          <view class="team-players">
-            <block wx:for="{{court[1]}}" wx:key="index">
+        <view class="team">
+          <view class="team-players">
+            <block wx:for="{{court.teams[1]}}" wx:key="index">
               <view class="player">
                 <!-- Use object detection without typeof -->
                 <block wx:if="{{item.name}}">{{item.name}}</block>
