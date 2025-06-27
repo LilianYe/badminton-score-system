@@ -47,32 +47,6 @@ Page({
 
       console.log(`Loaded ${allPlayers.length} top players (max: ${maxPlayers})`);
 
-      // Fetch gender information for all players
-      const playerNames = allPlayers.map(player => player.Name);
-      const genderPromises = playerNames.map(name => 
-        db.collection('UserProfile').where({ Name: name }).get()
-      );
-      
-      const genderResults = await Promise.all(genderPromises);
-      const genderMap = {};
-      
-      genderResults.forEach((result, index) => {
-        if (result.data && result.data.length > 0) {
-          const userProfile = result.data[0];
-          console.log(`UserProfile for ${playerNames[index]}:`, userProfile);
-          
-          // Try different possible field names for gender
-          const gender = userProfile.Gender || userProfile.gender || 'male';
-          genderMap[playerNames[index]] = gender;
-          console.log(`Set gender for ${playerNames[index]} to: ${gender}`);
-        } else {
-          genderMap[playerNames[index]] = 'male'; // default to male if not found
-          console.log(`No UserProfile found for ${playerNames[index]}, defaulting to male`);
-        }
-      });
-
-      console.log('Gender map:', genderMap);
-
       const processedPlayers = allPlayers.map((player, index) => {
         // Calculate win rate percentage
         const winRate = player.WinRate ? (player.WinRate * 100).toFixed(1) : '0.0';
@@ -81,7 +55,7 @@ Page({
         
         const processedPlayer = {
           ...player,
-          Gender: genderMap[player.Name] || 'male', // Add gender information
+          Gender: player.Gender || 'male', // Use Gender directly from UserPerformance
           rank: index + 1,
           winRateDisplay: `${winRate}%`,
           mixedWinRateDisplay: `${mixedWinRate}%`,

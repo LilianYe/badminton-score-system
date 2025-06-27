@@ -28,14 +28,21 @@
       <view class="welcome-text">Welcome to Badminton Score System!</view>
       <view class="subtitle">Please complete your registration to continue.</view>
       
-      <view class="avatar-section" wx:if="{{wechatUserInfo}}">
+      <!-- Avatar Section -->
+      <view class="avatar-section">
         <view class="avatar-container">
-          <image class="avatar" src="{{avatarUrl || wechatUserInfo.avatarUrl}}" mode="aspectFill"></image>
+          <image 
+            class="avatar" 
+            src="{{avatarUrl || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgdmlld0JveD0iMCAwIDEwMCAxMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIxMDAiIGhlaWdodD0iMTAwIiBmaWxsPSIjRjBGMEYwIi8+CjxjaXJjbGUgY3g9IjUwIiBjeT0iMzUiIHI9IjE1IiBmaWxsPSIjQ0NDIi8+CjxwYXRoIGQ9Ik0yMCA3NUMyMCA2NS4wNTc2IDI4LjA1NzYgNTcgMzggNTdINjJDNzEuOTQyNCA1NyA4MCA2NS4wNTc2IDgwIDc1VjgwSDIwVjc1WiIgZmlsbD0iI0NDQyIvPgo8L3N2Zz4K'}}" 
+            mode="aspectFill"
+            binderror="onAvatarError"
+            bindload="onAvatarLoad"
+          ></image>
           <view class="avatar-edit-btn" bindtap="toggleAvatarEdit">
             <text class="edit-icon">✏️</text>
           </view>
         </view>
-        <text class="nickname">{{wechatUserInfo.nickName}}</text>
+        <text class="avatar-label">点击编辑头像</text>
       </view>
       
       <!-- Avatar Selection Modal -->
@@ -46,10 +53,6 @@
             <text class="avatar-modal-title">选择头像</text>
           </view>
           <view class="avatar-options">
-            <view class="avatar-option" bindtap="useWeChatAvatar">
-              <image class="option-avatar" src="{{wechatUserInfo.avatarUrl || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgdmlld0JveD0iMCAwIDEwMCAxMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIxMDAiIGhlaWdodD0iMTAwIiBmaWxsPSIjRjBGMEYwIi8+CjxjaXJjbGUgY3g9IjUwIiBjeT0iMzUiIHI9IjE1IiBmaWxsPSIjQ0NDIi8+CjxwYXRoIGQ9Ik0yMCA3NUMyMCA2NS4wNTc2IDI4LjA1NzYgNTcgMzggNTdINjJDNzEuOTQyNCA1NyA4MCA2NS4wNTc2IDgwIDc1VjgwSDIwVjc1WiIgZmlsbD0iI0NDQyIvPgo8L3N2Zz4K'}}" mode="aspectFill"></image>
-              <text class="option-text">使用微信头像</text>
-            </view>
             <view class="avatar-option" bindtap="chooseAvatar">
               <view class="option-avatar-placeholder">
                 <text class="placeholder-icon">📷</text>
@@ -63,54 +66,43 @@
         </view>
       </view>
       
-      <!-- Info Source Toggle -->
-      <view class="info-source-section">
-        <text class="info-source-title">Use WeChat Information</text>
-        <switch 
-          checked="{{useWechatInfo}}" 
-          bindchange="toggleInfoSource"
-          color="#007AFF"
-        />
-      </view>
-      
       <!-- Nickname Input Section -->
       <view class="nickname-section">
-        <text class="nickname-label">Nickname</text>
+        <text class="nickname-label">昵称</text>
         <input 
           class="nickname-input" 
           value="{{nickname}}" 
           bindinput="onNicknameInput"
-          placeholder="Enter your nickname"
+          placeholder="请输入您的昵称"
           maxlength="20"
           focus="true"
-          disabled="{{useWechatInfo}}"
         />
         
         <!-- Availability indicator -->
         <view wx:if="{{nickname}}" class="availability-indicator">
           <view wx:if="{{checkingAvailability}}" class="checking">
-            <text class="checking-text">Checking availability...</text>
+            <text class="checking-text">检查中...</text>
           </view>
           <view wx:elif="{{nicknameAvailable === true}}" class="available">
-            <text class="available-text">✓ Available</text>
+            <text class="available-text">✓ 可用</text>
           </view>
           <view wx:elif="{{nicknameAvailable === false}}" class="unavailable">
-            <text class="unavailable-text">✗ Already taken</text>
+            <text class="unavailable-text">✗ 已被使用</text>
           </view>
         </view>
       </view>
       
       <!-- Gender Selection -->
       <view class="gender-section">
-        <text class="gender-title">Gender</text>
+        <text class="gender-title">性别</text>
         <view class="gender-selector">
           <picker 
             bindchange="onGenderChange" 
             value="{{genderIndex}}" 
-            range="{{['Male', 'Female']}}"
+            range="{{['男', '女']}}"
           >
             <view class="gender-picker">
-              <text class="gender-text">{{gender === 'male' ? 'Male' : 'Female'}}</text>
+              <text class="gender-text">{{gender === 'male' ? '男' : '女'}}</text>
               <view class="picker-arrow"></view>
             </view>
           </picker>
@@ -124,32 +116,9 @@
           type="primary"
           loading="{{isLoading}}"
         >
-          Complete Registration
+          完成注册
         </button>
-      </view>
-      
-      <view class="note">
-        <text>You can change your nickname anytime in your profile settings.</text>
       </view>
     </view>
   </view>
 </view>
-
-.test-cloud-btn::after {
-  border: none;
-}
-
-.test-scenarios-btn {
-  width: 100%;
-  height: 36px;
-  margin-top: 8px;
-  background-color: #5856D6 !important;
-  border-color: #5856D6 !important;
-  color: #fff !important;
-  font-size: 12px;
-  border-radius: 6px;
-}
-
-.test-scenarios-btn::after {
-  border: none;
-}

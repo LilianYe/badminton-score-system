@@ -1,8 +1,4 @@
 <view class="container">
-  <view class="header">
-    <text class="title">Player Rankings</text>
-  </view>
-
   <view wx:if="{{isLoading}}" class="loading-container">
     <text>Loading rankings...</text>
   </view>
@@ -27,7 +23,6 @@
       wx:for-index="index" 
       wx:key="_id" 
       class="player-item" 
-      bindtap="onPlayerTap"
       data-name="{{item.Name}}"
     >
       <text class="rank">{{item.rank}}</text>

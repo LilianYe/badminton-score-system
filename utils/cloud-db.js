@@ -255,7 +255,7 @@ class CloudDBService {
       throw error;
     }
   }
-
+  
   /**************************************************************************
    * RAW DATABASE OPERATIONS - GAME COLLECTION
    **************************************************************************/
@@ -451,7 +451,7 @@ class CloudDBService {
       throw error;
     }
   }
-
+  
   /**************************************************************************
    * RAW DATABASE OPERATIONS - MATCH COLLECTION
    **************************************************************************/
@@ -535,7 +535,7 @@ class CloudDBService {
       throw error;
     }
   }
-
+  
   /**
    * Get match by MatchId field
    * @param {string} matchId - Match ID (MatchId field value)
@@ -586,7 +586,7 @@ class CloudDBService {
         ...match,
         SessionId: sessionId, // Make sure to use the standard property name
         createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
+          updatedAt: new Date().toISOString()
       }));
       
       console.log('Matches to insert:', matchesToInsert);
@@ -604,7 +604,7 @@ class CloudDBService {
       throw error;
     }
   }
-
+  
   /**
    * Fetch ELO ratings for multiple players from UserPerformance collection
    * @param {Array} playerObjects - Array of player objects with name property
@@ -881,7 +881,7 @@ class CloudDBService {
       }
       
       return deleteResult;
-    } catch (error) {
+        } catch (error) {
       console.error('Failed to delete matches for game:', error);
       throw error;
     }
@@ -933,6 +933,53 @@ class CloudDBService {
       return result.data;
     } catch (error) {
       console.error('Error getting upcoming matches by user name:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Create default UserPerformance record for new user
+   * @param {string} userName - User's name
+   * @param {string} openid - User's openid
+   * @param {string} gender - User's gender
+   * @returns {Promise<Object>} Created performance record
+   */
+  static async createDefaultUserPerformance(userName, openid, gender) {
+    this.ensureInit();
+    
+    try {
+      console.log('Creating default UserPerformance record for:', userName, 'Gender:', gender);
+      
+      const defaultPerformance = {
+        Name: userName,
+        Gender: gender,
+        ELO: 1500, // Default starting ELO
+        Games: 0,
+        Wins: 0,
+        Losses: 0,
+        WinRate: 0,
+        MixedGames: 0,
+        MixedWins: 0,
+        MixedLosses: 0,
+        MixedWinRate: 0,
+        SameGenderGames: 0,
+        SameGenderWins: 0,
+        SameGenderLosses: 0,
+        SameGenderWinRate: 0,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+
+      console.log('Default performance data:', defaultPerformance);
+
+      const result = await db.collection('UserPerformance').add({
+        data: defaultPerformance
+      });
+
+      console.log('Default UserPerformance record created:', result);
+      return result;
+    } catch (error) {
+      console.error('Error creating default UserPerformance record:', error);
       throw error;
     }
   }
