@@ -68,11 +68,6 @@
           "id": -1,
           "name": "players page",
           "pathName": "pages/players/players"
-        },
-        {
-          "id": -2,
-          "name": "add player",
-          "pathName": "pages/add-player/add-player"
         }
       ]
     }
