@@ -195,39 +195,12 @@ exports.main = async (event, context) => {
   }
 
   try {
-    console.log(`Completing match ${matchId} with score ${scoreA}-${scoreB}`);
-    console.log('=== CLOUD FUNCTION DEBUG ===');
-    console.log('Received matchId:', matchId, 'type:', typeof matchId);
-    console.log('Received scoreA:', scoreA, 'type:', typeof scoreA);
-    console.log('Received scoreB:', scoreB, 'type:', typeof scoreB);
-
     // Get the match details
     const matchRes = await db.collection('Match').where({
       MatchId: matchId
     }).get();
     
     console.log('Query result - found matches:', matchRes.data.length);
-    if (matchRes.data.length > 0) {
-      console.log('Match found:', {
-        MatchId: matchRes.data[0].MatchId,
-        _id: matchRes.data[0]._id,
-        CompleteTime: matchRes.data[0].CompleteTime,
-        PlayerA1: matchRes.data[0].PlayerA1,
-        PlayerB1: matchRes.data[0].PlayerB1
-      });
-    } else {
-      console.log('No match found with MatchId:', matchId);
-      
-      // Let's check what matches exist
-      const allMatches = await db.collection('Match').limit(5).get();
-      console.log('Sample matches in database:', allMatches.data.map(m => ({
-        MatchId: m.MatchId,
-        _id: m._id,
-        CompleteTime: m.CompleteTime
-      })));
-    }
-    console.log('=== END CLOUD FUNCTION DEBUG ===');
-    
     if (!matchRes.data || matchRes.data.length === 0) {
       return {
         success: false,
@@ -236,23 +209,6 @@ exports.main = async (event, context) => {
     }
 
     const match = matchRes.data[0];
-    
-    // Debug: log the entire match object and each player field
-    console.log('DEBUG: match object:', JSON.stringify(match, null, 2));
-    console.log('DEBUG: PlayerA1:', match.PlayerA1);
-    console.log('DEBUG: PlayerA2:', match.PlayerA2);
-    console.log('DEBUG: PlayerB1:', match.PlayerB1);
-    console.log('DEBUG: PlayerB2:', match.PlayerB2);
-    console.log('DEBUG: Referee:', match.Referee);
-
-    // Check if match is already completed
-    if (match.CompleteTime) {
-      return {
-        success: false,
-        error: 'Match is already completed'
-      };
-    }
-
     // Determine winner (Team A wins if scoreA > scoreB)
     const teamAWins = scoreA > scoreB;
 
