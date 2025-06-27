@@ -303,7 +303,7 @@ class MatchService {
           elo: this.getPlayerElo(match.PlayerA1), 
           gender: this.getPlayerGender(match.PlayerA1)
         },
-        { 
+        {
           name: this.getPlayerName(match.PlayerA2), 
           elo: this.getPlayerElo(match.PlayerA2), 
           gender: this.getPlayerGender(match.PlayerA2)

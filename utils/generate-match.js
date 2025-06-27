@@ -14,15 +14,16 @@ const global_expected_wins = {};
  * @param {number[]} restPerRound - How many rest slots per round 
  * @param {number} targetRestCount
  * @param {Object} playerConsecutiveActive - {player: consecutiveActiveRounds}
+ * @param {number} maxConsecutiveRounds - Maximum consecutive active rounds before mandatory rest
  * @returns {boolean}
  */
-function backtrackRestScheduleVariable(players, restSchedule, restCounts, currentRound, totalRounds, restPerRound, targetRestCount, playerConsecutiveActive) {
+function backtrackRestScheduleVariable(players, restSchedule, restCounts, currentRound, totalRounds, restPerRound, targetRestCount, playerConsecutiveActive, maxConsecutiveRounds) {
   if (currentRound === totalRounds) return true;
   const restCountNeeded = restPerRound[currentRound];
   const roundsLeft = totalRounds - currentRound;
 
   // 1. Players who must rest due to consecutive actives
-  const mustRestConsecutive = players.filter(p => (playerConsecutiveActive[p.name] || 0) >= 6);
+  const mustRestConsecutive = players.filter(p => (playerConsecutiveActive[p.name] || 0) >= maxConsecutiveRounds);
   // 2. Players who must rest to meet target rest count
   const restNeeded = {};
   players.forEach(p => restNeeded[p.name] = targetRestCount - restCounts[p.name]);
@@ -118,7 +119,7 @@ function backtrackRestScheduleVariable(players, restSchedule, restCounts, curren
       }
     });
     // Recurse
-    if (backtrackRestScheduleVariable(players, restSchedule, restCounts, currentRound + 1, totalRounds, restPerRound, targetRestCount, playerConsecutiveActiveCopy)) {
+    if (backtrackRestScheduleVariable(players, restSchedule, restCounts, currentRound + 1, totalRounds, restPerRound, targetRestCount, playerConsecutiveActiveCopy, maxConsecutiveRounds)) {
       return true;
     }
     // Backtrack
@@ -141,9 +142,10 @@ function backtrackRestScheduleVariable(players, restSchedule, restCounts, curren
  * @param {number} eloThreshold
  * @param {number} teamEloDiff
  * @param {number} maxOpponentFrequency
+ * @param {number} maxConsecutiveRounds
  * @returns {{restSchedule: string[][], roundsLineups: string[][][]}}
  */
-function generateRotationFull(players, courtCount, gamePerPlayer, eloThreshold, teamEloDiff, maxOpponentFrequency) {  
+function generateRotationFull(players, courtCount, gamePerPlayer, eloThreshold, teamEloDiff, maxOpponentFrequency, maxConsecutiveRounds) {  
   const COURT_SIZE = 4;
   const minExpectedWins = 0;  // No need for femaleSet anymore, we'll use player.gender directly
   const totalPlayers = players.length;
@@ -188,6 +190,7 @@ function generateRotationFull(players, courtCount, gamePerPlayer, eloThreshold, 
   console.log('Rest per round:', restPerRound);
   console.log('Target rest count:', targetRestCount);
   console.log('Max opponent frequency:', maxOpponentFrequency);
+  console.log('Max consecutive rounds:', maxConsecutiveRounds);
 
   // Generate rest schedule
   const restOk = backtrackRestScheduleVariable(
@@ -198,7 +201,8 @@ function generateRotationFull(players, courtCount, gamePerPlayer, eloThreshold, 
     rounds,
     restPerRound,
     targetRestCount,
-    playerConsecutiveActive
+    playerConsecutiveActive,
+    maxConsecutiveRounds
   );
   if (!restOk) {
     console.error('Failed to generate rest schedule.');
@@ -524,14 +528,15 @@ function shuffleArray(arr) {
  * @param {number} eloThreshold
  * @param {number} teamEloDiff
  * @param {number} maxOpponentFrequency
+ * @param {number} maxConsecutiveRounds
  * @param {number} [maxTries=20]
  * @returns {{restSchedule: string[][], roundsLineups: string[][][]}|null}
  */
-function tryGenerateRotationFull(players, courtCount, gamePerPlayer, eloThreshold, teamEloDiff, maxOpponentFrequency, maxTries = 10) {
+function tryGenerateRotationFull(players, courtCount, gamePerPlayer, eloThreshold, teamEloDiff, maxOpponentFrequency, maxConsecutiveRounds, maxTries = 10) {
   for (let attempt = 1; attempt <= maxTries; attempt++) {
     const shuffled = shuffleArray([...players]);
     try {
-      const result = generateRotationFull(shuffled, courtCount, gamePerPlayer, eloThreshold, teamEloDiff, maxOpponentFrequency);
+      const result = generateRotationFull(shuffled, courtCount, gamePerPlayer, eloThreshold, teamEloDiff, maxOpponentFrequency, maxConsecutiveRounds);
       console.log(`[tryGenerateRotationFull] Success on attempt ${attempt}`);
       return result;
     } catch (e) {
@@ -561,7 +566,7 @@ module.exports = {
  * @param {number} maxOpponentFrequency
  * @returns {Object|null} The match result or null if generation failed
  */
-function testGenerateMatchWithSampleData(courtCount = 2, gamePerPlayer = 4, eloThreshold = 100, teamEloDiff = 300, maxOpponentFrequency = 5) {
+function testGenerateMatchWithSampleData(courtCount = 2, gamePerPlayer = 4, eloThreshold = 100, teamEloDiff = 300, maxOpponentFrequency = 5, maxConsecutiveRounds = 4) {
   // Sample player data
   const players = [
     {"avatar":"/assets/icons/user.png","elo":1500,"gender":"female","name":"敏敏子"},
@@ -593,7 +598,8 @@ function testGenerateMatchWithSampleData(courtCount = 2, gamePerPlayer = 4, eloT
       gamePerPlayer, 
       eloThreshold,
       teamEloDiff,
-      maxOpponentFrequency
+      maxOpponentFrequency,
+      maxConsecutiveRounds
     );
     
     if (result) {
