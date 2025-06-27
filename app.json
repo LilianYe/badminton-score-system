@@ -46,8 +46,5 @@
     "uploadFile": 60000,
     "downloadFile": 60000
   },
-  "debug": true,
-  "usingComponents": {
-    "player-selector": "/components/player-selector/player-selector"
-  }
+  "debug": true
 }
