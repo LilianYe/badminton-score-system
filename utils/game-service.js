@@ -205,7 +205,6 @@ class GameService {
         // Update game in database with added player, reset status, and reset match data
         await CloudDBService.updateGame(gameId, {
           players: updatedPlayers,
-          playerCount: updatedPlayers.length,
           status: 'active',
           matches: [],
           matchGenerated: false
@@ -214,7 +213,6 @@ class GameService {
         // If no matches were generated, just update player list
         await CloudDBService.updateGame(gameId, {
           players: updatedPlayers,
-          playerCount: updatedPlayers.length
         });
       }
       
@@ -276,7 +274,6 @@ class GameService {
         // Update game in database with removed player, reset status, and reset match data
         await CloudDBService.updateGame(gameId, {
           players: updatedPlayers,
-          playerCount: updatedPlayers.length,
           status: 'active',
           matches: [],
           matchGenerated: false
@@ -284,8 +281,7 @@ class GameService {
       } else {
         // If no matches were generated, just update player list
         await CloudDBService.updateGame(gameId, {
-          players: updatedPlayers,
-          playerCount: updatedPlayers.length
+          players: updatedPlayers
         });
       }
       
