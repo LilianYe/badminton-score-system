@@ -60,7 +60,6 @@
         </view>
         <view class="meta-row">
           <text class="court">场地: {{item.Court}}</text>
-          <text class="ref">裁判: {{item.RefereeName || '无'}}</text>
         </view>
         <view class="time-row">
           <text class="start-time">开始时间: {{item.formattedStartTime}}</text>

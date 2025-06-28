@@ -121,7 +121,6 @@
                         </view>
                     </view>
                     <view class="match-footer">
-                        <text>Referee: {{item.RefereeName}}</text>
                         <button class="edit-btn" bindtap="editScore" data-matchid="{{item.MatchId}}">Complete Match</button>
                     </view>
                 </view>
@@ -164,9 +163,7 @@
                             </view>
                         </view>
                     </view>
-                    <view class="match-footer">
-                        <text>Referee: {{item.RefereeName}}</text>
-                    </view>
+                    <!-- Match footer removed because it only contained referee info -->
                 </view>
             </view>
         </block>
@@ -202,4 +199,4 @@
             <button class="score-input-btn confirm-btn" bindtap="confirmScore">Confirm</button>
         </view>
     </view>
-</view> 
+</view>

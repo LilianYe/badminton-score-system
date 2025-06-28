@@ -53,9 +53,13 @@ Page({
         const mixedWinRate = player.MixedWinRate ? (player.MixedWinRate * 100).toFixed(1) : '0.0';
         const sameGenderWinRate = player.SameGenderWinRate ? (player.SameGenderWinRate * 100).toFixed(1) : '0.0';
         
+        // Round the ELO score to an integer
+        const roundedElo = player.ELO ? Math.round(player.ELO) : player.ELO;
+        
         const processedPlayer = {
           ...player,
           Gender: player.Gender || 'male', // Use Gender directly from UserPerformance
+          ELO: roundedElo, // Use the rounded integer value
           rank: index + 1,
           winRateDisplay: `${winRate}%`,
           mixedWinRateDisplay: `${mixedWinRate}%`,

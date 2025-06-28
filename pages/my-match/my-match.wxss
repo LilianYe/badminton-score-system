@@ -220,15 +220,14 @@ page {
 
 .meta-row {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-start;
   color: #666;
   font-size: 26rpx;
   margin-bottom: 10rpx;
 }
 
-.court,
-.ref {
-  flex: 1;
+.court {
+  /* No need for flex: 1 since it's the only element */
 }
 
 .time-row {

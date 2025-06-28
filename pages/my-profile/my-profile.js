@@ -110,9 +110,14 @@ Page({
                         sameGenderTitle = '女双';
                     }
                 }
+                
+                // Convert ELO to integer if it exists
+                const elo = stats.ELO ? Math.round(stats.ELO) : stats.ELO;
+                
                 this.setData({
                     userStats: {
                         ...stats,
+                        ELO: elo, // Use the integer value
                         winRateDisplay: formatPercent(stats.WinRate),
                         sameGenderWinRateDisplay: formatPercent(stats.SameGenderWinRate),
                         mixedWinRateDisplay: formatPercent(stats.MixedWinRate)
@@ -316,4 +321,4 @@ Page({
     toggleMatches: function() {
         this.setData({ showMatches: !this.data.showMatches });
     }
-}); 
+});

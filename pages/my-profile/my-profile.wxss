@@ -202,10 +202,8 @@
 .match-footer {
     margin-top: 20rpx;
     display: flex;
-    justify-content: space-between;
+    justify-content: flex-end;
     align-items: center;
-    font-size: 24rpx;
-    color: #888;
 }
 
 .edit-btn {
@@ -469,4 +467,4 @@
     height: 32rpx;
     vertical-align: middle;
     margin-left: 8rpx;
-} 
+}
