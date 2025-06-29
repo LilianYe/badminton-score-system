@@ -62,14 +62,16 @@
   </view>
     <view class="button-row">
     <button wx:if="{{fromSignup}}" class="back-button" bindtap="navigateBack">返回</button>
-    <button type="primary" class="generate-button" bindtap="onGenerate" loading="{{loading}}" disabled="{{loading}}">
-      {{loading ? '正在生成...' : '确认参数并生成对阵'}}
+    <button type="primary" class="generate-button" bindtap="onGenerate" loading="{{loading}}" disabled="{{loading || isSaving || (matchesSaved && !fromMyMatch)}}">
+      <block wx:if="{{loading}}">正在生成...</block>
+      <block wx:elif="{{matchRounds && matchRounds.length}}">重新生成对阵</block>
+      <block wx:else>确认参数并生成对阵</block>
     </button>
   </view>
   
-  <view wx:if="{{loading}}" class="loading-section">
-    <text>正在生成，请稍候...</text>
-  </view>
+  <view wx:if="{{loading || isSaving}}" class="loading-section">
+  <text>{{loading ? '正在生成，请稍候...' : isSaving ? '正在保存，请稍候...' : ''}}</text>
+</view>
     <view wx:if="{{matchRounds && matchRounds.length}}" class="result-section {{matchesSaved ? 'match-rounds-saved' : ''}}">
     <view wx:for="{{matchRounds}}" wx:key="index" class="match-round">      <view class="round-header">第 {{index+1}} 轮</view>
       
@@ -110,8 +112,11 @@
     </view>
         <!-- Action buttons -->
     <view class="toolbar">
-      <button class="toolbar-button primary" bindtap="confirmAndSaveMatches" disabled="{{loading || matchesSaved}}">{{matchesSaved ? '已保存' : '确认并保存'}}</button>
-      <button class="toolbar-button" bindtap="regenerateMatches" disabled="{{loading || matchesSaved}}">{{matchesSaved ? '已锁定对阵' : '重新生成'}}</button>
+      <button class="toolbar-button primary" bindtap="confirmAndSaveMatches" disabled="{{loading || isSaving || matchesSaved}}">
+        <block wx:if="{{matchesSaved}}">已保存</block>
+        <block wx:elif="{{isSaving}}">保存中...</block>
+        <block wx:else>确认并保存</block>
+      </button>
     </view>
   </view>
     <view wx:elif="{{!matchRounds.length}}" class="result-section">

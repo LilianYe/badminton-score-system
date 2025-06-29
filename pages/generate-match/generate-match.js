@@ -29,7 +29,8 @@ Page({
     ignoreGender: false,      // Add this line for gender balance toggle
     femaleEloDiff: '100',     // Add this line for female ELO adjustment
     result: '',    
-    loading: false,    
+    loading: false,
+    isSaving: false, // Add this flag to track saving state separately    
     fromSignup: false,
     fromExisting: false, // Flag to track if matches were loaded from existing data
     showAdvanced: false, // Toggle for advanced settings
@@ -254,23 +255,6 @@ Page({
       femaleEloDiff: e.detail.value
     });
   },
-
-  regenerateMatches() {
-    // Ask for confirmation before regenerating
-    if (this.data.matchRounds && this.data.matchRounds.length > 0) {
-      wx.showModal({
-        title: '确认重新生成？',
-        content: '重新生成将丢失当前对阵表，确定要继续吗？',
-        success: (res) => {
-          if (res.confirm) {
-            this.onGenerate();
-          }
-        }
-      });
-    } else {
-      this.onGenerate();
-    }
-  },
    
   // Process players from input string to array for rendering
   processPlayersInput() {
@@ -308,6 +292,24 @@ Page({
   },    
   
   onGenerate() {
+    // If matches already exist, confirm regeneration
+    if (this.data.matchRounds && this.data.matchRounds.length > 0) {
+      wx.showModal({
+        title: '确认重新生成？',
+        content: '重新生成将丢失当前对阵表，确定要继续吗？',
+        success: (res) => {
+          if (res.confirm) {
+            this.generateMatches();
+          }
+        }
+      });
+    } else {
+      this.generateMatches();
+    }
+  },
+
+  // New method that contains the actual match generation logic
+  generateMatches() {
     // Reset saved state whenever generating new matches
     this.setData({ 
       loading: true, 
@@ -532,10 +534,12 @@ Page({
   },
 
   async confirmAndSaveMatches() {
-    if (this.data.loading || this.data.matchesSaved || !this.data.matchRounds.length) {
+    if (this.data.loading || this.data.isSaving || this.data.matchesSaved || !this.data.matchRounds.length) {
       return;
     }      
-    this.setData({ loading: true });
+    this.setData({ 
+      isSaving: true
+    });
     
     const app = getApp();
     
@@ -562,10 +566,10 @@ Page({
                 icon: 'none',
                 duration: 2000
               });
-              this.setData({ loading: false });
+              this.setData({ isSaving: false }); // Reset isSaving state on error
             }
           } else {
-            this.setData({ loading: false });
+            this.setData({ isSaving: false }); // Reset isSaving state on cancel
           }
         }
       });
@@ -582,7 +586,7 @@ Page({
         content: '找不到游戏ID，无法保存比赛',
         showCancel: false,
         success: () => {
-          this.setData({ loading: false });
+          this.setData({ isSaving: false }); // Reset isSaving state
         }
       });
       return;
@@ -605,48 +609,48 @@ Page({
           status: 'active',
           matchGenerated: false
         });
-    }
+      }
 
-    // Use CloudDBService to create match data
-    this.CloudDBService.createMatchData(
-      this.data.matchRounds, 
-      gameId, 
-      app.globalData.currentPlayerObjects,
-      app.globalData.courtDetails // Add court details
-    )
-      .then(result => {
-        const matchDataArray = result.matchDataArray;
-        
-        // Save matches to database
-        return GameService.saveMatches(gameId, matchDataArray);
-      })
-      .then(updatedGame => {
-        console.log('Matches saved successfully to game:', updatedGame);
-        
-        this.setData({ 
-          matchesSaved: true,
-          loading: false 
+      // Use CloudDBService to create match data
+      this.CloudDBService.createMatchData(
+        this.data.matchRounds, 
+        gameId, 
+        app.globalData.currentPlayerObjects,
+        app.globalData.courtDetails // Add court details
+      )
+        .then(result => {
+          const matchDataArray = result.matchDataArray;
+          
+          // Save matches to database
+          return GameService.saveMatches(gameId, matchDataArray);
+        })
+        .then(updatedGame => {
+          console.log('Matches saved successfully to game:', updatedGame);
+          
+          this.setData({ 
+            matchesSaved: true,
+            isSaving: false // Reset isSaving instead of loading
+          });
+          
+          wx.showToast({
+            title: '比赛已保存',
+            icon: 'success',
+            duration: 2000
+          });
+        })
+        .catch(error => {
+          console.error('Failed to create or save match data:', error);
+          this.setData({ isSaving: false }); // Reset isSaving on error
+          
+          wx.showToast({
+            title: '创建比赛数据失败',
+            icon: 'none',
+            duration: 2000
+          });
         });
-        
-        wx.showToast({
-          title: '比赛已保存',
-          icon: 'success',
-          duration: 2000
-        });
-      })
-      .catch(error => {
-        console.error('Failed to create or save match data:', error);
-        this.setData({ loading: false });
-        
-        wx.showToast({
-          title: '创建比赛数据失败',
-          icon: 'none',
-          duration: 2000
-        });
-      });
     } catch (error) {
       console.error('Error in confirmAndSaveMatches:', error);
-      this.setData({ loading: false });
+      this.setData({ isSaving: false }); // Reset isSaving on error
       wx.showToast({
         title: '保存比赛时发生错误',
         icon: 'none',
