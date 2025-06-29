@@ -18,20 +18,27 @@
         <view class="courts-container">
           <view wx:for="{{item.courts}}" wx:for-item="court" wx:key="id" class="court-card">
             <view class="court-header">场地 {{court.court}}</view>
-            <view class="match-teams">
+            <view class="teams-container">
               <!-- Team A -->
-              <view class="team team-a">
-                <view wx:for="{{court.teams[0]}}" wx:for-item="player" wx:key="*this" class="player">
-                  <text>{{player.name || player}}</text>
+              <view class="team">
+                <view wx:for="{{court.teams[0]}}" wx:for-item="player" wx:key="*this" class="player-row">
+                  <text class="player-name {{player.gender === 'female' ? 'female-player' : 'male-player'}}">{{player.name || player}}</text>
+                  <image wx:if="{{player.gender === 'male'}}" class="gender-icon-small" src="/assets/icons/male_24dp_0000F5.png" mode="aspectFit"></image>
+                  <image wx:if="{{player.gender === 'female'}}" class="gender-icon-small" src="/assets/icons/female_24dp_EA33F7.png" mode="aspectFit"></image>
                 </view>
               </view>
               
-              <view class="vs-indicator">VS</view>
+              <!-- Centered VS Score -->
+              <view class="score center-vs">
+                <text class="vs-text">VS</text>
+              </view>
               
               <!-- Team B -->
-              <view class="team team-b">
-                <view wx:for="{{court.teams[1]}}" wx:for-item="player" wx:key="*this" class="player">
-                  <text>{{player.name || player}}</text>
+              <view class="team">
+                <view wx:for="{{court.teams[1]}}" wx:for-item="player" wx:key="*this" class="player-row">
+                  <text class="player-name {{player.gender === 'female' ? 'female-player' : 'male-player'}}">{{player.name || player}}</text>
+                  <image wx:if="{{player.gender === 'male'}}" class="gender-icon-small" src="/assets/icons/male_24dp_0000F5.png" mode="aspectFit"></image>
+                  <image wx:if="{{player.gender === 'female'}}" class="gender-icon-small" src="/assets/icons/female_24dp_EA33F7.png" mode="aspectFit"></image>
                 </view>
               </view>
             </view>
@@ -46,34 +53,66 @@
     </view>
   </block>
   
-  <!-- Original view for attention matches -->
+  <!-- Updated view for attention matches -->
   <block wx:else>
     <view wx:if="{{attentionMatches.length === 0}}" class="empty">没有需要您关注的比赛</view>
-    <view wx:else>
+    <view wx:else class="match-list">
       <view wx:for="{{attentionMatches}}" wx:key="_id" class="match-card">
         <view class="match-header">
-          <text class="players">{{item.PlayerNameA1}}, {{item.PlayerNameA2}} <text class="vs">vs</text> {{item.PlayerNameB1}}, {{item.PlayerNameB2}}</text>
+          <text class="match-time">{{item.formattedStartTime}}</text>
+          <text class="match-round">Round: {{item.Round || '-'}}</text>
+          <view class="match-status">待完成</view>
         </view>
-        <view class="score-row">
-          <text class="score-label">比分:</text>
-          <text class="score-value">{{item.ScoreA}} : {{item.ScoreB}}</text>
+        
+        <view class="teams-container">
+          <!-- Team A -->
+          <view class="team">
+            <view class="player-row">
+              <text class="player-name {{item.PlayerA1Gender === 'female' ? 'female-player' : 'male-player'}}">{{item.PlayerNameA1}}</text>
+              <image wx:if="{{item.PlayerA1Gender === 'male'}}" class="gender-icon-small" src="/assets/icons/male_24dp_0000F5.png" mode="aspectFit"></image>
+              <image wx:if="{{item.PlayerA1Gender === 'female'}}" class="gender-icon-small" src="/assets/icons/female_24dp_EA33F7.png" mode="aspectFit"></image>
+            </view>
+            <view wx:if="{{item.PlayerNameA2}}" class="player-row">
+              <text class="player-name {{item.PlayerA2Gender === 'female' ? 'female-player' : 'male-player'}}">{{item.PlayerNameA2}}</text>
+              <image wx:if="{{item.PlayerA2Gender === 'male'}}" class="gender-icon-small" src="/assets/icons/male_24dp_0000F5.png" mode="aspectFit"></image>
+              <image wx:if="{{item.PlayerA2Gender === 'female'}}" class="gender-icon-small" src="/assets/icons/female_24dp_EA33F7.png" mode="aspectFit"></image>
+            </view>
+          </view>
+          
+          <!-- Centered Score -->
+          <view class="score center-vs">
+            <text>{{item.ScoreA || 0}} - {{item.ScoreB || 0}}</text>
+          </view>
+          
+          <!-- Team B -->
+          <view class="team">
+            <view class="player-row">
+              <text class="player-name {{item.PlayerB1Gender === 'female' ? 'female-player' : 'male-player'}}">{{item.PlayerNameB1}}</text>
+              <image wx:if="{{item.PlayerB1Gender === 'male'}}" class="gender-icon-small" src="/assets/icons/male_24dp_0000F5.png" mode="aspectFit"></image>
+              <image wx:if="{{item.PlayerB1Gender === 'female'}}" class="gender-icon-small" src="/assets/icons/female_24dp_EA33F7.png" mode="aspectFit"></image>
+            </view>
+            <view wx:if="{{item.PlayerNameB2}}" class="player-row">
+              <text class="player-name {{item.PlayerB2Gender === 'female' ? 'female-player' : 'male-player'}}">{{item.PlayerNameB2}}</text>
+              <image wx:if="{{item.PlayerB2Gender === 'male'}}" class="gender-icon-small" src="/assets/icons/male_24dp_0000F5.png" mode="aspectFit"></image>
+              <image wx:if="{{item.PlayerB2Gender === 'female'}}" class="gender-icon-small" src="/assets/icons/female_24dp_EA33F7.png" mode="aspectFit"></image>
+            </view>
+          </view>
         </view>
-        <view class="meta-row">
-          <text class="court">场地: {{item.Court}}</text>
+        
+        <view class="match-footer">
+          <view class="meta-row">
+            <text class="court">场地: {{item.Court}}</text>
+          </view>
+          <button class="edit-btn" bindtap="onEditTap" data-id="{{item._id}}">编辑比分</button>
         </view>
-        <view class="time-row">
-          <text class="start-time">开始时间: {{item.formattedStartTime}}</text>
-        </view>
-        <view class="edit-row">
-          <button class="edit-btn" size="mini" bindtap="onEditTap" data-id="{{item._id}}">编辑</button>
-        </view>
+        
         <view wx:if="{{editMatchId === item._id}}" class="edit-form">
           <view class="edit-inputs">
             <input class="score-input" type="number" placeholder="队伍A" value="{{editScoreA}}" bindinput="onEditScoreAInput" />
             <text class="edit-vs">:</text>
             <input class="score-input" type="number" placeholder="队伍B" value="{{editScoreB}}" bindinput="onEditScoreBInput" />
           </view>
-          <view style="display: flex; justify-content: flex-end;">
+          <view class="edit-actions">
             <button class="save-btn" size="mini" type="primary" loading="{{isSaving}}" bindtap="onSaveScore">保存</button>
             <button class="cancel-btn" size="mini" bindtap="onCancelEdit">取消</button>
           </view>
