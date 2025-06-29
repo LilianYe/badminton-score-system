@@ -42,7 +42,7 @@ Page({
   
   onLoad(options) {
     console.log('Generate Match page loaded', options);
-      // Initialize Cloud DB Service at page load
+    // Initialize Cloud DB Service at page load
     try {
       this.CloudDBService = require('../../utils/cloud-db.js');
       if (this.CloudDBService) {
@@ -58,7 +58,70 @@ Page({
     } catch (error) {
       console.error('Error requiring cloud-db.js:', error);
     }
-      // Check if we're coming from signup page
+    
+    // Check if we're coming from my-match page
+    if (options && options.fromMyMatch) {
+      const gameId = options.gameId || null;
+      
+      this.setData({
+        fromSignup: true,
+        gameId: gameId,
+        fromMyMatch: true // Store this flag to indicate we're regenerating
+      });
+      
+      // Load player data for regeneration without checking for existing matches
+      if (gameId) {
+        console.log('Loading player data for regeneration from game ID:', gameId);
+        this.setData({ loading: true });
+        
+        // Get the game to load player information
+        this.CloudDBService.getGameById(gameId)
+          .then(game => {
+            if (game && game.players && game.players.length > 0) {
+              // Extract player names from the game - handle objects or strings
+              const playerNames = game.players.map(player => {
+                // Check if player is an object with a name property or just a string
+                return typeof player === 'object' && player.name ? player.name : player;
+              });
+              const playerList = playerNames.join('\n');
+              
+              // Update input fields with game data
+              this.setData({
+                playersInput: playerList,
+                courtCount: game.courtCount ? game.courtCount.toString() : '2',
+                loading: false
+              }, () => {
+                this.processPlayersInput();
+              });
+              
+              console.log('Loaded players for regeneration:', playerList);
+              
+              wx.showToast({
+                title: '请重新生成对阵表',
+                icon: 'none',
+                duration: 2000
+              });
+            } else {
+              console.log('Game found but no player data');
+              this.setData({ loading: false });
+            }
+          })
+          .catch(error => {
+            console.error('Failed to load game for regeneration:', error);
+            this.setData({ loading: false });
+            
+            wx.showToast({
+              title: '加载失败',
+              icon: 'none',
+              duration: 2000
+            });
+          });
+      }
+      
+      return; // Exit early to avoid the player loading code below
+    }
+    
+    // Check if we're coming from signup page
     if (options && options.fromSignup) {
       const gameId = options.gameId || null;
       
@@ -66,7 +129,7 @@ Page({
         fromSignup: true,
         gameId: gameId // Store the game ID for session tracking
       });
-        // If we have a gameId, check if matches have already been generated
+      // If we have a gameId, check if matches have already been generated
       if (gameId) {
         console.log('Setting gameId in data:', gameId);
         this.checkExistingMatches(gameId);
@@ -83,7 +146,8 @@ Page({
             .map(player => player.name);
           console.log('Loaded female players:', femalePlayers);
         }
-            this.setData({
+        
+        this.setData({
           playersInput: playerList,
           // Auto-adjust settings based on player count
           gamePerPlayer: Math.min(Math.floor(14 / app.globalData.signupPlayers.length) * 2, 7).toString(), 
@@ -93,7 +157,8 @@ Page({
         }, () => {
           this.processPlayersInput();
         });
-          console.log('Loaded players from signup:', playerList);
+        
+        console.log('Loaded players from signup:', playerList);
         
         // No longer auto-generate - let the user review parameters first
         wx.showToast({
@@ -127,6 +192,12 @@ Page({
     
   onShow() {
     console.log('Generate Match page shown');
+    
+    // Skip checking for existing matches if coming from my-match page
+    if (this.data.fromMyMatch) {
+      console.log('Skipping existing match check when coming from my-match page');
+      return;
+    }
     
     // Check if matches exist for the current game every time the page is shown
     const gameId = this.data.gameId || getApp().globalData.currentGameId;
@@ -588,6 +659,13 @@ Page({
   checkExistingMatches(gameId) {
     if (!gameId) return;
     
+    // If coming from my-match page, we specifically want to regenerate, so don't load existing matches
+    if (this.data.fromMyMatch) {
+      console.log('Coming from my-match page, skipping loading existing matches');
+      this.setData({ loading: false });
+      return;
+    }
+    
     // If matches are already loaded or saved, don't check again
     if (this.data.matchRounds && this.data.matchRounds.length > 0) {
       console.log('Matches already loaded, skipping check');
@@ -599,7 +677,7 @@ Page({
     // First, get the game to check if matches are generated
     this.CloudDBService.getGameById(gameId)
       .then(game => {
-        if (game && game.matchGenerated) {
+        if (game && game.matchGenerated && !this.data.fromMyMatch) {
           console.log('This game already has generated matches: ', gameId);
           // Directly load existing matches without showing a modal
           this.loadExistingMatches(gameId);
@@ -620,7 +698,7 @@ Page({
       .then(matches => {
         if (matches && matches.length > 0) {
           console.log('Loaded existing matches:', matches);
-            // Process matches into same format as match generation
+          // Process matches into same format as match generation
           // Group matches by round
           const roundsMap = {};
           const courtDetailsSet = new Set();
@@ -633,13 +711,15 @@ Page({
             }
             
             // Add this match to the appropriate round
-            // Check if we have full player objects
+            // Always extract just the player names for display
             let team1, team2;
-            if (match.PlayerA1 && typeof match.PlayerA1 === 'object') {
-              // We have full player objects
+            if (match.PlayerA1) {
               team1 = [match.PlayerA1, match.PlayerA2];
               team2 = [match.PlayerB1, match.PlayerB2];
-            } 
+            } else {
+              console.warn('Match has no recognizable player format:', match);
+              return; // Skip this match
+            }
             
             const courtId = match.Court;
             courtDetailsSet.add(courtId);
@@ -671,7 +751,7 @@ Page({
             courtDetails: courtDetails.join(',')
           });
           
-          // Also retrieve players' ELO from the matches
+          // Also retrieve players' ELO from the matches for potential regeneration
           const playerMap = {};
           matches.forEach(match => {
             // Check if we have full player objects or just names and ELOs

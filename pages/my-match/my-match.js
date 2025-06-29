@@ -250,7 +250,7 @@ Page({
     }
     
     wx.navigateTo({
-      url: `/pages/generate-match/generate-match?fromSignup=true&gameId=${gameId}`,
+      url: `/pages/generate-match/generate-match?fromSignup=true&gameId=${gameId}&fromMyMatch=true`,
       success: (res) => {
         console.log('Navigation to generate-match successful', res);
       },
@@ -263,4 +263,4 @@ Page({
       }
     });
   }
-}); 
+});
