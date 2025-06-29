@@ -284,10 +284,20 @@ Page({  data: {
             app.globalData.games[gameIndex] = updatedGame;
           }
           
+          // Check if game status has changed from "matched" to "active"
+          // This may happen when removing players affects match generation status
+          if (game.status === 'matched' && updatedGame.status === 'active') {
+            // Also update the hasGeneratedMatches state to reflect the new status
+            this.setData({
+              hasGeneratedMatches: false
+            });
+          } 
+          // Show standard success message
           wx.showToast({
             title: '已退出活动',
             icon: 'success'
           });
+          
       } else {
           wx.showToast({
             title: '操作失败',
