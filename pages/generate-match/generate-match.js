@@ -441,6 +441,39 @@ Page({
       elo: getApp().globalData.defaultElo || 1500
     }));
 
+    // Add check for single gender player when ignoreGender is false
+    const femalePlayerCount = playerObjects.filter(player => player.gender === 'female').length;
+    const malePlayerCount = playerObjects.filter(player => player.gender === 'male').length;
+    
+    if ((femalePlayerCount === 1 || malePlayerCount === 1) && !ignoreGender) {
+      const singleGender = femalePlayerCount === 1 ? '女性' : '男性';
+      const message = `只有1名${singleGender}球员，无法平衡性别分配。\n请设置"忽略性别平衡"为开启状态，或添加更多${singleGender}球员`;
+      
+      this.setData({ 
+        result: message,
+        loading: false 
+      });
+      
+      wx.showModal({
+        title: '无法生成对阵表',
+        content: message,
+        confirmText: '忽略性别',
+        cancelText: '取消',
+        success: (res) => {
+          if (res.confirm) {
+            // User chose to ignore gender, toggle the setting and try again
+            this.setData({
+              ignoreGender: true
+            }, () => {
+              // Call generate again after state is updated
+              this.generateMatches();
+            });
+          }
+        }
+      });
+      return;
+    }
+
     // Store courtDetails in app.globalData for later use
     app.globalData.courtDetails = courtDetails;
     

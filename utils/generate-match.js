@@ -15,9 +15,10 @@ const global_expected_wins = {};
  * @param {number} targetRestCount
  * @param {Object} playerConsecutiveActive - {player: consecutiveActiveRounds}
  * @param {number} maxConsecutiveRounds - Maximum consecutive active rounds before mandatory rest
+ * @param {boolean} ignoreGender - If true, ignore gender balance constraints
  * @returns {boolean}
  */
-function backtrackRestScheduleVariable(players, restSchedule, restCounts, currentRound, totalRounds, restPerRound, targetRestCount, playerConsecutiveActive, maxConsecutiveRounds) {
+function backtrackRestScheduleVariable(players, restSchedule, restCounts, currentRound, totalRounds, restPerRound, targetRestCount, playerConsecutiveActive, maxConsecutiveRounds, ignoreGender) {
   if (currentRound === totalRounds) return true;
   const restCountNeeded = restPerRound[currentRound];
   const roundsLeft = totalRounds - currentRound;
@@ -43,12 +44,16 @@ function backtrackRestScheduleVariable(players, restSchedule, restCounts, curren
   const maleCandidates = validCandidates.filter(p => p.gender === 'male').sort((a, b) => (playerConsecutiveActive[b.name] || 0) - (playerConsecutiveActive[a.name] || 0));
   const mustRestFemales = mustRest.filter(p => p.gender === 'female');
 
-  // Gender balance
+  // Gender balance - only apply if ignoreGender is false
   const restSlotsRemaining = restCountNeeded - mustRest.length;
-  const currentFemaleCount = mustRestFemales.length;
-  const totalFemales = players.filter(p => p.gender === 'female').length;
-  const activeFemales = totalFemales - currentFemaleCount;
-  const neededFemalesToRest = activeFemales % 2;
+  let neededFemalesToRest = 0;
+  
+  if (!ignoreGender) {
+    const currentFemaleCount = mustRestFemales.length;
+    const totalFemales = players.filter(p => p.gender === 'female').length;
+    const activeFemales = totalFemales - currentFemaleCount;
+    neededFemalesToRest = activeFemales % 2;
+  }
 
   // Generate combinations
   let combinationsToTry = [];
@@ -65,35 +70,45 @@ function backtrackRestScheduleVariable(players, restSchedule, restCounts, curren
     return result;
   }
 
-  if (neededFemalesToRest === 1) {
-    for (let offset = 0; offset <= Math.floor((femaleCandidates.length + 1) / 2); offset++) {
-      let femalesToAdd = 1 + offset * 2;
-      if (femalesToAdd > restSlotsRemaining) continue;
-      let malesToAdd = restSlotsRemaining - femalesToAdd;
-      if (malesToAdd > maleCandidates.length) continue;
-      let femaleCombos = getCombinations(femaleCandidates, Math.min(femalesToAdd, femaleCandidates.length));
-      let maleCombos = getCombinations(maleCandidates, Math.min(malesToAdd, maleCandidates.length));
-      femaleCombos.forEach(fCombo => {
-        maleCombos.forEach(mCombo => {
-          combinationsToTry.push([...fCombo, ...mCombo]);
-        });
-      });
-    }
+  // When ignoring gender, we can create any combination without gender restrictions
+  if (ignoreGender) {
+    // Combine all candidates regardless of gender
+    const allCandidates = [...femaleCandidates, ...maleCandidates];
+    const combos = getCombinations(allCandidates, Math.min(restSlotsRemaining, allCandidates.length));
+    combinationsToTry = combos;
   } else {
-    for (let offset = 0; offset <= Math.floor(femaleCandidates.length / 2); offset++) {
-      let femalesToAdd = offset * 2;
-      if (femalesToAdd > restSlotsRemaining) continue;
-      let malesToAdd = restSlotsRemaining - femalesToAdd;
-      if (malesToAdd > maleCandidates.length) continue;
-      let femaleCombos = getCombinations(femaleCandidates, Math.min(femalesToAdd, femaleCandidates.length));
-      let maleCombos = getCombinations(maleCandidates, Math.min(malesToAdd, maleCandidates.length));
-      femaleCombos.forEach(fCombo => {
-        maleCombos.forEach(mCombo => {
-          combinationsToTry.push([...fCombo, ...mCombo]);
+    // Use the existing gender-balanced logic
+    if (neededFemalesToRest === 1) {
+      for (let offset = 0; offset <= Math.floor((femaleCandidates.length + 1) / 2); offset++) {
+        let femalesToAdd = 1 + offset * 2;
+        if (femalesToAdd > restSlotsRemaining) continue;
+        let malesToAdd = restSlotsRemaining - femalesToAdd;
+        if (malesToAdd > maleCandidates.length) continue;
+        let femaleCombos = getCombinations(femaleCandidates, Math.min(femalesToAdd, femaleCandidates.length));
+        let maleCombos = getCombinations(maleCandidates, Math.min(malesToAdd, maleCandidates.length));
+        femaleCombos.forEach(fCombo => {
+          maleCombos.forEach(mCombo => {
+            combinationsToTry.push([...fCombo, ...mCombo]);
+          });
         });
-      });
+      }
+    } else {
+      for (let offset = 0; offset <= Math.floor(femaleCandidates.length / 2); offset++) {
+        let femalesToAdd = offset * 2;
+        if (femalesToAdd > restSlotsRemaining) continue;
+        let malesToAdd = restSlotsRemaining - femalesToAdd;
+        if (malesToAdd > maleCandidates.length) continue;
+        let femaleCombos = getCombinations(femaleCandidates, Math.min(femalesToAdd, femaleCandidates.length));
+        let maleCombos = getCombinations(maleCandidates, Math.min(malesToAdd, maleCandidates.length));
+        femaleCombos.forEach(fCombo => {
+          maleCombos.forEach(mCombo => {
+            combinationsToTry.push([...fCombo, ...mCombo]);
+          });
+        });
+      }
     }
   }
+  
   if (combinationsToTry.length > 1) {
     for (let i = combinationsToTry.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
@@ -119,7 +134,7 @@ function backtrackRestScheduleVariable(players, restSchedule, restCounts, curren
       }
     });
     // Recurse
-    if (backtrackRestScheduleVariable(players, restSchedule, restCounts, currentRound + 1, totalRounds, restPerRound, targetRestCount, playerConsecutiveActiveCopy, maxConsecutiveRounds)) {
+    if (backtrackRestScheduleVariable(players, restSchedule, restCounts, currentRound + 1, totalRounds, restPerRound, targetRestCount, playerConsecutiveActiveCopy, maxConsecutiveRounds, ignoreGender)) {
       return true;
     }
     // Backtrack
@@ -222,7 +237,8 @@ function generateRotationFull(players, courtCount, gamePerPlayer, eloThreshold, 
     restPerRound,
     targetRestCount,
     playerConsecutiveActive,
-    maxConsecutiveRounds
+    maxConsecutiveRounds,
+    ignoreGender  // Add the ignoreGender parameter
   );
   if (!restOk) {
     console.error('Failed to generate rest schedule.');
@@ -618,16 +634,11 @@ module.exports = {
 function testGenerateMatchWithSampleData(courtCount = 2, gamePerPlayer = 4, eloThreshold = 100, teamEloDiff = 300, maxOpponentFrequency = 5, maxConsecutiveRounds = 4, ignoreGender = true, femaleEloDiff = 100) {
   // Sample player data
   const players = [
-    {"avatar":"/assets/icons/user.png","elo":1500,"gender":"female","name":"敏敏子"},
-    {"avatar":"/assets/icons/user.png","elo":1550,"gender":"male","name":"Acaprice"},
-    {"avatar":"/assets/icons/user.png","elo":1600,"gender":"male","name":"liyu"},
-    {"avatar":"/assets/icons/user.png","elo":1500,"gender":"female","name":"Max"},
-    {"avatar":"/assets/icons/user.png","elo":1500,"gender":"female","name":"小白"},
-    {"avatar":"/assets/icons/user.png","elo":1500,"gender":"female","name":"ai"},
-    {"avatar":"/assets/icons/user.png","elo":1580,"gender":"male","name":"张晴川"},
-    {"avatar":"/assets/icons/user.png","elo":1520,"gender":"male","name":"方文"},
-    {"avatar":"/assets/icons/user.png","elo":1500,"gender":"male","name":"米兰的小铁匠"},
-    {"avatar":"/assets/icons/user.png","elo":1500,"gender":"male","name":"gdc"}
+    {"avatar":"/assets/icons/user.png","elo":1600,"gender":"male","name":"一顿饭"},
+    {"avatar":"/assets/icons/user.png","elo":1460,"gender":"male","name":"liyu"},
+    {"avatar":"/assets/icons/user.png","elo":1549,"gender":"female","name":"Yummy"},
+    {"avatar":"/assets/icons/user.png","elo":1445,"gender":"male","name":"杨昆"},
+    {"avatar":"/assets/icons/user.png","elo":1745,"gender":"male","name":"米兰的小铁匠"},
   ];
 
   console.log('Starting test with sample data:');
@@ -702,4 +713,4 @@ function testGenerateMatchWithSampleData(courtCount = 2, gamePerPlayer = 4, eloT
   }
 }
 
-// const result = testGenerateMatchWithSampleData();
+// const result = testGenerateMatchWithSampleData(courtCount = 1, gamePerPlayer = 4, eloThreshold = 300, teamEloDiff = 300, maxOpponentFrequency = 5, maxConsecutiveRounds = 4, ignoreGender = true, femaleEloDiff = 100);
