@@ -153,6 +153,15 @@
     
     <!-- Bottom Action Buttons -->
     <view class="action-buttons">
+      <!-- Return to game signup button -->
+      <button 
+        class="action-button return" 
+        bindtap="navigateToGameSignup"
+        hover-class="button-hover">
+        返回报名页面
+      </button>
+      
+      <!-- Generate matches button -->
       <button 
         class="action-button {{hasGeneratedMatches ? 'view-existing' : (isOwner ? 'primary' : 'disabled')}}{{isNavigating ? ' isNavigating' : ''}}" 
         bindtap="navigateToGenerate" 

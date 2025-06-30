@@ -665,4 +665,45 @@ Page({  data: {
       }
     });
   },
+  
+  // Navigate back to game-signup page
+  navigateToGameSignup: function() {
+    console.log('Navigating to game signup page');
+    
+    // Show loading toast
+    wx.showLoading({
+      title: '正在返回...',
+      mask: true
+    });
+    
+    try {
+      // Use switchTab for tabbar pages
+      wx.switchTab({
+        url: '/pages/game-signup/game-signup',
+        success: function() {
+          console.log('Navigation to game-signup successful');
+          wx.hideLoading();
+        },
+        fail: function(error) {
+          console.error('Failed to navigate to game-signup with switchTab:', error);
+          wx.hideLoading();
+          
+          // Show error message
+          wx.showToast({
+            title: '返回失败，请手动点击底部标签栏',
+            icon: 'none',
+            duration: 2000
+          });
+        }
+      });
+    } catch (e) {
+      console.error('Exception during navigation:', e);
+      wx.hideLoading();
+      wx.showToast({
+        title: '发生错误，请手动返回',
+        icon: 'none',
+        duration: 2000
+      });
+    }
+  },
 });

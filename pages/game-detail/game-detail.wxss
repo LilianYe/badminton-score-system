@@ -292,14 +292,15 @@ page {
 /* Action Button Styles */
 .action-buttons {
   display: flex;
-  justify-content: center;
+  justify-content: space-between;
   margin-top: 20rpx;
   margin-bottom: 40rpx;
   padding: 0 20rpx;
+  gap: 20rpx; /* Add gap between buttons */
 }
 
 .action-button {
-  width: 100%;
+  flex: 1; /* Make buttons take equal width */
   margin: 0;
   padding: 22rpx 0;
   text-align: center;
@@ -312,6 +313,12 @@ page {
   transition: all 0.3s ease;
 }
 
+/* Add style for return button */
+.action-button.return {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+/* Keep existing button styles */
 .action-button.primary {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
 }
@@ -335,6 +342,12 @@ page {
 .action-button:active:not(.disabled) {
   transform: translateY(2rpx);
   box-shadow: 0 1rpx 3rpx rgba(0, 0, 0, 0.1);
+}
+
+/* Button hover effect */
+.button-hover {
+  opacity: 0.8;
+  transform: translateY(2rpx);
 }
 
 /* Empty State */
