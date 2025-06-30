@@ -181,26 +181,29 @@ class MatchService {
       // Use the new optimized query
       const userMatches = await CloudDBService.getCompletedMatchesByUserName(currentUser.Name);
       const processedMatches = userMatches.map(match => {
-        let result = '';
-        const isPlayerA = [
-          this.getPlayerName(match.PlayerA1), 
-          this.getPlayerName(match.PlayerA2)
-        ].includes(currentUser.Name);
-        const isPlayerB = [
-          this.getPlayerName(match.PlayerB1), 
-          this.getPlayerName(match.PlayerB2)
-        ].includes(currentUser.Name);
-        if (isPlayerA) {
-          result = match.ScoreA > match.ScoreB ? 'Win' : 'Loss';
-        } else if (isPlayerB) {
-          result = match.ScoreB > match.ScoreA ? 'Win' : 'Loss';
-        } else {
-          result = 'Referee';
+        let eloChange = 0;
+        let isWin = false;
+        const userName = currentUser.Name;
+
+        if (match.PlayerA1 && match.PlayerA1.name === userName) {
+          eloChange = Math.round(match.PlayerA1.eloChanged || 0);
+          isWin = match.ScoreA > match.ScoreB;
+        } else if (match.PlayerA2 && match.PlayerA2.name === userName) {
+          eloChange = Math.round(match.PlayerA2.eloChanged || 0);
+          isWin = match.ScoreA > match.ScoreB;
+        } else if (match.PlayerB1 && match.PlayerB1.name === userName) {
+          eloChange = Math.round(match.PlayerB1.eloChanged || 0);
+          isWin = match.ScoreB > match.ScoreA;
+        } else if (match.PlayerB2 && match.PlayerB2.name === userName) {
+          eloChange = Math.round(match.PlayerB2.eloChanged || 0);
+          isWin = match.ScoreB > match.ScoreA;
         }
+
         const processedMatch = {
           ...match,
           formattedCompleteTime: this.formatTime(match.CompleteTime),
-          result: result,
+          eloChange,
+          isWin,
           PlayerA1: match.PlayerA1,
           PlayerA2: match.PlayerA2,
           PlayerB1: match.PlayerB1,

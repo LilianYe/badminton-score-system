@@ -483,3 +483,22 @@
     vertical-align: middle;
     margin-left: 8rpx;
 }
+
+.elo-change-badge {
+    padding: 6rpx 16rpx;
+    border-radius: 20rpx;
+    font-size: 24rpx;
+    font-weight: bold;
+    color: #fff;
+    display: inline-block;
+    min-width: 60rpx;
+    text-align: center;
+}
+
+.elo-change-badge.win {
+    background-color: #4caf50;
+}
+
+.elo-change-badge.loss {
+    background-color: #f44336;
+}
