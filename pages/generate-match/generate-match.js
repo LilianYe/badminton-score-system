@@ -803,10 +803,19 @@ Page({
     
   // Navigate back to signup page
   navigateBack: function() {
-    wx.navigateBack({
-      delta: 1
-    });
+    // Get the gameId from data
+    const gameId = this.data.gameId || getApp().globalData.currentGameId;
+    
+    // If we have a gameId, navigate directly to game detail page
+    if (gameId) {
+      wx.redirectTo({
+        url: `/pages/game-detail/game-detail?id=${gameId}`
+      });
+    } else {
+      // Fall back to regular navigation if no gameId is available
+      wx.navigateBack({
+        delta: 1
+      });
+    }
   }
 });
-
-// Note: In WeChat Mini Program, no need to explicitly export the Page
