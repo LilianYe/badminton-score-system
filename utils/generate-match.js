@@ -178,9 +178,9 @@ function generateRotationFull(players, courtCount, gamePerPlayer, eloThreshold, 
   }
   
   const COURT_SIZE = 4;
-  const minExpectedWins = 0;
   const totalPlayers = players.length;
   const totalPlayerGames = totalPlayers * gamePerPlayer;
+  const minExpectedWins = gamePerPlayer % 2 === 0 ? gamePerPlayer / 2 - 1 : Math.floor(gamePerPlayer / 2);
   const playerSlotsPerRound = courtCount * COURT_SIZE;
   const roundsFloat = totalPlayerGames / playerSlotsPerRound;
   const fullRounds = Math.floor(roundsFloat);
@@ -223,6 +223,7 @@ function generateRotationFull(players, courtCount, gamePerPlayer, eloThreshold, 
   console.log('Max opponent frequency:', maxOpponentFrequency);
   console.log('Max consecutive rounds:', maxConsecutiveRounds);
   console.log('Ignore gender balance:', ignoreGender);
+  console.log('minExpectedWins:', minExpectedWins);
   if (ignoreGender) {
     console.log('Female ELO adjustment:', femaleEloDiff);
   }
