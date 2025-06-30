@@ -119,18 +119,18 @@
 }
 
 .match-time {
-    font-size: 24rpx;
+    font-size: 30rpx;
     color: #888;
 }
 
 .match-round {
-    font-size: 24rpx;
+    font-size: 30rpx;
     color: #666;
     font-weight: 500;
 }
 
 .match-court {
-    font-size: 24rpx;
+    font-size: 30rpx;
     color: #007AFF;
     font-weight: 500;
     background-color: rgba(0, 122, 255, 0.1);
@@ -195,7 +195,7 @@
 }
 
 .player-name {
-    font-size: 28rpx;
+    font-size: 30rpx;
     color: #333;
     margin-bottom: 0;
 }
@@ -227,7 +227,7 @@
     border: none;
     padding: 12rpx 24rpx;
     border-radius: 20rpx;
-    font-size: 24rpx;
+    font-size: 30rpx;
     margin: 0;
 }
 

@@ -88,8 +88,7 @@
                 <view wx:for="{{upcomingMatches}}" wx:key="MatchId" class="match-card">
                     <view class="match-header">
                         <text class="match-time">{{item.formattedStartTime}}</text>
-                        <text class="match-round">Round: {{item.Round}}</text>
-                        <view class="match-status">Upcoming</view>
+                        <text class="match-round">第{{item.Round}}轮</text>
                     </view>
                     <view class="teams-container">
                         <view class="team">
@@ -121,7 +120,7 @@
                         </view>
                     </view>
                     <view class="match-footer">
-                        <text class="match-court">Court: {{item.Court}}</text>
+                        <text class="match-court">{{item.Court}}号场</text>
                         <button class="edit-btn" bindtap="editScore" data-matchid="{{item.MatchId}}">记录比分</button>
                     </view>
                 </view>
@@ -132,7 +131,7 @@
                 <view wx:for="{{completedMatches}}" wx:key="MatchId" class="match-card">
                     <view class="match-header">
                         <text class="match-time">{{item.formattedCompleteTime}}</text>
-                        <text class="match-round">Round: {{item.Round}}</text>
+                        <text class="match-round">第{{item.Round}}轮</text>
                         <view class="result-badge {{item.result}}">{{item.result}}</view>
                     </view>
                     <view class="teams-container">

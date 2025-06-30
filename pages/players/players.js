@@ -29,7 +29,7 @@ Page({
       const totalCount = countResult.total;
       console.log(`Total players with more than 5 games: ${totalCount}`);
 
-      // Load top 50 players with more than 5 games using pagination
+      // Load top 50 players with greater than or equal 10 games using pagination
       const allPlayers = [];
       const maxPlayers = 50; // Limit to top 50 players
       const batchSize = 20; // WeChat cloud database limit
@@ -42,7 +42,7 @@ Page({
         
         const res = await db.collection('UserPerformance')
           .where({
-            Games: db.command.gt(5)
+            Games: db.command.gte(10)
           })
           .orderBy('ELO', 'desc')
           .skip(skip)
