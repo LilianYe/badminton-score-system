@@ -360,7 +360,32 @@ Page({
     }
     
     if (players.length < 4) {
-      this.setData({ result: '至少需要4名球员才能生成对阵表', loading: false });
+      this.setData({ 
+        result: '至少需要4名球员才能生成对阵表', 
+        loading: false 
+      });
+      
+      wx.showToast({
+        title: '至少需要4名球员才能生成对阵表',
+        icon: 'none',
+        duration: 2000
+      });
+      return;
+    }
+    
+    // Add check for minimum player count based on court count
+    if (players.length < courtCount * 4) {
+      const message = `球员数量不足: 需要至少 ${courtCount * 4} 名球员 (当前: ${players.length})\n请增加球员或减少场地数量`;
+      this.setData({ 
+        result: message,
+        loading: false 
+      });
+      
+      wx.showModal({
+        title: '无法生成对阵表',
+        content: message,
+        showCancel: false
+      });
       return;
     }
       
