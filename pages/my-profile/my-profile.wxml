@@ -132,7 +132,9 @@
                     <view class="match-header">
                         <text class="match-time">{{item.formattedCompleteTime}}</text>
                         <text class="match-round">第{{item.Round}}轮</text>
-                        <view class="result-badge {{item.result}}">{{item.result}}</view>
+                        <view class="elo-change-badge {{item.eloChange >= 0 ? 'win' : 'loss'}}">
+                            {{ item.eloChange >= 0 ? '+' : ''}}{{item.eloChange}}
+                        </view>
                     </view>
                     <view class="teams-container">
                         <view class="team">
@@ -195,8 +197,8 @@
             </view>
         </view>
         <view class="score-input-actions">
-            <button class="score-input-btn cancel-btn" bindtap="cancelScore">Cancel</button>
-            <button class="score-input-btn confirm-btn" bindtap="confirmScore">Confirm</button>
+            <button class="score-input-btn cancel-btn" bindtap="cancelScore">取消</button>
+            <button class="score-input-btn confirm-btn" bindtap="confirmScore">确定</button>
         </view>
     </view>
 </view>
