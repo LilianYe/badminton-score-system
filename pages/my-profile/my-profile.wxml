@@ -175,7 +175,7 @@
     <view class="score-input-overlay" bindtap="cancelScore"></view>
     <view class="score-input-container">
         <view class="score-input-header">
-            <text class="score-input-title">Complete Match</text>
+            <text class="score-input-title">记录比分</text>
         </view>
         <view class="score-input-content">
             <view class="score-input-row">
