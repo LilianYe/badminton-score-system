@@ -708,15 +708,14 @@ Page({
       const game = await this.CloudDBService.getGameById(gameId);
       
       // Check if the game already has matches generated
-      if (game && game.matchGenerated) {
+      if (game && game.status === 'matched') {
         console.log('Deleting generated matches before saving new ones');
         await this.CloudDBService.deleteMatchesForGame(gameId);
         
         // Update game in database to reset status
         console.log('Resetting game status');
         await this.CloudDBService.updateGame(gameId, {
-          status: 'active',
-          matchGenerated: false
+          status: 'active'
         });
       }
 
@@ -790,7 +789,7 @@ Page({
     // First, get the game to check if matches are generated
     this.CloudDBService.getGameById(gameId)
       .then(game => {
-        if (game && game.matchGenerated && !this.data.fromMyMatch) {
+        if (game && game.status === 'matched' && !this.data.fromMyMatch) {
           console.log('This game already has generated matches: ', gameId);
           // Directly load existing matches without showing a modal
           this.loadExistingMatches(gameId);

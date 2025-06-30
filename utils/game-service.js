@@ -205,8 +205,7 @@ class GameService {
         // Update game in database with added player, reset status, and reset match data
         await CloudDBService.updateGame(gameId, {
           players: updatedPlayers,
-          status: 'active',
-          matchGenerated: false
+          status: 'active'
         });
       } else {
         // If no matches were generated, just update player list
@@ -273,8 +272,7 @@ class GameService {
         // Update game in database with removed player, reset status, and reset match data
         await CloudDBService.updateGame(gameId, {
           players: updatedPlayers,
-          status: 'active',
-          matchGenerated: false
+          status: 'active'
         });
       } else {
         // If no matches were generated, just update player list
@@ -319,8 +317,7 @@ class GameService {
       
       // Update game with matches
       await CloudDBService.updateGame(gameId, {
-        status: 'matched',
-        matchGenerated: true
+        status: 'matched'
       });
       const updatedGame = await this.getGameById(gameId);
       console.log('Matches saved successfully:', updatedGame);

@@ -797,10 +797,8 @@ class CloudDBService {
     
     try {
       console.log(`Marking game ${gameId} as having generated matches`);
-        // Update the game with matchGenerated flag
       const updateData = {
-        matchGenerated: true,
-        matchGeneratedTime: new Date().toISOString()
+        status: 'matched'
       };
       
       // Use updateGame method to update the game
@@ -877,9 +875,7 @@ class CloudDBService {
       // Also update the game to show matches are no longer generated
       if (deleteResult.stats.removed > 0) {        
         await this.updateGame(gameId, {
-          matchGenerated: false,
-          status: 'active',
-          matchGeneratedTime: null
+          status: 'active'
         });
         console.log(`Updated game ${gameId} to show matches are no longer generated`);
       }

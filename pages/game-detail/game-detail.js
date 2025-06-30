@@ -86,7 +86,7 @@ Page({  data: {
           game, 
           isOwner,
           // Check if this game already has generated matches
-          hasGeneratedMatches: game.matchGenerated || false,
+          hasGeneratedMatches: game.status === 'matched',
           // Initialize edit game data
           editGame: {
             title: game.title,
