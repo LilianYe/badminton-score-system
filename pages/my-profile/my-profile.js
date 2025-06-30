@@ -141,16 +141,45 @@ Page({
         });
     },
 
-    editScore: function(e) {
+    editScore: async function(e) {
         const matchId = e.currentTarget.dataset.matchid;
         console.log('=== EDIT SCORE DEBUG ===');
         console.log('Raw matchId from dataset:', matchId, 'type:', typeof matchId);
-        
+
+        // Query the database to check if the match has already been completed
+        const db = wx.cloud.database();
+        try {
+            const res = await db.collection('Match').where({ MatchId: matchId }).get();
+            if (res.data && res.data.length > 0) {
+                const match = res.data[0];
+                if (match.CompleteTime) {
+                    wx.showToast({
+                        title: '该比赛已被他人完成',
+                        icon: 'none',
+                        duration: 2000
+                    });
+                    // Reload upcoming matches
+                    if (this.data.currentUser && this.data.currentUser.Name) {
+                        await this.loadMatches(this.data.currentUser.Name);
+                    }
+                    return;
+                }
+            }
+        } catch (error) {
+            console.error('Error checking match completion:', error);
+            wx.showToast({
+                title: '检查比赛状态失败',
+                icon: 'none'
+            });
+            return;
+        }
+
+        // If not completed, proceed as before
         const match = this.data.upcomingMatches.find(m => m.MatchId === matchId);
         console.log('Found match:', match);
         console.log('Available matches:', this.data.upcomingMatches.map(m => ({ MatchId: m.MatchId, _id: m._id })));
         console.log('=== END EDIT SCORE DEBUG ===');
-        
+
         if (match) {
             this.setData({
                 showScoreInput: true,
