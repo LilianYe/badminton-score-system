@@ -154,7 +154,7 @@ Page({
                 const match = res.data[0];
                 if (match.CompleteTime) {
                     wx.showToast({
-                        title: '该比赛已被他人完成',
+                        title: '比分已被他人记录，请前往历史记录查看',
                         icon: 'none',
                         duration: 2000
                     });
