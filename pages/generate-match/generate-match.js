@@ -474,6 +474,40 @@ Page({
       return;
     }
 
+    // Add check for exactly 2 players of a gender when ignoreGender is false
+    // When there are exactly 2 female or male players, they will always play against each other
+    // which means maxOpponentFrequency must be at least equal to gamePerPlayer
+    if (!ignoreGender && (femalePlayerCount === 2 || malePlayerCount === 2)) {
+      const twoGender = femalePlayerCount === 2 ? '女性' : '男性';
+      if (maxOpponentFrequency < gamePerPlayer) {
+        const message = `只有2名${twoGender}球员，他们每场比赛必须相互对抗${gamePerPlayer}次，\n但最大对手频率设置为${maxOpponentFrequency}。\n请增大最大对手频率参数，或设置"忽略性别平衡"为开启状态`;
+        
+        this.setData({ 
+          result: message,
+          loading: false 
+        });
+        
+        wx.showModal({
+          title: '参数设置不合理',
+          content: message,
+          confirmText: '忽略性别',
+          cancelText: '调整参数',
+          success: (res) => {
+            if (res.confirm) {
+              // User chose to ignore gender, toggle the setting and try again
+              this.setData({
+                ignoreGender: true
+              }, () => {
+                // Call generate again after state is updated
+                this.generateMatches();
+              });
+            }
+          }
+        });
+        return;
+      }
+    }
+
     // Store courtDetails in app.globalData for later use
     app.globalData.courtDetails = courtDetails;
     
