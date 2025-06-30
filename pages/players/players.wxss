@@ -193,6 +193,13 @@
   margin-top: 20px;
 }
 
+.filter-note {
+  padding: 20rpx;
+  text-align: center;
+  font-size: 24rpx;
+  color: #6c757d;
+}
+
 .actions {
   margin-top: 30px;
   display: flex;

@@ -129,7 +129,8 @@ class MatchService {
         PlayerA2: match.PlayerA2,
         PlayerB1: match.PlayerB1,
         PlayerB2: match.PlayerB2,
-        Referee: match.Referee
+        Referee: match.Referee,
+        Court: match.Court
       };
       return processedMatch;
     });
@@ -204,7 +205,8 @@ class MatchService {
           PlayerA2: match.PlayerA2,
           PlayerB1: match.PlayerB1,
           PlayerB2: match.PlayerB2,
-          Referee: match.Referee
+          Referee: match.Referee,
+          Court: match.Court
         };
         return processedMatch;
       });

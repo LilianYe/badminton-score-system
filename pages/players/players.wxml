@@ -36,5 +36,10 @@
       <text class="wins">{{item.totalWins}}</text>
       <text class="winrate">{{item.winRateDisplay}}</text>
     </view>
+
+    <!-- Filter note -->
+    <view class="filter-note">
+      <text>排行榜只展示参赛多于5场的top50选手</text>
+    </view>
   </view>
 </view>

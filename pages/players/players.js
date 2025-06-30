@@ -20,12 +20,16 @@ Page({
     const db = wx.cloud.database();
 
     try {
-      // Get total count first
-      const countResult = await db.collection('UserPerformance').count();
+      // Get total count first for players with more than 5 games
+      const countResult = await db.collection('UserPerformance')
+        .where({
+          Games: db.command.gt(5)
+        })
+        .count();
       const totalCount = countResult.total;
-      console.log(`Total players in database: ${totalCount}`);
+      console.log(`Total players with more than 5 games: ${totalCount}`);
 
-      // Load top 50 players using pagination
+      // Load top 50 players with more than 5 games using pagination
       const allPlayers = [];
       const maxPlayers = 50; // Limit to top 50 players
       const batchSize = 20; // WeChat cloud database limit
@@ -37,6 +41,9 @@ Page({
         console.log(`Loading batch ${batch + 1}/${totalBatches} (skip: ${skip}, limit: ${limit})`);
         
         const res = await db.collection('UserPerformance')
+          .where({
+            Games: db.command.gt(5)
+          })
           .orderBy('ELO', 'desc')
           .skip(skip)
           .limit(limit)
@@ -45,7 +52,7 @@ Page({
         allPlayers.push(...res.data);
       }
 
-      console.log(`Loaded ${allPlayers.length} top players (max: ${maxPlayers})`);
+      console.log(`Loaded ${allPlayers.length} top players with more than 5 games (max: ${maxPlayers})`);
 
       const processedPlayers = allPlayers.map((player, index) => {
         // Calculate win rate percentage
