@@ -123,6 +123,21 @@
     color: #888;
 }
 
+.match-round {
+    font-size: 24rpx;
+    color: #666;
+    font-weight: 500;
+}
+
+.match-court {
+    font-size: 24rpx;
+    color: #007AFF;
+    font-weight: 500;
+    background-color: rgba(0, 122, 255, 0.1);
+    padding: 4rpx 12rpx;
+    border-radius: 12rpx;
+}
+
 .match-status {
     padding: 6rpx 16rpx;
     border-radius: 20rpx;
@@ -202,7 +217,7 @@
 .match-footer {
     margin-top: 20rpx;
     display: flex;
-    justify-content: flex-end;
+    justify-content: space-between;
     align-items: center;
 }
 

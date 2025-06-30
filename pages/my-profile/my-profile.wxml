@@ -121,7 +121,8 @@
                         </view>
                     </view>
                     <view class="match-footer">
-                        <button class="edit-btn" bindtap="editScore" data-matchid="{{item.MatchId}}">Complete Match</button>
+                        <text class="match-court">Court: {{item.Court}}</text>
+                        <button class="edit-btn" bindtap="editScore" data-matchid="{{item.MatchId}}">记录比分</button>
                     </view>
                 </view>
             </view>

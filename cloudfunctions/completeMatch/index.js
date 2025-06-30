@@ -66,6 +66,12 @@ async function updatePlayerPerformance(playerName, isWinner, eloChange, isMixed)
       playerRecord._id = addRes._id;
       console.log(`Inserted initial UserPerformance record for ${playerName} with ID: ${addRes._id}`);
     } else {
+      // Check if multiple records exist (this shouldn't happen but handle it gracefully)
+      if (playerRes.data.length > 1) {
+        console.warn(`Multiple performance records found for ${playerName} (${playerRes.data.length} records). Using the first one.`);
+        console.warn('This indicates a data integrity issue that should be investigated.');
+      }
+      
       console.log(`Found existing performance record for ${playerName}:`, {
         _id: playerRecord._id,
         ELO: playerRecord.ELO,

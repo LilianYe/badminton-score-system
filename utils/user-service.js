@@ -171,8 +171,12 @@ class UserService {
       
       // Create default UserPerformance record
       try {
-        await CloudDBService.createDefaultUserPerformance(userData.Name, openid, userData.Gender);
-        console.log('Default UserPerformance record created for new user');
+        const performanceResult = await CloudDBService.createDefaultUserPerformance(userData.Name, openid, userData.Gender);
+        if (performanceResult.exists) {
+          console.log('UserPerformance record already exists for new user:', performanceResult.message);
+        } else {
+          console.log('Default UserPerformance record created for new user');
+        }
       } catch (performanceError) {
         console.error('Failed to create default UserPerformance record:', performanceError);
         // Don't fail the registration if performance record creation fails

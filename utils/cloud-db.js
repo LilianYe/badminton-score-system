@@ -942,17 +942,51 @@ class CloudDBService {
   }
 
   /**
+   * Check if user performance record exists by name
+   * @param {string} userName - User's name
+   * @returns {Promise<boolean>} True if performance record exists
+   */
+  static async userPerformanceExists(userName) {
+    this.ensureInit();
+    
+    try {
+      console.log('Checking if user performance record exists for:', userName);
+      
+      const result = await db.collection('UserPerformance')
+        .where({
+          Name: userName
+        })
+        .get();
+      
+      const exists = result.data.length > 0;
+      console.log(`User performance record exists for ${userName}:`, exists);
+      return exists;
+    } catch (error) {
+      console.error('Error checking if user performance exists:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Create default UserPerformance record for new user
    * @param {string} userName - User's name
    * @param {string} openid - User's openid
    * @param {string} gender - User's gender
-   * @returns {Promise<Object>} Created performance record
+   * @returns {Promise<Object>} Created performance record or existing record
    */
   static async createDefaultUserPerformance(userName, openid, gender) {
     this.ensureInit();
     
     try {
       console.log('Creating default UserPerformance record for:', userName, 'Gender:', gender);
+      
+      // First check if a performance record already exists for this user
+      const existingRecord = await this.userPerformanceExists(userName);
+      
+      if (existingRecord) {
+        console.log(`UserPerformance record already exists for ${userName}, skipping creation`);
+        return { exists: true, message: 'Performance record already exists' };
+      }
       
       const defaultPerformance = {
         Name: userName,
@@ -981,7 +1015,7 @@ class CloudDBService {
       });
 
       console.log('Default UserPerformance record created:', result);
-      return result;
+      return { exists: false, result: result };
     } catch (error) {
       console.error('Error creating default UserPerformance record:', error);
       throw error;

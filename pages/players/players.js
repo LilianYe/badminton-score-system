@@ -25,7 +25,7 @@ Page({
       const totalCount = countResult.total;
       console.log(`Total players in database: ${totalCount}`);
 
-      // Load top 50 players using pagination
+      // Load top 50 players using pagination, then filter for 5+ games
       const allPlayers = [];
       const maxPlayers = 50; // Limit to top 50 players
       const batchSize = 20; // WeChat cloud database limit
@@ -47,7 +47,11 @@ Page({
 
       console.log(`Loaded ${allPlayers.length} top players (max: ${maxPlayers})`);
 
-      const processedPlayers = allPlayers.map((player, index) => {
+      // Filter players with more than 5 games
+      const filteredPlayers = allPlayers.filter(player => (player.Games || 0) > 5);
+      console.log(`Filtered to ${filteredPlayers.length} players with more than 5 games`);
+
+      const processedPlayers = filteredPlayers.map((player, index) => {
         // Calculate win rate percentage
         const winRate = player.WinRate ? (player.WinRate * 100).toFixed(1) : '0.0';
         const mixedWinRate = player.MixedWinRate ? (player.MixedWinRate * 100).toFixed(1) : '0.0';
