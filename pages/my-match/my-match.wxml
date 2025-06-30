@@ -48,7 +48,7 @@
       
       <view class="actions">
         <button class="back-btn" bindtap="navigateBack">返回</button>
-        <button class="regenerate-btn" bindtap="navigateToGenerate" wx:if="{{isOwner}}">重新生成</button>
+        <button class="regenerate-btn {{gameStatus === 'playing' ? 'disabled-btn' : ''}}" bindtap="navigateToGenerate" wx:if="{{isOwner}}">重新生成</button>
       </view>
     </view>
   </block>

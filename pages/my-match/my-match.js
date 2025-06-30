@@ -11,11 +11,13 @@ Page({
     editMatchId: null,
     editScoreA: '',
     editScoreB: '',
-    isSaving: false,    gameId: null, // Store the game ID when viewing generated matches
+    isSaving: false,    
+    gameId: null, // Store the game ID when viewing generated matches
     isFromGame: false, // Flag to indicate if viewing matches for a specific game
     gameName: '', // Store the game name to display in the UI
     matchRounds: [], // Structured match data organized by rounds
-    isOwner: false // Flag to indicate if current user is the game owner
+    isOwner: false, // Flag to indicate if current user is the game owner
+    gameStatus: '' // Add this to store the game's status
   },
   
   onLoad(options) {
@@ -44,7 +46,7 @@ Page({
       
       // Initialize the cloud DB service
       CloudDBService.ensureInit();
-        // Get the game details first to display the game name
+      // Get the game details first to display the game name
       const game = await CloudDBService.getGameById(gameId);
       if (game) {
         // Get current user to check ownership
@@ -55,13 +57,16 @@ Page({
         if (currentUser && game.owner) {
           // Check if current user is the owner
           isOwner = currentUser.Name === game.owner.Name;
-          console.log('Owner check:', isOwner, currentUser.Name, game.owner.nickname);
+          console.log('Owner check:', isOwner, currentUser.Name, game.owner?.nickname);
         }
         
         this.setData({ 
           gameName: game.title || '对阵表',
-          isOwner: isOwner
+          isOwner: isOwner,
+          gameStatus: game.status || '' // Store game status
         });
+        
+        console.log('Game status:', game.status);
       }
       
       // Get matches for this game
@@ -237,9 +242,20 @@ Page({
     });
   },
 
-  // Function to navigate to the generate-match page for regenerating matches
+  // Updated function to check game status before navigating to generate matches
   navigateToGenerate() {
-    const { gameId } = this.data;
+    const { gameId, gameStatus } = this.data;
+    
+    // Check if game status is "playing" - don't allow generating matches
+    if (gameStatus === 'playing') {
+      console.log('Game status is playing, cannot regenerate matches');
+      wx.showToast({
+        title: '比赛正在进行中，无法重新生成对阵表',
+        icon: 'none',
+        duration: 2000
+      });
+      return;
+    }
     
     if (!gameId) {
       wx.showToast({

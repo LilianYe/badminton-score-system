@@ -128,17 +128,28 @@ page {
 }
 
 .back-btn {
-  background: linear-gradient(135deg, #8e8e8e 0%, #6e6e6e 100%);
+  background: linear-gradient(135deg, #5cc2f0 0%, #4a90e2 100%);
 }
 
 .regenerate-btn {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
 }
 
-.back-btn:active,
-.regenerate-btn:active {
+.back-btn:active {
   transform: translateY(2rpx);
   box-shadow: 0 1rpx 3rpx rgba(0, 0, 0, 0.1);
+}
+
+/* Disabled button styles */
+.disabled-btn {
+  background: linear-gradient(135deg, #c7c7c7 0%, #a9a9a9 100%) !important;
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.disabled-btn:active {
+  transform: none !important;
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.15) !important;
 }
 
 /* Match list and card styling - now unified with my-profile */
