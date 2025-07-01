@@ -96,12 +96,12 @@
           
           <view class="form-group">
             <label>最大人数</label>
-            <slider min="2" max="16" step="1" value="{{newGame.maxPlayers}}" show-value bindchange="onMaxPlayersChange"></slider>
+            <slider min="2" max="50" step="1" value="{{newGame.maxPlayers}}" show-value bindchange="onMaxPlayersChange"></slider>
           </view>
           
           <view class="form-group">
             <label>场地数量</label>
-            <slider min="1" max="4" step="1" value="{{newGame.courtCount}}" show-value bindchange="onCourtCountChange"></slider>
+            <slider min="1" max="10" step="1" value="{{newGame.courtCount}}" show-value bindchange="onCourtCountChange"></slider>
           </view>
           
           <view class="form-group">
