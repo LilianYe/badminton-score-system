@@ -10,7 +10,7 @@ const db = cloud.database();
 function calculateELOChange(playerELO, opponentELO, actualResult, kFactor = 32) {
   const expectedScore = 1 / (1 + Math.pow(10, (opponentELO - playerELO) / 400));
   const actualScore = actualResult; // 1 for win, 0 for loss
-  return Math.round(kFactor * (actualScore - expectedScore));
+  return kFactor * (actualScore - expectedScore);
 }
 
 // Determine if a team is mixed (has both male and female players)
@@ -278,30 +278,53 @@ exports.main = async (event, context) => {
     console.log('Team B players:', teamBPlayers);
     console.log('All players:', allPlayers);
 
-    // Extract player information directly from match record
+    // Query current player information from UserPerformance collection
     const playerGenders = {};
     const playerELOs = {};
     
+    console.log('=== QUERYING CURRENT PLAYER PERFORMANCE ===');
     for (const playerName of allPlayers) {
-      // Find player info in match record
-      let playerInfo = null;
-      if (match.PlayerA1?.name === playerName) playerInfo = match.PlayerA1;
-      else if (match.PlayerA2?.name === playerName) playerInfo = match.PlayerA2;
-      else if (match.PlayerB1?.name === playerName) playerInfo = match.PlayerB1;
-      else if (match.PlayerB2?.name === playerName) playerInfo = match.PlayerB2;
-      
-      if (playerInfo) {
-        playerGenders[playerName] = playerInfo.gender;
-        playerELOs[playerName] = playerInfo.elo || 1500;
-        console.log(`Player info for ${playerName}:`, playerInfo);
-      } else {
-        console.log(`Could not find player info for ${playerName}, using defaults`);
-        playerGenders[playerName] = 'unknown';
+      try {
+        // Query current performance data from UserPerformance collection
+        const performanceRes = await db.collection('UserPerformance')
+          .where({
+            Name: playerName
+          })
+          .get();
+        
+        if (performanceRes.data && performanceRes.data.length > 0) {
+          const performance = performanceRes.data[0];
+          playerELOs[playerName] = performance.ELO || 1500;
+          console.log(`Found current performance for ${playerName}: ELO=${performance.ELO || 1500}`);
+        } else {
+          // If no performance record exists, use default ELO
+          playerELOs[playerName] = 1500;
+          console.log(`No performance record found for ${playerName}, using default ELO=1500`);
+        }
+        
+        // Get gender from match record (this is static data that doesn't change)
+        let playerInfo = null;
+        if (match.PlayerA1?.name === playerName) playerInfo = match.PlayerA1;
+        else if (match.PlayerA2?.name === playerName) playerInfo = match.PlayerA2;
+        else if (match.PlayerB1?.name === playerName) playerInfo = match.PlayerB1;
+        else if (match.PlayerB2?.name === playerName) playerInfo = match.PlayerB2;
+        
+        if (playerInfo) {
+          playerGenders[playerName] = playerInfo.gender;
+          console.log(`Player gender for ${playerName}: ${playerInfo.gender}`);
+        } else {
+          console.log(`Could not find player info for ${playerName}, using default gender`);
+          playerGenders[playerName] = 'unknown';
+        }
+      } catch (error) {
+        console.error(`Error querying performance for ${playerName}:`, error);
+        // Use defaults if query fails
         playerELOs[playerName] = 1500;
+        playerGenders[playerName] = 'unknown';
       }
     }
+    console.log('Current player ELOs:', playerELOs);
     console.log('Player genders:', playerGenders);
-    console.log('Player ELOs:', playerELOs);
 
     // Determine if each team is mixed
     const teamAIsMixed = isTeamMixed(teamAPlayers, playerGenders);
@@ -310,11 +333,11 @@ exports.main = async (event, context) => {
     console.log(`Team A is mixed: ${teamAIsMixed}`);
     console.log(`Team B is mixed: ${teamBIsMixed}`);
 
-    // Calculate average ELO for each team
+    // Calculate average ELO for each team using current ELO values
     const teamAELO = teamAPlayers.reduce((sum, player) => sum + playerELOs[player], 0) / teamAPlayers.length;
     const teamBELO = teamBPlayers.reduce((sum, player) => sum + playerELOs[player], 0) / teamBPlayers.length;
 
-    console.log('Team ELOs:', { teamA: teamAELO, teamB: teamBELO });
+    console.log('Team ELOs (using current values):', { teamA: teamAELO, teamB: teamBELO });
 
     // Update performance for all players
     const updatePromises = [];
@@ -329,15 +352,16 @@ exports.main = async (event, context) => {
       // Determine if this player's team is mixed
       const isMixed = isTeamA ? teamAIsMixed : teamBIsMixed;
       
-      // Calculate ELO change
+      // Calculate ELO change using current ELO values
       const playerELO = playerELOs[playerName];
+      const playerTeamELO = isTeamA ? teamAELO : teamBELO;
       const opponentELO = isTeamA ? teamBELO : teamAELO;
-      const eloChange = calculateELOChange(playerELO, opponentELO, actualResult);
+      const eloChange = calculateELOChange(playerTeamELO, opponentELO, actualResult);
       
       // Store ELO change for updating match record
       playerEloChanges[playerName] = eloChange;
 
-      console.log(`Processing ${playerName}: TeamA=${isTeamA}, Winner=${isWinner}, ELO=${playerELO}, OpponentELO=${opponentELO}, ELOChange=${eloChange}, TeamMixed=${isMixed}`);
+      console.log(`Processing ${playerName}: TeamA=${isTeamA}, Winner=${isWinner}, CurrentELO=${playerELO}, OpponentELO=${opponentELO}, ELOChange=${eloChange}, TeamMixed=${isMixed}`);
 
       updatePromises.push(
         updatePlayerPerformance(playerName, isWinner, eloChange, isMixed)
@@ -360,40 +384,40 @@ exports.main = async (event, context) => {
 
     // Add ELO changes and updated ELO scores to player data
     if (match.PlayerA1 && match.PlayerA1.name && playerEloChanges[match.PlayerA1.name] !== undefined) {
-      const newELO = (match.PlayerA1.elo || 1500) + playerEloChanges[match.PlayerA1.name];
+      const newELO = playerELOs[match.PlayerA1.name] + playerEloChanges[match.PlayerA1.name];
       matchUpdateData.PlayerA1 = {
         ...match.PlayerA1,
         elo: newELO,
         eloChanged: playerEloChanges[match.PlayerA1.name]
       };
-      console.log(`Updated ${match.PlayerA1.name}: ELO ${match.PlayerA1.elo || 1500} -> ${newELO} (change: ${playerEloChanges[match.PlayerA1.name]})`);
+      console.log(`Updated ${match.PlayerA1.name}: ELO ${playerELOs[match.PlayerA1.name]} -> ${newELO} (change: ${playerEloChanges[match.PlayerA1.name]})`);
     }
     if (match.PlayerA2 && match.PlayerA2.name && playerEloChanges[match.PlayerA2.name] !== undefined) {
-      const newELO = (match.PlayerA2.elo || 1500) + playerEloChanges[match.PlayerA2.name];
+      const newELO = playerELOs[match.PlayerA2.name] + playerEloChanges[match.PlayerA2.name];
       matchUpdateData.PlayerA2 = {
         ...match.PlayerA2,
         elo: newELO,
         eloChanged: playerEloChanges[match.PlayerA2.name]
       };
-      console.log(`Updated ${match.PlayerA2.name}: ELO ${match.PlayerA2.elo || 1500} -> ${newELO} (change: ${playerEloChanges[match.PlayerA2.name]})`);
+      console.log(`Updated ${match.PlayerA2.name}: ELO ${playerELOs[match.PlayerA2.name]} -> ${newELO} (change: ${playerEloChanges[match.PlayerA2.name]})`);
     }
     if (match.PlayerB1 && match.PlayerB1.name && playerEloChanges[match.PlayerB1.name] !== undefined) {
-      const newELO = (match.PlayerB1.elo || 1500) + playerEloChanges[match.PlayerB1.name];
+      const newELO = playerELOs[match.PlayerB1.name] + playerEloChanges[match.PlayerB1.name];
       matchUpdateData.PlayerB1 = {
         ...match.PlayerB1,
         elo: newELO,
         eloChanged: playerEloChanges[match.PlayerB1.name]
       };
-      console.log(`Updated ${match.PlayerB1.name}: ELO ${match.PlayerB1.elo || 1500} -> ${newELO} (change: ${playerEloChanges[match.PlayerB1.name]})`);
+      console.log(`Updated ${match.PlayerB1.name}: ELO ${playerELOs[match.PlayerB1.name]} -> ${newELO} (change: ${playerEloChanges[match.PlayerB1.name]})`);
     }
     if (match.PlayerB2 && match.PlayerB2.name && playerEloChanges[match.PlayerB2.name] !== undefined) {
-      const newELO = (match.PlayerB2.elo || 1500) + playerEloChanges[match.PlayerB2.name];
+      const newELO = playerELOs[match.PlayerB2.name] + playerEloChanges[match.PlayerB2.name];
       matchUpdateData.PlayerB2 = {
         ...match.PlayerB2,
         elo: newELO,
         eloChanged: playerEloChanges[match.PlayerB2.name]
       };
-      console.log(`Updated ${match.PlayerB2.name}: ELO ${match.PlayerB2.elo || 1500} -> ${newELO} (change: ${playerEloChanges[match.PlayerB2.name]})`);
+      console.log(`Updated ${match.PlayerB2.name}: ELO ${playerELOs[match.PlayerB2.name]} -> ${newELO} (change: ${playerEloChanges[match.PlayerB2.name]})`);
     }
 
     console.log('Updating match record with ELO changes:', matchUpdateData);
