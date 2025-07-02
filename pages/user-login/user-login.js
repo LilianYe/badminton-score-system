@@ -54,16 +54,16 @@ Page({
         // Existing user - login successful
         console.log('Existing user logged in:', loginResult.user);
           
-          wx.showToast({
+        wx.showToast({
           title: '欢迎回来，' + loginResult.user.Name + '！',
-            icon: 'success'
-          });
+          icon: 'success'
+        });
           
-          // Redirect to main page
-          setTimeout(() => {
-            this.redirectToMainPage();
-          }, 1500);
-        } else {
+        // Redirect to main page
+        setTimeout(() => {
+          this.redirectToMainPage();
+        }, 1500);
+      } else {
         // New user - show registration page
         console.log('New user, showing registration page');
         
@@ -180,7 +180,7 @@ Page({
             checkingAvailability: false
           });
         } catch (error) {
-          console.error('Error checking nickname availability:', error);
+          console.error('检查昵称可用性时出错:', error);
           this.setData({
             nicknameAvailable: null,
             checkingAvailability: false

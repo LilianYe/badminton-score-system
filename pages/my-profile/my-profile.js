@@ -17,7 +17,8 @@ Page({
         userStats: null,
         showStats: true,
         sameGenderTitle: '同性统计',
-        showMatches: true
+        showMatches: true,
+        needsLogin: false // Add this property
     },
 
     onShow: function() {
@@ -29,29 +30,24 @@ Page({
             const currentUser = UserService.getCurrentUser();
             if (currentUser && currentUser.Name) {
                 console.log('Current user found:', currentUser);
-                this.setData({ currentUser });
+                this.setData({ 
+                    currentUser,
+                    needsLogin: false 
+                });
                 await this.loadMatches(currentUser.Name);
                 await this.loadUserStats(currentUser.Name);
             } else {
-                console.log('No current user found, redirecting to login');
-                wx.showToast({
-                    title: '请先登录',
-                    icon: 'none'
-                });
+                console.log('No current user found, showing login prompt');
                 this.setData({ 
                     isLoading: false, 
                     upcomingMatches: [], 
                     completedMatches: [], 
                     isEmpty: true,
-                    currentUser: null 
+                    currentUser: null,
+                    needsLogin: true
                 });
                 
-                // Redirect to login page
-                setTimeout(() => {
-                    wx.navigateTo({
-                        url: '/pages/user-login/user-login'
-                    });
-                }, 1500);
+                // No automatic redirect - we'll show a login button instead
             }
         } catch (error) {
             console.error('Error checking user:', error);
@@ -60,6 +56,13 @@ Page({
                 icon: 'none'
             });
         }
+    },
+    
+    // Add new function to handle login button click
+    navigateToLogin() {
+        wx.navigateTo({
+            url: '/pages/user-login/user-login'
+        });
     },
 
     async loadMatches(currentUserName) {

@@ -1,175 +1,190 @@
 <view class="container">
-    <!-- User Profile Section -->
-    <view class="profile-section">
-        <view class="avatar-container">
-            <image class="avatar" src="{{currentUser.Avatar || '/images/default-avatar.png'}}" mode="aspectFill"></image>
-        </view>
-        <view class="user-info">
-            <text class="nickname">{{currentUser.Name || 'User'}}</text>
-            <image class="gender-icon" wx:if="{{currentUser.Gender === 'male'}}" src="/assets/icons/male_24dp_0000F5.png" mode="aspectFit"></image>
-            <image class="gender-icon" wx:if="{{currentUser.Gender === 'female'}}" src="/assets/icons/female_24dp_EA33F7.png" mode="aspectFit"></image>
+    <!-- Login Prompt Section (shown when needsLogin is true) -->
+    <view class="login-prompt-container" wx:if="{{needsLogin}}">
+        <view class="login-prompt-card">
+            <view class="login-prompt-icon">
+                <image src="/assets/icons/user.png" mode="aspectFit"></image>
+            </view>
+            <view class="login-prompt-title">欢迎使用</view>
+            <view class="login-prompt-message">请先登录以查看您的个人资料和比赛记录</view>
+            <button class="login-button" bindtap="navigateToLogin">立即登录</button>
         </view>
     </view>
 
-    <!-- Statistics Section -->
-    <view class="stats-section">
-        <view class="stats-header" bindtap="toggleStats">
-            <text class="stats-title">个人表现</text>
-            <text class="stats-toggle-icon">{{showStats ? '▲' : '▼'}}</text>
-        </view>
-        <view wx:if="{{showStats}}" class="stats-main">
-            <view class="elo-row">
-                <text class="stats-elo-value">{{userStats.ELO || '--'}}</text>
+    <!-- User Profile and Stats (shown when user is logged in) -->
+    <block wx:if="{{!needsLogin}}">
+        <!-- User Profile Section -->
+        <view class="profile-section">
+            <view class="avatar-container">
+                <image class="avatar" src="{{currentUser.Avatar || '/assets/icons/user.png'}}" mode="aspectFill"></image>
             </view>
-            <view class="stats-cards">
-                <view class="stats-card main-stats-card">
-                    <view class="stats-card-title">总计</view>
-                    <view class="stats-card-row">
-                        <view class="stats-card-item"><text class="stats-label">场次</text><text class="stats-value">{{userStats.Games || 0}}</text></view>
-                        <view class="stats-card-item"><text class="stats-label">胜</text><text class="stats-value">{{userStats.Wins || 0}}</text></view>
-                        <view class="stats-card-item"><text class="stats-label">负</text><text class="stats-value">{{userStats.Losses || 0}}</text></view>
-                        <view class="stats-card-item"><text class="stats-label">胜率</text><text class="stats-value">{{userStats.winRateDisplay || '0.0'}}%</text></view>
-                    </view>
-                </view>
-                <view class="stats-card same-gender-card">
-                    <view class="stats-card-title">{{sameGenderTitle}}</view>
-                    <view class="stats-card-row">
-                        <view class="stats-card-item"><text class="stats-label">场次</text><text class="stats-value">{{userStats.SameGenderGames || 0}}</text></view>
-                        <view class="stats-card-item"><text class="stats-label">胜</text><text class="stats-value">{{userStats.SameGenderWins || 0}}</text></view>
-                        <view class="stats-card-item"><text class="stats-label">负</text><text class="stats-value">{{userStats.SameGenderLosses || 0}}</text></view>
-                        <view class="stats-card-item"><text class="stats-label">胜率</text><text class="stats-value">{{userStats.sameGenderWinRateDisplay || '0.0'}}%</text></view>
-                    </view>
-                </view>
-                <view class="stats-card mixed-card">
-                    <view class="stats-card-title">混双</view>
-                    <view class="stats-card-row">
-                        <view class="stats-card-item"><text class="stats-label">场次</text><text class="stats-value">{{userStats.MixedGames || 0}}</text></view>
-                        <view class="stats-card-item"><text class="stats-label">胜</text><text class="stats-value">{{userStats.MixedWins || 0}}</text></view>
-                        <view class="stats-card-item"><text class="stats-label">负</text><text class="stats-value">{{userStats.MixedLosses || 0}}</text></view>
-                        <view class="stats-card-item"><text class="stats-label">胜率</text><text class="stats-value">{{userStats.mixedWinRateDisplay || '0.0'}}%</text></view>
-                    </view>
-                </view>
+            <view class="user-info">
+                <text class="nickname">{{currentUser.Name || 'User'}}</text>
+                <image class="gender-icon" wx:if="{{currentUser.Gender === 'male'}}" src="/assets/icons/male_24dp_0000F5.png" mode="aspectFit"></image>
+                <image class="gender-icon" wx:if="{{currentUser.Gender === 'female'}}" src="/assets/icons/female_24dp_EA33F7.png" mode="aspectFit"></image>
             </view>
         </view>
-    </view>
 
-    <!-- Title Section -->
-    <view class="title-section" bindtap="toggleMatches" style="display: flex; align-items: center; justify-content: space-between;">
-        <text class="title">比赛</text>
-        <text class="stats-toggle-icon">{{showMatches ? '▲' : '▼'}}</text>
-    </view>
-
-    <!-- Tab Navigation -->
-    <view wx:if="{{showMatches}}" class="tab-navigation">
-        <view class="tab-item {{activeTab === 'upcoming' ? 'active' : ''}}" 
-              bindtap="switchTab" data-tab="upcoming">
-            <text>待进行</text>
-        </view>
-        <view class="tab-item {{activeTab === 'history' ? 'active' : ''}}" 
-              bindtap="switchTab" data-tab="history">
-            <text>历史</text>
-        </view>
-    </view>
-
-    <!-- Content Section -->
-    <view wx:if="{{showMatches}}" class="content-section">
-        <view wx:if="{{isLoading}}" class="loading-container">
-            <text>加载中...</text>
-        </view>
-        
-        <view wx:elif="{{isEmpty}}" class="empty-container">
-            <text wx:if="{{activeTab === 'upcoming'}}">没有待进行的比赛</text>
-            <text wx:else>没有已完成的比赛，请继续加油</text>
-        </view>
-        
-        <block wx:else>
-            <!-- Upcoming Matches -->
-            <view wx:if="{{activeTab === 'upcoming'}}" class="match-list">
-                <view wx:for="{{upcomingMatches}}" wx:key="MatchId" class="match-card">
-                    <view class="match-header">
-                        <text class="match-time">{{item.formattedStartTime}}</text>
-                        <text class="match-round">第{{item.Round}}轮</text>
-                    </view>
-                    <view class="teams-container">
-                        <view class="team">
-                            <view class="player-row">
-                                <text class="player-name">{{item.PlayerA1.name}}</text>
-                                <image wx:if="{{item.PlayerA1.gender === 'male'}}" class="gender-icon-small" src="/assets/icons/male_24dp_0000F5.png" mode="aspectFit"></image>
-                                <image wx:if="{{item.PlayerA1.gender === 'female'}}" class="gender-icon-small" src="/assets/icons/female_24dp_EA33F7.png" mode="aspectFit"></image>
-                            </view>
-                            <view wx:if="{{item.PlayerA2}}" class="player-row">
-                                <text class="player-name">{{item.PlayerA2.name}}</text>
-                                <image wx:if="{{item.PlayerA2.gender === 'male'}}" class="gender-icon-small" src="/assets/icons/male_24dp_0000F5.png" mode="aspectFit"></image>
-                                <image wx:if="{{item.PlayerA2.gender === 'female'}}" class="gender-icon-small" src="/assets/icons/female_24dp_EA33F7.png" mode="aspectFit"></image>
-                            </view>
-                        </view>
-                        <view class="score">
-                            <text>{{item.ScoreA || 0}} - {{item.ScoreB || 0}}</text>
-                        </view>
-                        <view class="team">
-                            <view class="player-row">
-                                <text class="player-name">{{item.PlayerB1.name}}</text>
-                                <image wx:if="{{item.PlayerB1.gender === 'male'}}" class="gender-icon-small" src="/assets/icons/male_24dp_0000F5.png" mode="aspectFit"></image>
-                                <image wx:if="{{item.PlayerB1.gender === 'female'}}" class="gender-icon-small" src="/assets/icons/female_24dp_EA33F7.png" mode="aspectFit"></image>
-                            </view>
-                            <view wx:if="{{item.PlayerB2}}" class="player-row">
-                                <text class="player-name">{{item.PlayerB2.name}}</text>
-                                <image wx:if="{{item.PlayerB2.gender === 'male'}}" class="gender-icon-small" src="/assets/icons/male_24dp_0000F5.png" mode="aspectFit"></image>
-                                <image wx:if="{{item.PlayerB2.gender === 'female'}}" class="gender-icon-small" src="/assets/icons/female_24dp_EA33F7.png" mode="aspectFit"></image>
-                            </view>
+        <!-- Statistics Section -->
+        <view class="stats-section">
+            <view class="stats-header" bindtap="toggleStats">
+                <text class="stats-title">个人表现</text>
+                <text class="stats-toggle-icon">{{showStats ? '▲' : '▼'}}</text>
+            </view>
+            <view wx:if="{{showStats}}" class="stats-main">
+                <view class="elo-row">
+                    <text class="stats-elo-value">{{userStats.ELO || '--'}}</text>
+                </view>
+                <view class="stats-cards">
+                    <view class="stats-card main-stats-card">
+                        <view class="stats-card-title">总计</view>
+                        <view class="stats-card-row">
+                            <view class="stats-card-item"><text class="stats-label">场次</text><text class="stats-value">{{userStats.Games || 0}}</text></view>
+                            <view class="stats-card-item"><text class="stats-label">胜</text><text class="stats-value">{{userStats.Wins || 0}}</text></view>
+                            <view class="stats-card-item"><text class="stats-label">负</text><text class="stats-value">{{userStats.Losses || 0}}</text></view>
+                            <view class="stats-card-item"><text class="stats-label">胜率</text><text class="stats-value">{{userStats.winRateDisplay || '0.0'}}%</text></view>
                         </view>
                     </view>
-                    <view class="match-footer">
-                        <text class="match-court">{{item.Court}}号场</text>
-                        <button class="edit-btn" bindtap="editScore" data-matchid="{{item.MatchId}}">记录比分</button>
+                    <view class="stats-card same-gender-card">
+                        <view class="stats-card-title">{{sameGenderTitle}}</view>
+                        <view class="stats-card-row">
+                            <view class="stats-card-item"><text class="stats-label">场次</text><text class="stats-value">{{userStats.SameGenderGames || 0}}</text></view>
+                            <view class="stats-card-item"><text class="stats-label">胜</text><text class="stats-value">{{userStats.SameGenderWins || 0}}</text></view>
+                            <view class="stats-card-item"><text class="stats-label">负</text><text class="stats-value">{{userStats.SameGenderLosses || 0}}</text></view>
+                            <view class="stats-card-item"><text class="stats-label">胜率</text><text class="stats-value">{{userStats.sameGenderWinRateDisplay || '0.0'}}%</text></view>
+                        </view>
+                    </view>
+                    <view class="stats-card mixed-card">
+                        <view class="stats-card-title">混双</view>
+                        <view class="stats-card-row">
+                            <view class="stats-card-item"><text class="stats-label">场次</text><text class="stats-value">{{userStats.MixedGames || 0}}</text></view>
+                            <view class="stats-card-item"><text class="stats-label">胜</text><text class="stats-value">{{userStats.MixedWins || 0}}</text></view>
+                            <view class="stats-card-item"><text class="stats-label">负</text><text class="stats-value">{{userStats.MixedLosses || 0}}</text></view>
+                            <view class="stats-card-item"><text class="stats-label">胜率</text><text class="stats-value">{{userStats.mixedWinRateDisplay || '0.0'}}%</text></view>
+                        </view>
                     </view>
                 </view>
             </view>
+        </view>
 
-            <!-- Completed Matches -->
-            <view wx:if="{{activeTab === 'history'}}" class="match-list">
-                <view wx:for="{{completedMatches}}" wx:key="MatchId" class="match-card">
-                    <view class="match-header">
-                        <text class="match-time">{{item.formattedCompleteTime}}</text>
-                        <text class="match-round">第{{item.Round}}轮</text>
-                        <view class="elo-change-badge {{item.eloChange >= 0 ? 'win' : 'loss'}}">
-                            {{ item.eloChange >= 0 ? '+' : ''}}{{item.eloChange}}
-                        </view>
-                    </view>
-                    <view class="teams-container">
-                        <view class="team">
-                            <view class="player-row">
-                                <text class="player-name">{{item.PlayerA1.name}}</text>
-                                <image wx:if="{{item.PlayerA1.gender === 'male'}}" class="gender-icon-small" src="/assets/icons/male_24dp_0000F5.png" mode="aspectFit"></image>
-                                <image wx:if="{{item.PlayerA1.gender === 'female'}}" class="gender-icon-small" src="/assets/icons/female_24dp_EA33F7.png" mode="aspectFit"></image>
-                            </view>
-                            <view wx:if="{{item.PlayerA2}}" class="player-row">
-                                <text class="player-name">{{item.PlayerA2.name}}</text>
-                                <image wx:if="{{item.PlayerA2.gender === 'male'}}" class="gender-icon-small" src="/assets/icons/male_24dp_0000F5.png" mode="aspectFit"></image>
-                                <image wx:if="{{item.PlayerA2.gender === 'female'}}" class="gender-icon-small" src="/assets/icons/female_24dp_EA33F7.png" mode="aspectFit"></image>
-                            </view>
-                        </view>
-                        <view class="score">
-                            <text>{{item.ScoreA}} - {{item.ScoreB}}</text>
-                        </view>
-                        <view class="team">
-                            <view class="player-row">
-                                <text class="player-name">{{item.PlayerB1.name}}</text>
-                                <image wx:if="{{item.PlayerB1.gender === 'male'}}" class="gender-icon-small" src="/assets/icons/male_24dp_0000F5.png" mode="aspectFit"></image>
-                                <image wx:if="{{item.PlayerB1.gender === 'female'}}" class="gender-icon-small" src="/assets/icons/female_24dp_EA33F7.png" mode="aspectFit"></image>
-                            </view>
-                            <view wx:if="{{item.PlayerB2}}" class="player-row">
-                                <text class="player-name">{{item.PlayerB2.name}}</text>
-                                <image wx:if="{{item.PlayerB2.gender === 'male'}}" class="gender-icon-small" src="/assets/icons/male_24dp_0000F5.png" mode="aspectFit"></image>
-                                <image wx:if="{{item.PlayerB2.gender === 'female'}}" class="gender-icon-small" src="/assets/icons/female_24dp_EA33F7.png" mode="aspectFit"></image>
-                            </view>
-                        </view>
-                    </view>
-                    <!-- Match footer removed because it only contained referee info -->
-                </view>
+        <!-- Title Section -->
+        <view class="title-section" bindtap="toggleMatches" style="display: flex; align-items: center; justify-content: space-between;">
+            <text class="title">比赛</text>
+            <text class="stats-toggle-icon">{{showMatches ? '▲' : '▼'}}</text>
+        </view>
+
+        <!-- Tab Navigation -->
+        <view wx:if="{{showMatches}}" class="tab-navigation">
+            <view class="tab-item {{activeTab === 'upcoming' ? 'active' : ''}}" 
+                  bindtap="switchTab" data-tab="upcoming">
+                <text>待进行</text>
             </view>
-        </block>
-    </view>
+            <view class="tab-item {{activeTab === 'history' ? 'active' : ''}}" 
+                  bindtap="switchTab" data-tab="history">
+                <text>历史</text>
+            </view>
+        </view>
+
+        <!-- Content Section -->
+        <view wx:if="{{showMatches}}" class="content-section">
+            <view wx:if="{{isLoading}}" class="loading-container">
+                <text>加载中...</text>
+            </view>
+            
+            <view wx:elif="{{isEmpty}}" class="empty-container">
+                <text wx:if="{{activeTab === 'upcoming'}}">没有待进行的比赛</text>
+                <text wx:else>没有已完成的比赛，请继续加油</text>
+            </view>
+            
+            <block wx:else>
+                <!-- Upcoming Matches -->
+                <view wx:if="{{activeTab === 'upcoming'}}" class="match-list">
+                    <view wx:for="{{upcomingMatches}}" wx:key="MatchId" class="match-card">
+                        <view class="match-header">
+                            <text class="match-time">{{item.formattedStartTime}}</text>
+                            <text class="match-round">第{{item.Round}}轮</text>
+                        </view>
+                        <view class="teams-container">
+                            <view class="team">
+                                <view class="player-row">
+                                    <text class="player-name">{{item.PlayerA1.name}}</text>
+                                    <image wx:if="{{item.PlayerA1.gender === 'male'}}" class="gender-icon-small" src="/assets/icons/male_24dp_0000F5.png" mode="aspectFit"></image>
+                                    <image wx:if="{{item.PlayerA1.gender === 'female'}}" class="gender-icon-small" src="/assets/icons/female_24dp_EA33F7.png" mode="aspectFit"></image>
+                                </view>
+                                <view wx:if="{{item.PlayerA2}}" class="player-row">
+                                    <text class="player-name">{{item.PlayerA2.name}}</text>
+                                    <image wx:if="{{item.PlayerA2.gender === 'male'}}" class="gender-icon-small" src="/assets/icons/male_24dp_0000F5.png" mode="aspectFit"></image>
+                                    <image wx:if="{{item.PlayerA2.gender === 'female'}}" class="gender-icon-small" src="/assets/icons/female_24dp_EA33F7.png" mode="aspectFit"></image>
+                                </view>
+                            </view>
+                            <view class="score">
+                                <text>{{item.ScoreA || 0}} - {{item.ScoreB || 0}}</text>
+                            </view>
+                            <view class="team">
+                                <view class="player-row">
+                                    <text class="player-name">{{item.PlayerB1.name}}</text>
+                                    <image wx:if="{{item.PlayerB1.gender === 'male'}}" class="gender-icon-small" src="/assets/icons/male_24dp_0000F5.png" mode="aspectFit"></image>
+                                    <image wx:if="{{item.PlayerB1.gender === 'female'}}" class="gender-icon-small" src="/assets/icons/female_24dp_EA33F7.png" mode="aspectFit"></image>
+                                </view>
+                                <view wx:if="{{item.PlayerB2}}" class="player-row">
+                                    <text class="player-name">{{item.PlayerB2.name}}</text>
+                                    <image wx:if="{{item.PlayerB2.gender === 'male'}}" class="gender-icon-small" src="/assets/icons/male_24dp_0000F5.png" mode="aspectFit"></image>
+                                    <image wx:if="{{item.PlayerB2.gender === 'female'}}" class="gender-icon-small" src="/assets/icons/female_24dp_EA33F7.png" mode="aspectFit"></image>
+                                </view>
+                            </view>
+                        </view>
+                        <view class="match-footer">
+                            <text class="match-court">{{item.Court}}号场</text>
+                            <button class="edit-btn" bindtap="editScore" data-matchid="{{item.MatchId}}">记录比分</button>
+                        </view>
+                    </view>
+                </view>
+
+                <!-- Completed Matches -->
+                <view wx:if="{{activeTab === 'history'}}" class="match-list">
+                    <view wx:for="{{completedMatches}}" wx:key="MatchId" class="match-card">
+                        <view class="match-header">
+                            <text class="match-time">{{item.formattedCompleteTime}}</text>
+                            <text class="match-round">第{{item.Round}}轮</text>
+                            <view class="elo-change-badge {{item.eloChange >= 0 ? 'win' : 'loss'}}">
+                                {{ item.eloChange >= 0 ? '+' : ''}}{{item.eloChange}}
+                            </view>
+                        </view>
+                        <view class="teams-container">
+                            <view class="team">
+                                <view class="player-row">
+                                    <text class="player-name">{{item.PlayerA1.name}}</text>
+                                    <image wx:if="{{item.PlayerA1.gender === 'male'}}" class="gender-icon-small" src="/assets/icons/male_24dp_0000F5.png" mode="aspectFit"></image>
+                                    <image wx:if="{{item.PlayerA1.gender === 'female'}}" class="gender-icon-small" src="/assets/icons/female_24dp_EA33F7.png" mode="aspectFit"></image>
+                                </view>
+                                <view wx:if="{{item.PlayerA2}}" class="player-row">
+                                    <text class="player-name">{{item.PlayerA2.name}}</text>
+                                    <image wx:if="{{item.PlayerA2.gender === 'male'}}" class="gender-icon-small" src="/assets/icons/male_24dp_0000F5.png" mode="aspectFit"></image>
+                                    <image wx:if="{{item.PlayerA2.gender === 'female'}}" class="gender-icon-small" src="/assets/icons/female_24dp_EA33F7.png" mode="aspectFit"></image>
+                                </view>
+                            </view>
+                            <view class="score">
+                                <text>{{item.ScoreA}} - {{item.ScoreB}}</text>
+                            </view>
+                            <view class="team">
+                                <view class="player-row">
+                                    <text class="player-name">{{item.PlayerB1.name}}</text>
+                                    <image wx:if="{{item.PlayerB1.gender === 'male'}}" class="gender-icon-small" src="/assets/icons/male_24dp_0000F5.png" mode="aspectFit"></image>
+                                    <image wx:if="{{item.PlayerB1.gender === 'female'}}" class="gender-icon-small" src="/assets/icons/female_24dp_EA33F7.png" mode="aspectFit"></image>
+                                </view>
+                                <view wx:if="{{item.PlayerB2}}" class="player-row">
+                                    <text class="player-name">{{item.PlayerB2.name}}</text>
+                                    <image wx:if="{{item.PlayerB2.gender === 'male'}}" class="gender-icon-small" src="/assets/icons/male_24dp_0000F5.png" mode="aspectFit"></image>
+                                    <image wx:if="{{item.PlayerB2.gender === 'female'}}" class="gender-icon-small" src="/assets/icons/female_24dp_EA33F7.png" mode="aspectFit"></image>
+                                </view>
+                            </view>
+                        </view>
+                        <!-- Match footer removed because it only contained referee info -->
+                    </view>
+                </view>
+            </block>
+        </view>
+    </block>
 </view>
 
 <!-- Custom Score Input Modal -->

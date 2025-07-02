@@ -1,8 +1,8 @@
 {
   "pages": [
+    "pages/game-signup/game-signup",
     "pages/user-login/user-login",
     "pages/generate-match/generate-match",
-    "pages/game-signup/game-signup",
     "pages/game-detail/game-detail",
     "pages/players/players",
     "pages/user-profile/user-profile",

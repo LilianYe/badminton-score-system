@@ -1,10 +1,10 @@
 <view class="container">
   <view class="login-card">
-    <view class="app-title">Badminton Score System</view>
+    <view class="app-title">羽毛球积分助手</view>
     
     <!-- Login Step -->
     <view wx:if="{{!showRegistration}}">
-      <view class="welcome-text">Welcome! Please login with WeChat to continue.</view>
+      <view class="welcome-text">欢迎！请使用微信登录以继续。</view>
       
       <view class="login-section">
         <button 
@@ -14,19 +14,19 @@
           loading="{{isLoading}}"
         >
           <text class="wechat-icon">📱</text>
-          Login with WeChat
+          微信登录
         </button>
       </view>
       
       <view class="note">
-        <text>We'll use your WeChat profile to personalize your badminton experience.</text>
+        <text>我们将使用您的微信资料来个性化您的羽毛球体验。</text>
       </view>
     </view>
     
     <!-- Registration Step -->
     <view wx:else class="registration">
-      <view class="welcome-text">Welcome to Badminton Score System!</view>
-      <view class="subtitle">Please complete your registration to continue.</view>
+      <view class="welcome-text">欢迎使用羽毛球积分助手！</view>
+      <view class="subtitle">请完成注册以继续。</view>
       
       <!-- Avatar Section -->
       <view class="avatar-section">

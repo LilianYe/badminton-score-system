@@ -502,3 +502,74 @@
 .elo-change-badge.loss {
     background-color: #f44336;
 }
+
+/* Login Prompt Styles */
+.login-prompt-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 60rpx 40rpx;
+    min-height: 60vh;
+}
+
+.login-prompt-card {
+    background: #ffffff;
+    border-radius: 16rpx;
+    padding: 60rpx 40rpx;
+    box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.1);
+    width: 100%;
+    max-width: 600rpx;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.login-prompt-icon {
+    width: 180rpx;
+    height: 180rpx;
+    background: #f0f0f0;
+    border-radius: 90rpx;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 40rpx;
+}
+
+.login-prompt-icon image {
+    width: 100rpx;
+    height: 100rpx;
+    opacity: 0.6;
+}
+
+.login-prompt-title {
+    font-size: 36rpx;
+    font-weight: bold;
+    color: #333;
+    margin-bottom: 20rpx;
+}
+
+.login-prompt-message {
+    font-size: 28rpx;
+    color: #666;
+    line-height: 1.6;
+    margin-bottom: 40rpx;
+}
+
+.login-button {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: #ffffff;
+    padding: 20rpx 0;
+    width: 80%;
+    border-radius: 40rpx;
+    font-size: 30rpx;
+    font-weight: bold;
+    border: none;
+    box-shadow: 0 4rpx 12rpx rgba(118, 75, 162, 0.3);
+}
+
+.login-button:active {
+    opacity: 0.9;
+    transform: translateY(2rpx);
+}
