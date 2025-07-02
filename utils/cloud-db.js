@@ -811,7 +811,7 @@ class CloudDBService {
   }
   
   /**
-   * Get matches for a specific game using the gameId
+   * Get matches for a specific game using the gameId with pagination support
    * @param {string} gameId - The ID of the game
    * @returns {Promise<Array>} - Array of match objects
    */
@@ -824,24 +824,63 @@ class CloudDBService {
       if (!game) {
         throw new Error('Game not found');
       }
-         
-      // Query matches by gameId
-      const db = wx.cloud.database();
-      const matchesResult = await db.collection('Match')
+      
+      // Define batch size - WeChat cloud DB default is 20
+      const MAX_LIMIT = 20;
+      // Maximum number of batches to fetch (20 * 20 = 400 records max)
+      const MAX_BATCH_TIMES = 20;
+      
+      // First, get the total count of matches for this game
+      const countResult = await db.collection('Match')
         .where({
           SessionId: gameId
         })
-        .orderBy('Round', 'asc')
-        .orderBy('Court', 'asc')
-        .get();
+        .count();
       
-      if (matchesResult.data.length === 0) {
+      const total = countResult.total;
+      console.log(`Total matches found for game ${gameId}: ${total}`);
+      
+      // If no matches, return empty array
+      if (total === 0) {
         console.log('No matches found for this game');
         return [];
       }
       
-      console.log(`Found ${matchesResult.data.length} matches for game ${gameId}`);
-      return matchesResult.data;
+      // Create an array to hold all our query promises
+      const tasks = [];
+      
+      // If there are more records than we can fetch, start from the end
+      // to get the most recent matches
+      const startIndex = Math.max(0, total - (MAX_BATCH_TIMES * MAX_LIMIT));
+      
+      // Create a promise for each batch
+      for (let i = 0; i < MAX_BATCH_TIMES; i++) {
+        const skipCount = startIndex + (i * MAX_LIMIT);
+        
+        const promise = db.collection('Match')
+          .where({
+            SessionId: gameId
+          })
+          .skip(skipCount)
+          .limit(MAX_LIMIT)
+          .orderBy('Round', 'asc')
+          .orderBy('Court', 'asc')
+          .get();
+        
+        tasks.push(promise);
+      }
+      
+      // Wait for all batches to complete
+      const results = await Promise.all(tasks);
+      
+      // Combine the results from all batches
+      const matchesData = results.reduce((acc, cur) => {
+        return acc.concat(cur.data);
+      }, []);
+      
+      console.log(`Successfully retrieved ${matchesData.length} matches for game ${gameId}`);
+      return matchesData;
+      
     } catch (error) {
       console.error('Failed to get matches for game:', error);
       throw error;
