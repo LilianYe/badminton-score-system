@@ -4,7 +4,7 @@
     
     <!-- Login Step -->
     <view wx:if="{{!showRegistration}}">
-      <view class="welcome-text">欢迎！请使用微信登录以继续。</view>
+      <view class="welcome-text">欢迎！请使用微信登录。</view>
       
       <view class="login-section">
         <button 
@@ -18,9 +18,6 @@
         </button>
       </view>
       
-      <view class="note">
-        <text>我们将使用您的微信资料来个性化您的羽毛球体验。</text>
-      </view>
     </view>
     
     <!-- Registration Step -->
