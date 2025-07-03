@@ -365,3 +365,17 @@ switch {
   transform: scale(0.8);
   margin-left: -8rpx;
 }
+
+/* Help icon style */
+.help-icon {
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+  line-height: 18px;
+  text-align: center;
+  border-radius: 50%;
+  background-color: #0078d7;
+  color: white;
+  font-size: 12px;
+  margin-left: 5px;
+}

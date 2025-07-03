@@ -39,7 +39,18 @@ Page({
     processedPlayers: [], // Processed player array for rendering
     playerCount: 0, // Count of players,
     matchesSaved: false, // Flag to track if matches have been saved to database
-  },    
+    paramExplanations: {
+      eloThreshold: "队伍ELO差：对阵双方的ELO平均差值上限。较小值使比赛更均衡，但可能难以生成对阵。建议：50-150。",
+      teamEloDiff: "搭档ELO差：同队队友间允许的ELO差值上限。较大值使配对更灵活。建议：200-400。",
+      gamePerPlayer: "每人场次：每位球员参与的比赛数。需满足：球员数×场次÷4为整数。建议：4、6、8。",
+      courtCount: "场地数量：同时进行的比赛场地数。球员数必须≥场地数×4。",
+      courtDetails: "场地编号：具体场地号码，用英文逗号分隔。例：'1,3,5'表示使用1、3、5号场地。默认使用连续编号。",
+      maxOpponentFrequency: "对手频率上限：限制同一球员与特定对手交手的最大次数。较小值使对阵更多样化。建议：2-4。",
+      maxConsecutiveRounds: "连续比赛上限：球员最多可连续参赛的轮数。较小值确保休息时间。建议：2-4。",
+      ignoreGender: "忽略性别平衡：开启后不考虑性别平衡。当女性球员较少或性别比例极不平衡时建议开启。",
+      femaleEloDiff: "女性ELO调整：混合比赛中女性球员的ELO加成，用于平衡男女实力差异。建议：50-150。"
+    },
+  },
   
   onLoad(options) {
     console.log('Generate Match page loaded', options);
@@ -925,5 +936,19 @@ Page({
         delta: 1
       });
     }
-  }
+  },
+
+  // Add a new method to show explanation when user clicks the "?" icon
+  showParameterExplanation(e) {
+    const paramName = e.currentTarget.dataset.param;
+    const explanation = this.data.paramExplanations[paramName];
+    
+    if (explanation) {
+      wx.showModal({
+        title: '参数说明',
+        content: explanation,
+        showCancel: false
+      });
+    }
+  },
 });

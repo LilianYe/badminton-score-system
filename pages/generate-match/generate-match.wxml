@@ -18,41 +18,59 @@
     </view>
     <view class="parameter-group">
       <view class="parameter">
-        <text>每人场数：</text>
+        <view class="param-label">
+          每人场数：<text class="help-icon" bindtap="showParameterExplanation" data-param="gamePerPlayer">?</text>
+        </view>
         <input type="number" value="{{gamePerPlayer}}" placeholder="如 4" bindinput="onGamePerPlayerInput" />
       </view>
       <view class="parameter">
-        <text>场地数：</text>
+        <view class="param-label">
+          场地数：<text class="help-icon" bindtap="showParameterExplanation" data-param="courtCount">?</text>
+        </view>
         <input type="number" value="{{courtCount}}" placeholder="如 2" bindinput="onCourtCountInput" />
       </view>
       <view class="parameter">
-        <text>场地编号：</text>
+        <view class="param-label">
+          场地编号：<text class="help-icon" bindtap="showParameterExplanation" data-param="courtDetails">?</text>
+        </view>
         <input type="text" value="{{courtDetails}}" placeholder="如 2,5 (用逗号分隔)" bindinput="onCourtDetailsInput" />
       </view>
     </view>
     <view class="parameter-group advanced-settings {{showAdvanced ? 'show' : ''}}">
       <view class="parameter" wx:if="{{showAdvanced}}">
-        <text>ELO阈值：</text>
+        <view class="param-label">
+          队伍ELO差：<text class="help-icon" bindtap="showParameterExplanation" data-param="eloThreshold">?</text>
+        </view>
         <input type="number" value="{{eloThreshold}}" placeholder="如 100" bindinput="onEloThresholdInput" />
       </view>
       <view class="parameter" wx:if="{{showAdvanced}}">
-        <text>队伍ELO差：</text>
+        <view class="param-label">
+          搭档ELO差：<text class="help-icon" bindtap="showParameterExplanation" data-param="teamEloDiff">?</text>
+        </view>
         <input type="number" value="{{teamEloDiff}}" placeholder="如 300" bindinput="onTeamEloDiffInput" />
       </view>
       <view class="parameter" wx:if="{{showAdvanced}}">
-        <text>对手频率上限：</text>
+        <view class="param-label">
+          对手频率上限：<text class="help-icon" bindtap="showParameterExplanation" data-param="maxOpponentFrequency">?</text>
+        </view>
         <input type="number" value="{{maxOpponentFrequency}}" placeholder="如 4" bindinput="onMaxOpponentFrequencyInput" />
       </view>
       <view class="parameter" wx:if="{{showAdvanced}}">
-        <text>连续比赛上限：</text>
+        <view class="param-label">
+          连续比赛上限：<text class="help-icon" bindtap="showParameterExplanation" data-param="maxConsecutiveRounds">?</text>
+        </view>
         <input type="number" value="{{maxConsecutiveRounds}}" placeholder="如 4" bindinput="onMaxConsecutiveRoundsInput" />
       </view>
       <view class="parameter" wx:if="{{showAdvanced}}">
-        <text>忽略性别平衡：</text>
+        <view class="param-label">
+          忽略性别平衡：<text class="help-icon" bindtap="showParameterExplanation" data-param="ignoreGender">?</text>
+        </view>
         <switch checked="{{ignoreGender}}" bindchange="onIgnoreGenderChange" />
       </view>
       <view class="parameter" wx:if="{{showAdvanced && ignoreGender}}">
-        <text>女性ELO调整值：</text>
+        <view class="param-label">
+          女性ELO调整值：<text class="help-icon" bindtap="showParameterExplanation" data-param="femaleEloDiff">?</text>
+        </view>
         <input type="number" value="{{femaleEloDiff}}" placeholder="如 100" bindinput="onFemaleEloDiffInput" />
       </view>
     </view>
