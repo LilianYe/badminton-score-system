@@ -279,11 +279,38 @@
     margin-bottom: 40rpx;
 }
 
+.score-input-team-info {
+    margin-bottom: 24rpx;
+    text-align: center;
+}
+
+.team-label {
+    font-size: 24rpx;
+    color: #666;
+    margin-bottom: 8rpx;
+    font-weight: 500;
+}
+
+.team-players {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8rpx;
+    flex-wrap: wrap;
+}
+
+.team-players .player-name {
+    font-size: 28rpx;
+    color: #333;
+    font-weight: 500;
+}
+
 .score-input-row {
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 20rpx;
+    margin: 20rpx 0;
 }
 
 .score-input-box {
@@ -322,6 +349,15 @@
     font-size: 28rpx;
     font-weight: bold;
     border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8rpx;
+}
+
+.score-input-btn:disabled {
+    opacity: 0.6;
+    pointer-events: none;
 }
 
 .cancel-btn {
@@ -329,9 +365,33 @@
     color: #666;
 }
 
+.cancel-btn:disabled {
+    background-color: #e9ecef;
+    color: #adb5bd;
+}
+
 .confirm-btn {
     background-color: #007AFF;
     color: white;
+}
+
+.confirm-btn:disabled {
+    background-color: #6c757d;
+    color: #dee2e6;
+}
+
+.loading-spinner {
+    width: 24rpx;
+    height: 24rpx;
+    border: 2rpx solid transparent;
+    border-top: 2rpx solid currentColor;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
 }
 
 .stats-section {

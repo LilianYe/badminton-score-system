@@ -966,7 +966,7 @@ class CloudDBService {
           { 'PlayerA2.name': userName },
           { 'PlayerB1.name': userName },
           { 'PlayerB2.name': userName },
-          { 'Referee.name': userName }
+          { 'Referee': userName }
         ]
       }).orderBy('StartTime', 'asc').get();
       return result.data;
