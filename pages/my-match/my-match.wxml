@@ -1,6 +1,6 @@
 <view class="container">
   <!-- Always display the title at the top, regardless of loading state -->
-  <view class="game-title">{{gameName || (isFromGame ? '对阵表' : '我的比赛')}}</view>
+  <view class="game-title">{{gameName || '对阵表'}}</view>
   
   <!-- Loading indicator below the title -->
   <view wx:if="{{isLoading}}" class="loading-container">
@@ -8,16 +8,20 @@
   </view>
   
   <!-- View for game-specific matches organized by rounds -->
-  <block wx:elif="{{isFromGame}}">
+  <block wx:else>
     <view wx:if="{{matchRounds.length === 0}}" class="empty">该游戏没有生成对阵表</view>
     
-    <view wx:else class="rounds-container">
+    <view wx:if="{{matchRounds.length > 0}}" class="rounds-container">
       <view wx:for="{{matchRounds}}" wx:key="round" class="round-section">
         <view class="round-header">第 {{item.round}} 轮</view>
         
         <view class="courts-container">
-          <view wx:for="{{item.courts}}" wx:for-item="court" wx:key="id" class="court-card">
-            <view class="court-header">场地 {{court.court}}</view>
+          <view wx:for="{{item.courts}}" wx:for-item="court" wx:key="id" class="court-card {{court.isCompleted ? 'match-completed' : ''}}">
+            <view class="court-header">
+              <text>场地 {{court.court}}</text>
+              <text wx:if="{{court.isCompleted}}" class="completion-status status-completed">已完成</text>
+            </view>
+            
             <view class="teams-container">
               <!-- Team A -->
               <view class="team">
@@ -30,7 +34,10 @@
               
               <!-- Centered VS Score -->
               <view class="score center-vs">
-                <text class="vs-text">VS</text>
+                <text wx:if="{{court.isCompleted && court.scoreA !== undefined && court.scoreB !== undefined}}">
+                  {{court.scoreA}} - {{court.scoreB}}
+                </text>
+                <text wx:else class="vs-text">VS</text>
               </view>
               
               <!-- Team B -->
@@ -49,74 +56,6 @@
       <view class="actions">
         <button class="back-btn" bindtap="navigateBack">返回</button>
         <button class="regenerate-btn {{gameStatus === 'playing' ? 'disabled-btn' : ''}}" bindtap="navigateToGenerate" wx:if="{{isOwner}}">重新生成</button>
-      </view>
-    </view>
-  </block>
-  
-  <!-- Updated view for attention matches -->
-  <block wx:else>
-    <view wx:if="{{attentionMatches.length === 0}}" class="empty">没有需要您关注的比赛</view>
-    <view wx:else class="match-list">
-      <view wx:for="{{attentionMatches}}" wx:key="_id" class="match-card">
-        <view class="match-header">
-          <text class="match-time">{{item.formattedStartTime}}</text>
-          <text class="match-round">Round: {{item.Round || '-'}}</text>
-          <view class="match-status">待完成</view>
-        </view>
-        
-        <view class="teams-container">
-          <!-- Team A -->
-          <view class="team">
-            <view class="player-row">
-              <text class="player-name {{item.PlayerA1Gender === 'female' ? 'female-player' : 'male-player'}}">{{item.PlayerNameA1}}</text>
-              <image wx:if="{{item.PlayerA1Gender === 'male'}}" class="gender-icon-small" src="/assets/icons/male_24dp_0000F5.png" mode="aspectFit"></image>
-              <image wx:if="{{item.PlayerA1Gender === 'female'}}" class="gender-icon-small" src="/assets/icons/female_24dp_EA33F7.png" mode="aspectFit"></image>
-            </view>
-            <view wx:if="{{item.PlayerNameA2}}" class="player-row">
-              <text class="player-name {{item.PlayerA2Gender === 'female' ? 'female-player' : 'male-player'}}">{{item.PlayerNameA2}}</text>
-              <image wx:if="{{item.PlayerA2Gender === 'male'}}" class="gender-icon-small" src="/assets/icons/male_24dp_0000F5.png" mode="aspectFit"></image>
-              <image wx:if="{{item.PlayerA2Gender === 'female'}}" class="gender-icon-small" src="/assets/icons/female_24dp_EA33F7.png" mode="aspectFit"></image>
-            </view>
-          </view>
-          
-          <!-- Centered Score -->
-          <view class="score center-vs">
-            <text>{{item.ScoreA || 0}} - {{item.ScoreB || 0}}</text>
-          </view>
-          
-          <!-- Team B -->
-          <view class="team">
-            <view class="player-row">
-              <text class="player-name {{item.PlayerB1Gender === 'female' ? 'female-player' : 'male-player'}}">{{item.PlayerNameB1}}</text>
-              <image wx:if="{{item.PlayerB1Gender === 'male'}}" class="gender-icon-small" src="/assets/icons/male_24dp_0000F5.png" mode="aspectFit"></image>
-              <image wx:if="{{item.PlayerB1Gender === 'female'}}" class="gender-icon-small" src="/assets/icons/female_24dp_EA33F7.png" mode="aspectFit"></image>
-            </view>
-            <view wx:if="{{item.PlayerNameB2}}" class="player-row">
-              <text class="player-name {{item.PlayerB2Gender === 'female' ? 'female-player' : 'male-player'}}">{{item.PlayerNameB2}}</text>
-              <image wx:if="{{item.PlayerB2Gender === 'male'}}" class="gender-icon-small" src="/assets/icons/male_24dp_0000F5.png" mode="aspectFit"></image>
-              <image wx:if="{{item.PlayerB2Gender === 'female'}}" class="gender-icon-small" src="/assets/icons/female_24dp_EA33F7.png" mode="aspectFit"></image>
-            </view>
-          </view>
-        </view>
-        
-        <view class="match-footer">
-          <view class="meta-row">
-            <text class="court">场地: {{item.Court}}</text>
-          </view>
-          <button class="edit-btn" bindtap="onEditTap" data-id="{{item._id}}">编辑比分</button>
-        </view>
-        
-        <view wx:if="{{editMatchId === item._id}}" class="edit-form">
-          <view class="edit-inputs">
-            <input class="score-input" type="number" placeholder="队伍A" value="{{editScoreA}}" bindinput="onEditScoreAInput" />
-            <text class="edit-vs">:</text>
-            <input class="score-input" type="number" placeholder="队伍B" value="{{editScoreB}}" bindinput="onEditScoreBInput" />
-          </view>
-          <view class="edit-actions">
-            <button class="save-btn" size="mini" type="primary" loading="{{isSaving}}" bindtap="onSaveScore">保存</button>
-            <button class="cancel-btn" size="mini" bindtap="onCancelEdit">取消</button>
-          </view>
-        </view>
       </view>
     </view>
   </block>

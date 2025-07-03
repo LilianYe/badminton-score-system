@@ -5,13 +5,8 @@ const CloudDBService = require('../../utils/cloud-db.js');
 
 Page({
   data: {
-    attentionMatches: [],
     gameMatches: [], // For matches from a specific game
-    isLoading: false,
-    editMatchId: null,
-    editScoreA: '',
-    editScoreB: '',
-    isSaving: false,    
+    isLoading: false,   
     gameId: null, // Store the game ID when viewing generated matches
     isFromGame: false, // Flag to indicate if viewing matches for a specific game
     gameName: '', // Store the game name to display in the UI
@@ -31,9 +26,9 @@ Page({
   },
   
   onShow() {
-    // Only load attention matches if not viewing game-specific matches
-    if (!this.data.isFromGame) {
-      this.loadAttentionMatches();
+    // If we have a gameId but no matches loaded, load them now
+    if (this.data.gameId && this.data.matchRounds.length === 0) {
+      this.loadGameMatches(this.data.gameId);
     }
   },
   
@@ -77,7 +72,13 @@ Page({
         
         // Group matches by round
         const roundsMap = {};
+        let completedMatchesCount = 0; // Track completed matches
+        let totalMatchesCount = 0;     // Track total matches
+        
         matches.forEach(match => {
+          totalMatchesCount++;
+          if (match.CompleteTime) completedMatchesCount++;
+          
           const round = match.Round;
           if (!roundsMap[round]) {
             roundsMap[round] = {
@@ -102,7 +103,11 @@ Page({
           roundsMap[round].courts.push({
             teams: [team1, team2],
             court: match.Court,
-            id: match._id
+            id: match._id,
+            isCompleted: !!match.CompleteTime, // Add isCompleted flag
+            scoreA: match.ScoreA,              // Add scores if available
+            scoreB: match.ScoreB,
+            matchId: match.MatchId || ''       // Add MatchId for reference
           });
         });
         
@@ -119,16 +124,21 @@ Page({
         this.setData({
           gameMatches: matches,
           matchRounds: matchRounds,
-          isLoading: false
+          isLoading: false,
+          completedCount: completedMatchesCount,
+          totalCount: totalMatchesCount
         });
         
         console.log('Processed match rounds:', matchRounds);
+        console.log(`Completion: ${completedMatchesCount}/${totalMatchesCount}`);
       } else {
         console.log('No matches found for game');
         this.setData({
           gameMatches: [],
           matchRounds: [],
-          isLoading: false
+          isLoading: false,
+          completedCount: 0,
+          totalCount: 0
         });
         
         wx.showToast({
@@ -147,92 +157,6 @@ Page({
         duration: 2000
       });
     }
-  },
-  
-  // Original function to load matches that need attention
-  async loadAttentionMatches() {
-    this.setData({ isLoading: true });
-    
-    try {
-      // Use MatchService to get upcoming matches for current user
-      const matches = await MatchService.getUpcomingMatchesForUser();
-      
-      this.setData({ 
-        attentionMatches: matches, 
-        isLoading: false 
-      });
-      
-      // Update tab bar red dot
-      if (matches.length > 0) {
-        wx.showTabBarRedDot({ index: 1 }); // Adjust index as needed
-      } else {
-        wx.hideTabBarRedDot({ index: 1 });
-      }
-    } catch (error) {
-      console.error('Failed to load matches:', error);
-      wx.showToast({ 
-        title: error.message || 'Failed to load matches', 
-        icon: 'none' 
-      });
-      this.setData({ isLoading: false });
-    }
-  },
-  onEditTap(e) {
-    const matchId = e.currentTarget.dataset.id;
-    const match = this.data.attentionMatches.find(m => m._id === matchId);
-    this.setData({
-      editMatchId: matchId,
-      editScoreA: match ? (match.ScoreA !== undefined ? match.ScoreA : '') : '',
-      editScoreB: match ? (match.ScoreB !== undefined ? match.ScoreB : '') : '',
-      isSaving: false
-    });
-  },
-  onEditScoreAInput(e) {
-    this.setData({ editScoreA: e.detail.value });
-  },
-  onEditScoreBInput(e) {
-    this.setData({ editScoreB: e.detail.value });
-  },
-  async onSaveScore() {
-    const { editMatchId, editScoreA, editScoreB } = this.data;
-    
-    if (!editMatchId) return;
-    
-    if (editScoreA === '' || editScoreB === '') {
-      wx.showToast({ title: 'Please enter both scores', icon: 'none' });
-      return;
-    }
-    
-    this.setData({ isSaving: true });
-    
-    try {
-      // Use MatchService to update match scores
-      await MatchService.updateMatchScores(editMatchId, editScoreA, editScoreB);
-      
-      wx.showToast({ title: 'Scores saved', icon: 'success' });
-      this.setData({ 
-        editMatchId: null, 
-        editScoreA: '', 
-        editScoreB: '', 
-        isSaving: false 
-      });
-      
-      // Reload matches to reflect changes
-      this.loadAttentionMatches();
-    } catch (error) {
-      console.error('Failed to save scores:', error);
-      wx.showToast({ 
-        title: error.message || 'Failed to save', 
-        icon: 'none' 
-      });
-      this.setData({ isSaving: false });
-    }
-  },  onCancelEdit() {
-    this.setData({ 
-      editMatchId: null, 
-      editScoreA: '', 
-      editScoreB: '' 
-    });
   },
 
   // Function to navigate back to the game details page
