@@ -247,7 +247,7 @@ exports.main = async (event, context) => {
         error: 'Match not found'
       };
     }
-    
+
     const match = matchRes.data[0];
     // Check if match is already completed
     if (match.CompleteTime) {
@@ -257,6 +257,7 @@ exports.main = async (event, context) => {
         error: 'Match already completed by another user'
       };
     }
+    
     console.log('Match found:', match.MatchId);
     console.log('Match player data:', {
       PlayerA1: match.PlayerA1,
@@ -339,11 +340,10 @@ exports.main = async (event, context) => {
 
     console.log('Team ELOs (using current values):', { teamA: teamAELO, teamB: teamBELO });
 
-    // Update performance for all players
-    const updatePromises = [];
+    // Calculate ELO changes for all players (but don't update performance yet)
     const playerEloChanges = {};
 
-    console.log('=== PERFORMANCE UPDATE LOOP ===');
+    console.log('=== CALCULATING ELO CHANGES ===');
     for (const playerName of allPlayers) {
       const isTeamA = teamAPlayers.includes(playerName);
       const isWinner = isTeamA ? teamAWins : !teamAWins;
@@ -361,18 +361,9 @@ exports.main = async (event, context) => {
       // Store ELO change for updating match record
       playerEloChanges[playerName] = eloChange;
 
-      console.log(`Processing ${playerName}: TeamA=${isTeamA}, Winner=${isWinner}, CurrentELO=${playerELO}, OpponentELO=${opponentELO}, ELOChange=${eloChange}, TeamMixed=${isMixed}`);
-
-      updatePromises.push(
-        updatePlayerPerformance(playerName, isWinner, eloChange, isMixed)
-      );
+      console.log(`Calculated for ${playerName}: TeamA=${isTeamA}, Winner=${isWinner}, CurrentELO=${playerELO}, OpponentELO=${opponentELO}, ELOChange=${eloChange}, TeamMixed=${isMixed}`);
     }
-    console.log('=== END PERFORMANCE UPDATE LOOP ===');
-
-    // Wait for all performance updates to complete
-    console.log('Waiting for all performance updates to complete...');
-    await Promise.all(updatePromises);
-    console.log('All performance updates completed');
+    console.log('=== END CALCULATING ELO CHANGES ===');
 
     // Update match record with ELO changes
     const matchUpdateData = {
@@ -441,6 +432,26 @@ exports.main = async (event, context) => {
     }
     
     console.log('Match record updated successfully:', updateResult);
+
+    // Now that match is successfully updated, update user performance
+    const updatePromises = [];
+    console.log('=== UPDATING USER PERFORMANCE ===');
+    for (const playerName of allPlayers) {
+      const isTeamA = teamAPlayers.includes(playerName);
+      const isWinner = isTeamA ? teamAWins : !teamAWins;
+      const isMixed = isTeamA ? teamAIsMixed : teamBIsMixed;
+      const eloChange = playerEloChanges[playerName];
+
+      console.log(`Updating performance for ${playerName}: Winner=${isWinner}, ELOChange=${eloChange}, TeamMixed=${isMixed}`);
+      updatePromises.push(
+        updatePlayerPerformance(playerName, isWinner, eloChange, isMixed)
+      );
+    }
+    
+    // Wait for all performance updates to complete
+    console.log('Waiting for all performance updates to complete...');
+    await Promise.all(updatePromises);
+    console.log('All performance updates completed');
 
     // Update session status
     if (match.SessionId) {
