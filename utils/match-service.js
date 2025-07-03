@@ -150,11 +150,8 @@ class MatchService {
         throw new Error('用户未登录');
       }
       
-      // Get all upcoming matches from database
-      const allMatches = await CloudDBService.getUpcomingMatches();
-      
-      // Filter matches for current user
-      const userMatches = this.filterMatchesByUser(allMatches, currentUser.Name);
+      // Use optimized query to get upcoming matches for current user directly
+      const userMatches = await CloudDBService.getUpcomingMatchesByUserName(currentUser.Name);
       
       // Process matches for display
       const processedMatches = this.processMatchesForDisplay(userMatches);

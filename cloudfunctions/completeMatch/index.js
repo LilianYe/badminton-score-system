@@ -230,14 +230,6 @@ exports.main = async (event, context) => {
       error: 'Missing required parameters: matchId, scoreA, scoreB'
     };
   }
-
-  // Validate that scores are different (no draws in badminton)
-  if (scoreA === scoreB) {
-    return {
-      success: false,
-      error: 'Scores cannot be equal. Badminton matches must have a winner.'
-    };
-  }
   
   try {
     console.log('=== COMPLETING MATCH ===');
@@ -255,8 +247,16 @@ exports.main = async (event, context) => {
         error: 'Match not found'
       };
     }
-
+    
     const match = matchRes.data[0];
+    // Check if match is already completed
+    if (match.CompleteTime) {
+      console.log('Match already completed at:', match.CompleteTime);
+      return {
+        success: false,
+        error: 'Match already completed by another user'
+      };
+    }
     console.log('Match found:', match.MatchId);
     console.log('Match player data:', {
       PlayerA1: match.PlayerA1,
@@ -264,7 +264,7 @@ exports.main = async (event, context) => {
       PlayerB1: match.PlayerB1,
       PlayerB2: match.PlayerB2
     });
-    
+        
     // Determine winner (Team A wins if scoreA > scoreB)
     const teamAWins = scoreA > scoreB;
 
@@ -422,12 +422,25 @@ exports.main = async (event, context) => {
 
     console.log('Updating match record with ELO changes:', matchUpdateData);
 
-    // Update match record with scores, completion time, and ELO changes
-    await db.collection('Match').where({
-      MatchId: matchId
+    // Use conditional update to prevent race conditions
+    // Only update if CompleteTime is null (not already completed)
+    const updateResult = await db.collection('Match').where({
+      MatchId: matchId,
+      CompleteTime: null  // Only update if not already completed
     }).update({
       data: matchUpdateData
     });
+    
+    // Check if the update was successful
+    if (updateResult.stats.updated === 0) {
+      console.log('No records were updated - match was likely completed by another user');
+      return {
+        success: false,
+        error: 'Match already completed by another user'
+      };
+    }
+    
+    console.log('Match record updated successfully:', updateResult);
 
     // Update session status
     if (match.SessionId) {

@@ -18,7 +18,8 @@ Page({
         showStats: true,
         sameGenderTitle: '同性统计',
         showMatches: true,
-        needsLogin: false // Add this property
+        needsLogin: false, // Add this property
+        isProcessing: false // Add processing state
     },
 
     onShow: function() {
@@ -187,6 +188,7 @@ Page({
             this.setData({
                 showScoreInput: true,
                 editingMatchId: matchId,
+                currentMatch: match, // Store the current match data for display
                 teamAScore: '',
                 teamBScore: ''
             });
@@ -209,6 +211,11 @@ Page({
 
     // Confirm score input
     confirmScore: function() {
+        // Prevent multiple submissions
+        if (this.data.isProcessing) {
+            return;
+        }
+        
         const { teamAScore, teamBScore, editingMatchId } = this.data;
         
         const scoreA = parseInt(teamAScore);
@@ -299,13 +306,49 @@ Page({
         this.setData({
             showScoreInput: false,
             editingMatchId: null,
+            currentMatch: null, // Clear the current match data
             teamAScore: '',
-            teamBScore: ''
+            teamBScore: '',
+            isProcessing: false // Reset processing state
         });
     },
 
     async completeMatch(matchId, scoreA, scoreB) {
-        try {            
+        // Set processing state
+        this.setData({ isProcessing: true });
+        
+        try {
+            // Final check: Verify the match hasn't been completed by someone else
+            const db = wx.cloud.database();
+            const finalCheck = await db.collection('Match').where({ MatchId: matchId }).get();
+            
+            if (finalCheck.data && finalCheck.data.length > 0) {
+                const match = finalCheck.data[0];
+                if (match.CompleteTime) {
+                    // Match was completed by someone else while user was entering score
+                    wx.showToast({
+                        title: '比赛已被他人完成，请刷新查看',
+                        icon: 'none',
+                        duration: 3000
+                    });
+                    
+                    this.setData({
+                        showScoreInput: false,
+                        editingMatchId: null,
+                        currentMatch: null,
+                        teamAScore: '',
+                        teamBScore: '',
+                        isProcessing: false
+                    });
+                    
+                    // Reload matches to show updated status
+                    if (this.data.currentUser) {
+                        await this.loadMatches(this.data.currentUser.Name);
+                    }
+                    return;
+                }
+            }
+            
             // Use MatchService to update match scores
             await MatchService.updateMatchScores(matchId, scoreA, scoreB);            
             wx.showToast({
@@ -316,8 +359,10 @@ Page({
             this.setData({
                 showScoreInput: false,
                 editingMatchId: null,
+                currentMatch: null, // Clear the current match data
                 teamAScore: '',
-                teamBScore: ''
+                teamBScore: '',
+                isProcessing: false // Reset processing state
             });
             
             // Reload matches and user stats to reflect changes
@@ -329,10 +374,28 @@ Page({
             }
         } catch (error) {
             console.error('Error completing match:', error);
-            wx.showToast({
-                title: error.message || '完成比赛失败',
-                icon: 'none'
-            });
+            
+            // Check if the error is due to match already being completed
+            if (error.message && error.message.includes('already completed')) {
+                wx.showToast({
+                    title: '比赛已被他人完成',
+                    icon: 'none',
+                    duration: 3000
+                });
+                
+                // Reload matches to show updated status
+                if (this.data.currentUser) {
+                    await this.loadMatches(this.data.currentUser.Name);
+                }
+            } else {
+                wx.showToast({
+                    title: error.message || '完成比赛失败',
+                    icon: 'none'
+                });
+            }
+            
+            // Reset processing state on error
+            this.setData({ isProcessing: false });
         }
     },
 
