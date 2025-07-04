@@ -12,7 +12,7 @@ const global_expected_wins = {};
  * @param {number} currentRound
  * @param {number} totalRounds
  * @param {number[]} restPerRound - How many rest slots per round 
- * @param {number} targetRestCount
+ * @param {Object} targetRestCount - Dictionary of {playerName: targetRestCount}
  * @param {Object} playerConsecutiveActive - {player: consecutiveActiveRounds}
  * @param {number} maxConsecutiveRounds - Maximum consecutive active rounds before mandatory rest
  * @param {boolean} ignoreGender - If true, ignore gender balance constraints
@@ -25,21 +25,23 @@ function backtrackRestScheduleVariable(players, restSchedule, restCounts, curren
 
   // 1. Players who must rest due to consecutive actives
   const mustRestConsecutive = players.filter(p => (playerConsecutiveActive[p.name] || 0) >= maxConsecutiveRounds);
+  
   // 2. Players who must rest to meet target rest count
   const restNeeded = {};
-  players.forEach(p => restNeeded[p.name] = targetRestCount - restCounts[p.name]);
+  // Update to use player-specific target rest counts from dictionary
+  players.forEach(p => restNeeded[p.name] = targetRestCount[p.name] - restCounts[p.name]);
+  
   const mustRestCount = players.filter(p => restNeeded[p.name] > 0 && restNeeded[p.name] > roundsLeft - 1);
   const mustRest = Array.from(new Set([...mustRestConsecutive, ...mustRestCount]));
+  
   if (mustRest.length > restCountNeeded) {
-    console.log('  [FAIL] Too many must-rest players for available rest slots.');
+    console.log(`[RestSchedule][Round ${currentRound}] [FAIL] Too many must-rest players for available rest slots.`);
     return false;
-  }    
-  if (players.filter(p => restCounts[p.name] < targetRestCount).length < restCountNeeded) {
-    console.log('  [FAIL] Not enough players left who need rest.');
-    return false;
-  }
+  }  
   // Candidates for resting  
-  const validCandidates = players.filter(p => restCounts[p.name] < targetRestCount && !mustRest.includes(p));
+  // Update to use player-specific target rest counts
+  const validCandidates = players.filter(p => restCounts[p.name] < targetRestCount[p.name] && !mustRest.includes(p));
+  
   const femaleCandidates = validCandidates.filter(p => p.gender === 'female').sort((a, b) => (playerConsecutiveActive[b.name] || 0) - (playerConsecutiveActive[a.name] || 0));
   const maleCandidates = validCandidates.filter(p => p.gender === 'male').sort((a, b) => (playerConsecutiveActive[b.name] || 0) - (playerConsecutiveActive[a.name] || 0));
   const mustRestFemales = mustRest.filter(p => p.gender === 'female');
@@ -180,7 +182,13 @@ function generateRotationFull(players, courtCount, gamePerPlayer, eloThreshold, 
   const COURT_SIZE = 4;
   const totalPlayers = players.length;
   const totalPlayerGames = totalPlayers * gamePerPlayer;
-  const minExpectedWins = gamePerPlayer % 2 === 0 ? gamePerPlayer / 2 - 1 : Math.floor(gamePerPlayer / 2);
+  
+  // Calculate how many extra rest slots are needed to make total divisible by 4
+  const extraPlayNeeded = (Math.ceil(totalPlayerGames / 4) * 4) - totalPlayerGames;
+  
+  console.log(`Total player games: ${totalPlayerGames}, needs ${extraPlayNeeded} extra play slots to be divisible by 4`);
+  
+  const minExpectedWins = gamePerPlayer % 2 === 0 ? gamePerPlayer / 2 - 2 : Math.floor(gamePerPlayer / 2) - 1;
   const playerSlotsPerRound = courtCount * COURT_SIZE;
   const roundsFloat = totalPlayerGames / playerSlotsPerRound;
   const fullRounds = Math.floor(roundsFloat);
@@ -193,12 +201,39 @@ function generateRotationFull(players, courtCount, gamePerPlayer, eloThreshold, 
   }
   // How many rest slots per round
   const courtsPerRound = Array(rounds - 1).fill(courtCount).concat([lastRoundCourts]);
-  const restPerRound = courtsPerRound.map(roundCourts => totalPlayers - roundCourts * COURT_SIZE);  
+  const restPerRound = courtsPerRound.map(roundCourts => totalPlayers - roundCourts * COURT_SIZE);
+  
   // Rest schedule
   const restSchedule = Array.from({ length: rounds }, () => []);
   const restCounts = {};
   players.forEach(p => restCounts[p.name] = 0);
-  const targetRestCount = rounds - gamePerPlayer;
+  
+  // Make targetRestCount a dictionary instead of a single value
+  const targetRestCount = {};
+  
+  // By default, everyone's target rest count is rounds - gamePerPlayer
+  players.forEach(p => targetRestCount[p.name] = rounds - gamePerPlayer);
+  
+  // Create an array of only male players for extra play
+  const malePlayers = players.filter(p => p.gender === 'male');
+  let malePlayersForExtraPlay = malePlayers.map(p => p.name);
+  
+  // Shuffle to randomize which male players get selected for extra play
+  shuffleArray(malePlayersForExtraPlay);
+  
+  // If we need extra players to play, reduce their rest count
+  // Only select male players for extra play
+  if (extraPlayNeeded > 0) {
+    console.log(`Need ${extraPlayNeeded} male players to play an extra game`);
+    
+    // We have enough male players
+    for (let i = 0; i < extraPlayNeeded; i++) {
+      const playerName = malePlayersForExtraPlay[i];
+      targetRestCount[playerName]--;
+      console.log(`Adjusted target rest for male player ${playerName}: ${rounds - gamePerPlayer} -> ${targetRestCount[playerName]} (plays ${gamePerPlayer + 1} games)`);
+    }
+  }
+  
   const playerConsecutiveActive = {};
   players.forEach(p => playerConsecutiveActive[p.name] = 0);
 
@@ -212,6 +247,7 @@ function generateRotationFull(players, courtCount, gamePerPlayer, eloThreshold, 
   console.log('Team ELO diff:', teamEloDiff);
   console.log('Player ELOs:', players.map(p => `${p.name}: ${p.elo}`).join(', '));
   console.log('Total player games:', totalPlayerGames);
+  console.log('Extra play needed:', extraPlayNeeded);
   console.log('Player slots per round:', playerSlotsPerRound);
   console.log('Rounds float:', roundsFloat);
   console.log('Full rounds:', fullRounds);
@@ -236,7 +272,7 @@ function generateRotationFull(players, courtCount, gamePerPlayer, eloThreshold, 
     0,
     rounds,
     restPerRound,
-    targetRestCount,
+    targetRestCount, // Now passing a dictionary instead of a single value
     playerConsecutiveActive,
     maxConsecutiveRounds,
     ignoreGender  // Add the ignoreGender parameter
@@ -248,7 +284,6 @@ function generateRotationFull(players, courtCount, gamePerPlayer, eloThreshold, 
     throw new Error('Failed to generate rest schedule');
   }
   console.log('Rest Schedule:', JSON.stringify(restSchedule, null, 2));
-
   // Court assignments for each round
   const roundsLineups = [];
   
@@ -315,8 +350,9 @@ function checkExpectedWinBalance(team1, team2, playerRemainingRounds, eloThresho
   const team1Avg = (team1[0].elo + team1[1].elo) / 2;
   const team2Avg = (team2[0].elo + team2[1].elo) / 2;
   if (Math.abs(team1Avg - team2Avg) > eloThreshold) return false;
-  // Expected win balance check
-  const disadvantaged = team1Avg > team2Avg ? team2 : team1;  for (const p of disadvantaged) {
+    // Expected win balance check
+  const disadvantaged = team1Avg > team2Avg ? team2 : team1;  
+  for (const p of disadvantaged) {
     const current = global_expected_wins[p.name] || 0;
     const remaining = (playerRemainingRounds[p.name] || 0) - 1;
     if (current + remaining < minExpectedWins) return false;
@@ -328,7 +364,7 @@ function checkOpponentsValid(team1, team2, maxOpponentFrequency) {
   for (const p1 of team1) {
     for (const p2 of team2) {
       const pair = [p1.name, p2.name].sort().join('|');
-      if ((global_opponents[pair] || 0) > maxOpponentFrequency) {
+      if ((global_opponents[pair] || 0) >= maxOpponentFrequency) {
         return false;
       }
     }
@@ -510,18 +546,21 @@ function backtrackCourts(courts, females, males, courtCount, usedPlayers, eloThr
       let team1 = null;
       for (const [m1, m2] of malePairs) {
         if (usedCopy.has(m1) || usedCopy.has(m2)) continue;
+        if (m1.gender === 'female' && m2.gender === 'female') continue;
         const pair = [m1.name, m2.name].sort().join('|');
         if (global_partnerships[pair]) continue;
         if (!checkTeammateEloCompatibility(m1, m2, teamEloDiff)) continue;
         team1 = [m1, m2];
         global_partnerships[pair] = (global_partnerships[pair] || 0) + 1;
-        usedCopy.add(m1); usedCopy.add(m2);
+        usedCopy.add(m1); 
+        usedCopy.add(m2);
         break;
       }
       if (!team1) continue;      
       let team2 = null;
       for (const [m1, m2] of malePairs) {
         if (usedCopy.has(m1) || usedCopy.has(m2)) continue;
+        if (m1.gender === 'female' && m2.gender === 'female') continue;
         const pair = [m1.name, m2.name].sort().join('|');
         if (global_partnerships[pair]) continue;
         if (!checkExpectedWinBalance(team1, [m1, m2], playerRemainingRounds, eloThreshold, minExpectedWins)) continue;
@@ -632,14 +671,30 @@ module.exports = {
  * @param {number} femaleEloDiff Amount to subtract from female players' ELO when ignoreGender=true
  * @returns {Object|null} The match result or null if generation failed
  */
-function testGenerateMatchWithSampleData(courtCount = 2, gamePerPlayer = 4, eloThreshold = 100, teamEloDiff = 300, maxOpponentFrequency = 5, maxConsecutiveRounds = 4, ignoreGender = true, femaleEloDiff = 100) {
+function testGenerateMatchWithSampleData(courtCount = 4, gamePerPlayer = 6, eloThreshold = 100, teamEloDiff = 500, maxOpponentFrequency = 3, maxConsecutiveRounds = 8, ignoreGender = true, femaleEloDiff = 100) {
   // Sample player data
   const players = [
-    {"avatar":"/assets/icons/user.png","elo":1600,"gender":"male","name":"一顿饭"},
-    {"avatar":"/assets/icons/user.png","elo":1460,"gender":"male","name":"liyu"},
-    {"avatar":"/assets/icons/user.png","elo":1549,"gender":"female","name":"Yummy"},
-    {"avatar":"/assets/icons/user.png","elo":1445,"gender":"male","name":"杨昆"},
-    {"avatar":"/assets/icons/user.png","elo":1745,"gender":"male","name":"米兰的小铁匠"},
+    {"elo":1711,"gender":"male","name":"米兰的小铁匠"},
+    {"elo":1642,"gender":"male","name":"gdc"},
+    {"elo":1438,"gender":"male","name":"Louis"},
+    {"elo":1632,"gender":"male","name":"一顿饭"},
+    {"elo":1700,"gender":"male","name":"qianjun"},
+    {"elo": 1444, "name":"Plastic", "gender":"male"},
+    {"elo": 1493, "gender":"male", "name":"Max"},
+    {"elo": 1566, "gender":"female","name":"敏敏子"},
+    {"elo": 1406, "name":"尼古丁","gender":"male"},
+    {"elo": 1549, "gender":"female","name":"Yummy"},
+    {"elo": 1305, "gender":"female","name":"Jieling"},
+    {"elo": 1524, "gender":"male","name":"🐟🥬"},
+    {"elo": 1490, "gender":"male","name":"Jensen"},
+    {"elo": 1451, "gender":"male","name":"杨昆"},
+    {"elo": 1350,"name":"Kevin","gender":"male"},
+    {"elo": 1541, "gender":"male","name":"星际宇航员"},
+    {"elo": 1609, "gender":"male","name":"张晴川"},
+    {"elo": 1591, "gender":"male","name":"曹大"},
+    {"elo": 1638, "gender":"male","name":"郑旭明"},
+    {"elo": 1330, "gender":"male","name":"Damien"},
+    {"elo": 1500, "gender":"male","name":"林海"}
   ];
 
   console.log('Starting test with sample data:');
@@ -667,7 +722,8 @@ function testGenerateMatchWithSampleData(courtCount = 2, gamePerPlayer = 4, eloT
       maxOpponentFrequency,
       maxConsecutiveRounds,
       ignoreGender,
-      femaleEloDiff
+      femaleEloDiff,
+      10
     );
     
     if (result) {
@@ -714,4 +770,4 @@ function testGenerateMatchWithSampleData(courtCount = 2, gamePerPlayer = 4, eloT
   }
 }
 
-// const result = testGenerateMatchWithSampleData(courtCount = 1, gamePerPlayer = 4, eloThreshold = 300, teamEloDiff = 300, maxOpponentFrequency = 5, maxConsecutiveRounds = 4, ignoreGender = true, femaleEloDiff = 100);
+const result = testGenerateMatchWithSampleData();

@@ -399,23 +399,6 @@ Page({
       });
       return;
     }
-    
-    // Add check for mathematical constraint: players * games per player must be divisible by 4
-    const totalPlayerGames = players.length * gamePerPlayer;
-    if (totalPlayerGames % 4 !== 0) {
-      const message = `参数设置不合理: 球员数量(${players.length}) × 场次(${gamePerPlayer}) = ${totalPlayerGames}\n必须被4整除才能生成对阵表`;
-      this.setData({ 
-        result: message,
-        loading: false 
-      });
-      
-      wx.showModal({
-        title: '无法生成对阵表',
-        content: message,
-        showCancel: false
-      });
-      return;
-    }
       
     // Check if database is ready
     try {
