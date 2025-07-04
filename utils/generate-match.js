@@ -770,4 +770,4 @@ function testGenerateMatchWithSampleData(courtCount = 4, gamePerPlayer = 6, eloT
   }
 }
 
-const result = testGenerateMatchWithSampleData();
+// const result = testGenerateMatchWithSampleData();
