@@ -2,6 +2,12 @@ const app = getApp();
 const UserService = require('../../utils/user-service.js');
 const MatchService = require('../../utils/match-service.js');
 
+// Cache constants for user stats
+const USER_STATS_CACHE_KEY = 'USER_STATS_CACHE';
+const USER_STATS_CACHE_EXPIRY_KEY = 'USER_STATS_CACHE_EXPIRY';
+const USER_STATS_CACHE_USER_KEY = 'USER_STATS_CACHE_USER';
+const CACHE_DURATION_MS = 12 * 60 * 60 * 1000; // 12 hours in milliseconds
+
 Page({
     data: {
         currentUser: null,
@@ -18,8 +24,9 @@ Page({
         showStats: true,
         sameGenderTitle: '同性统计',
         showMatches: true,
-        needsLogin: false, // Add this property
-        isProcessing: false // Add processing state
+        needsLogin: false,
+        isProcessing: false,
+        lastStatsUpdate: null // Add timestamp for displaying when stats were last updated
     },
 
     onShow: function() {
@@ -36,7 +43,9 @@ Page({
                     needsLogin: false 
                 });
                 await this.loadMatches(currentUser.Name);
-                await this.loadUserStats(currentUser.Name);
+                
+                // Try to load user stats from cache first
+                await this.loadUserStatsWithCache(currentUser.Name, false);
             } else {
                 console.log('No current user found, showing login prompt');
                 this.setData({ 
@@ -95,6 +104,124 @@ Page({
         }
     },
 
+    // New function that decides whether to use cache or fetch from DB
+    async loadUserStatsWithCache(nickname, forceRefresh = false) {
+        if (!nickname) return;
+        
+        try {
+            // Try to get stats from cache first, unless forcing a refresh
+            if (!forceRefresh) {
+                const cachedStats = this.getCachedUserStats(nickname);
+                if (cachedStats) {
+                    console.log('Using cached user stats');
+                    return;
+                }
+            }
+            
+            // No valid cache or forceRefresh is true, load from database
+            await this.loadUserStats(nickname);
+            
+        } catch (error) {
+            console.error('Error in loadUserStatsWithCache:', error);
+        }
+    },
+    
+    // Get cached user stats if available and valid
+    getCachedUserStats(nickname) {
+        try {
+            const cachedUser = wx.getStorageSync(USER_STATS_CACHE_USER_KEY);
+            const cachedStatsString = wx.getStorageSync(USER_STATS_CACHE_KEY);
+            const cachedExpiryTime = wx.getStorageSync(USER_STATS_CACHE_EXPIRY_KEY);
+            
+            // Verify cache is for current user and is not expired
+            if (cachedUser === nickname && cachedStatsString && cachedExpiryTime) {
+                const now = new Date().getTime();
+                
+                // Check if cache is still valid
+                if (now < cachedExpiryTime) {
+                    const cachedData = JSON.parse(cachedStatsString);
+                    console.log('Found valid user stats cache from:', new Date(cachedData.timestamp));
+                    
+                    // Update state with cached data
+                    const stats = cachedData.stats;
+                    let sameGenderTitle = cachedData.sameGenderTitle;
+                    
+                    this.setData({
+                        userStats: stats,
+                        sameGenderTitle,
+                        lastStatsUpdate: cachedData.timestamp
+                    });
+                    
+                    return true;
+                } else {
+                    console.log('User stats cache expired, will fetch new data');
+                    // Clear expired cache
+                    this.clearUserStatsCache();
+                }
+            }
+        } catch (error) {
+            console.error('Error reading user stats from cache:', error);
+            this.clearUserStatsCache();
+        }
+        
+        return false;
+    },
+    
+    // Save user stats to cache
+    saveUserStatsToCache(nickname, stats, sameGenderTitle) {
+        try {
+            const timestamp = new Date().getTime();
+            const cacheData = {
+                stats: stats,
+                sameGenderTitle: sameGenderTitle,
+                timestamp: timestamp
+            };
+            
+            // Calculate expiry time
+            const expiryTime = timestamp + CACHE_DURATION_MS;
+            
+            // Save to storage
+            wx.setStorageSync(USER_STATS_CACHE_USER_KEY, nickname);
+            wx.setStorageSync(USER_STATS_CACHE_KEY, JSON.stringify(cacheData));
+            wx.setStorageSync(USER_STATS_CACHE_EXPIRY_KEY, expiryTime);
+            
+            console.log('User stats cached successfully. Expires:', new Date(expiryTime));
+            
+            // Update timestamp in UI
+            this.setData({
+                lastStatsUpdate: timestamp
+            });
+        } catch (error) {
+            console.error('Error saving user stats to cache:', error);
+        }
+    },
+    
+    // Clear user stats cache
+    clearUserStatsCache() {
+        try {
+            wx.removeStorageSync(USER_STATS_CACHE_KEY);
+            wx.removeStorageSync(USER_STATS_CACHE_EXPIRY_KEY);
+            wx.removeStorageSync(USER_STATS_CACHE_USER_KEY);
+            console.log('User stats cache cleared');
+        } catch (error) {
+            console.error('Error clearing user stats cache:', error);
+        }
+    },
+    
+    // Format timestamp to readable format
+    formatLastUpdate(timestamp) {
+        if (!timestamp) return '';
+        
+        const date = new Date(timestamp);
+        const month = date.getMonth() + 1;
+        const day = date.getDate();
+        const hours = date.getHours().toString().padStart(2, '0');
+        const minutes = date.getMinutes().toString().padStart(2, '0');
+        
+        return `${month}月${day}日 ${hours}:${minutes}`;
+    },
+
+    // Modified to save stats to cache
     async loadUserStats(nickname) {
         const db = wx.cloud.database();
         function formatPercent(val) {
@@ -118,18 +245,27 @@ Page({
                 // Convert ELO to integer if it exists
                 const elo = stats.ELO ? Math.round(stats.ELO) : stats.ELO;
                 
+                // Process stats for display
+                const processedStats = {
+                    ...stats,
+                    ELO: elo, // Use the integer value
+                    winRateDisplay: formatPercent(stats.WinRate),
+                    sameGenderWinRateDisplay: formatPercent(stats.SameGenderWinRate),
+                    mixedWinRateDisplay: formatPercent(stats.MixedWinRate)
+                };
+                
                 this.setData({
-                    userStats: {
-                        ...stats,
-                        ELO: elo, // Use the integer value
-                        winRateDisplay: formatPercent(stats.WinRate),
-                        sameGenderWinRateDisplay: formatPercent(stats.SameGenderWinRate),
-                        mixedWinRateDisplay: formatPercent(stats.MixedWinRate)
-                    },
+                    userStats: processedStats,
                     sameGenderTitle
                 });
+                
+                // Save to cache
+                this.saveUserStatsToCache(nickname, processedStats, sameGenderTitle);
+                
             } else {
                 this.setData({ userStats: null, sameGenderTitle: '同性统计' });
+                // Clear any existing cache since we have no data
+                this.clearUserStatsCache();
             }
         } catch (error) {
             console.error('Failed to load user stats:', error);
@@ -414,8 +550,15 @@ Page({
 
     onPullDownRefresh() {
         if (this.data.currentUser) {
-            this.loadMatches(this.data.currentUser.Name).then(() => {
+            Promise.all([
+                this.loadMatches(this.data.currentUser.Name),
+                this.loadUserStatsWithCache(this.data.currentUser.Name, true) // Force refresh stats
+            ]).then(() => {
                 wx.stopPullDownRefresh();
+                wx.showToast({
+                    title: '数据已更新',
+                    icon: 'success'
+                });
             });
         } else {
             wx.stopPullDownRefresh();
