@@ -1,0 +1,30 @@
+{
+  "name": "badminton-score-system",
+  "version": "1.0.0",
+  "description": "A WeChat Mini Program for managing badminton matches, ELO-based player rankings, and match history, with cloud data storage and user login. Designed for clubs, groups, or individuals who want to track player performance and match results in a user-friendly, mobile-first interface.",
+  "main": "app.js",
+  "scripts": {
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/LilianYe/badminton-score-system.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/LilianYe/badminton-score-system/issues"
+  },
+  "homepage": "https://github.com/LilianYe/badminton-score-system#readme",
+  "devDependencies": {
+    "@babel/core": "^7.21.0",
+    "@babel/preset-env": "^7.21.0",
+    "babel-jest": "^29.5.0",
+    "jest": "^29.5.0",
+    "jest-environment-jsdom": "^29.7.0",
+    "regenerator-runtime": "^0.13.11"
+  }
+}
