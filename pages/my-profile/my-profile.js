@@ -168,6 +168,19 @@ Page({
                     }
                     return;
                 }
+                
+                // Check if the current time is after the match start time
+                const currentTime = new Date();
+                const matchStartTime = match.StartTime ? new Date(match.StartTime) : null;
+                
+                if (matchStartTime && currentTime < matchStartTime) {
+                    wx.showToast({
+                        title: '比赛尚未开始，请等待开始时间后再记录比分',
+                        icon: 'none',
+                        duration: 2000
+                    });
+                    return;
+                }
             }
         } catch (error) {
             console.error('Error checking match completion:', error);
@@ -178,7 +191,7 @@ Page({
             return;
         }
 
-        // If not completed, proceed as before
+        // If not completed and after start time, proceed as before
         const match = this.data.upcomingMatches.find(m => m.MatchId === matchId);
         console.log('Found match:', match);
         console.log('Available matches:', this.data.upcomingMatches.map(m => ({ MatchId: m.MatchId, _id: m._id })));
