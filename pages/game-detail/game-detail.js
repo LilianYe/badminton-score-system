@@ -229,6 +229,59 @@ Page({  data: {
 
 
   removePlayer: async function(e) {
+    const index = e.currentTarget.dataset.index;
+    const { game, isOwner } = this.data;
+    
+    // Get current user
+    const app = getApp();
+    const currentUser = await app.getCurrentUser();
+    
+    if (!currentUser) {
+      wx.showToast({
+        title: '请先登录',
+        icon: 'none'
+      });
+      return;
+    }
+    
+    const playerToRemove = game.players[index];
+    
+    // Only allow removal if:
+    // 1. User is the owner of the game, OR
+    // 2. User is removing themselves
+    if (!(isOwner || (playerToRemove.name === currentUser.Name))) {
+      wx.showToast({
+          title: "您没有权限移除其他球员",
+          icon: 'none'
+      });
+      return;
+    }
+    
+    // Determine the confirmation message based on whether user is removing themselves or another player
+    const isSelf = playerToRemove.name === currentUser.Name;
+    const confirmTitle = isSelf ? '确认退出' : '确认移除球员';
+    const confirmContent = isSelf 
+      ? '确定要退出该活动吗？'
+      : `确定要移除球员 ${playerToRemove.name} 吗？`;
+    
+    // Show confirmation dialog
+    wx.showModal({
+      title: confirmTitle,
+      content: confirmContent,
+      confirmText: isSelf ? '退出' : '移除',
+      confirmColor: '#E64340',
+      cancelText: '取消',
+      success: async (res) => {
+        if (res.confirm) {
+          // If confirmed, proceed with player removal
+          await this.performPlayerRemoval(index);
+        }
+      }
+    });
+  },
+  
+  // New function to perform the actual player removal after confirmation
+  performPlayerRemoval: async function(index) {
     // Set loading state
     this.setData({ isLoading: true });
     
@@ -238,71 +291,46 @@ Page({  data: {
         mask: true
       });
       
-      const index = e.currentTarget.dataset.index;
-      const { game, isOwner } = this.data;
-      
-      // Get current user
-      const app = getApp();
-      const currentUser = await app.getCurrentUser();
-      
-      if (!currentUser) {
-        wx.showToast({
-          title: '请先登录',
-          icon: 'none'
-        });
-        return;
-      }
-      
+      const { game } = this.data;
       const playerToRemove = game.players[index];
-      let updatedGame = null; // Initialize the variable here
-
-      // Only allow removal if:
-      // 1. User is the owner of the game, OR
-      // 2. User is removing themselves
-      if (isOwner || (playerToRemove.name === currentUser.Name)) {
-        // Import the GameService
-        const GameService = require('../../utils/game-service.js');
-        updatedGame = await GameService.removePlayerFromGame(game.id, index);
-      } else {
-        wx.showToast({
-            title: "您没有权限移除其他球员",
-            icon: 'none'
-        });
-        return; // Add return statement to exit early
-      }
+      
+      // Import the GameService
+      const GameService = require('../../utils/game-service.js');
+      const updatedGame = await GameService.removePlayerFromGame(game.id, index);
         
       if (updatedGame) {
-          // Update local state with the updated game
+        // Update local state with the updated game
+        this.setData({
+          game: updatedGame
+        });
+        
+        // Also update in globalData for consistency
+        const app = getApp();
+        const allGames = app.globalData.games || [];
+        const gameIndex = allGames.findIndex(g => g.id === game.id);
+        if (gameIndex !== -1) {
+          app.globalData.games[gameIndex] = updatedGame;
+        }
+        
+        // Check if game status has changed from "matched" to "active"
+        // This may happen when removing players affects match generation status
+        if (game.status === 'matched' && updatedGame.status === 'active') {
+          // Also update the hasGeneratedMatches state to reflect the new status
           this.setData({
-            game: updatedGame
+            hasGeneratedMatches: false
           });
-          
-          // Also update in globalData for consistency
-          const allGames = app.globalData.games || [];
-          const gameIndex = allGames.findIndex(g => g.id === game.id);
-          if (gameIndex !== -1) {
-            app.globalData.games[gameIndex] = updatedGame;
-          }
-          
-          // Check if game status has changed from "matched" to "active"
-          // This may happen when removing players affects match generation status
-          if (game.status === 'matched' && updatedGame.status === 'active') {
-            // Also update the hasGeneratedMatches state to reflect the new status
-            this.setData({
-              hasGeneratedMatches: false
-            });
-          } 
-          // Show standard success message
-          wx.showToast({
-            title: '已退出活动',
-            icon: 'success'
-          });
-          
+        } 
+        
+        // Show standard success message
+        wx.showToast({
+          title: `已${playerToRemove.name === app.getCurrentUser().Name ? '退出' : '移除'}球员`,
+          icon: 'success'
+        });
       } else {
-          wx.showToast({
-            title: '操作失败',
-            icon: 'error'
-          });
+        wx.showToast({
+          title: '操作失败',
+          icon: 'error'
+        });
       }       
     } catch (error) {
       console.error('Error removing player from game:', error);
