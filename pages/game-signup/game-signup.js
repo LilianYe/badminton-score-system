@@ -1,8 +1,14 @@
+// Cache constants for games list
+const GAMES_CACHE_KEY = 'GAMES_LIST_CACHE';
+const GAMES_CACHE_EXPIRY_KEY = 'GAMES_LIST_CACHE_EXPIRY';
+const CACHE_DURATION_MS = 5 * 60 * 1000; // 5 minutes in milliseconds (shorter than other caches since game data changes more frequently)
+
 Page({  
   data: {
     games: [],
     selectedGameIndex: null,
     selectedGame: null,
+    lastUpdated: null, // Add timestamp for displaying when games were last loaded
     
     // New game modal data
     showAddGameModal: false,
@@ -27,8 +33,8 @@ Page({
     const app = getApp();
     app.globalData = app.globalData || {};
     
-    // Load games from the cloud
-    this.loadGamesFromCloud();
+    // Load games with cache support
+    this.loadGamesWithCache();
   },
   
   // This method will be called every time this page is shown
@@ -36,11 +42,137 @@ Page({
   onShow: function() {
     console.log('Game Signup page shown/returned to');
     
-    // Get the latest games from the cloud
-    this.loadGamesFromCloud();
+    // Check if we should force refresh based on game modification
+    const app = getApp();
+    const forceRefresh = app.globalData.gameModified === true;
+    
+    if (forceRefresh) {
+      console.log('Game was modified, forcing refresh');
+      // Reset the flag
+      app.globalData.gameModified = false;
+      this.loadGamesWithCache(true);
+    } else {
+      // Normal load with cache if available
+      this.loadGamesWithCache(false);
+    }
   },
   
-  // Load games from cloud database
+  // New function to manage cache and loading
+  loadGamesWithCache: function(forceRefresh = false) {
+    try {
+      if (!forceRefresh) {
+        // Try to get cached games first
+        const cachedGames = this.getCachedGames();
+        if (cachedGames) {
+          console.log('Using cached games list');
+          return;
+        }
+      }
+      
+      // No valid cache or force refresh, load from database
+      this.loadGamesFromCloud();
+    } catch (error) {
+      console.error('Error in loadGamesWithCache:', error);
+      // If there's an error with cache, fall back to cloud loading
+      this.loadGamesFromCloud();
+    }
+  },
+  
+  // Get cached games if available and valid
+  getCachedGames: function() {
+    try {
+      const cachedGamesString = wx.getStorageSync(GAMES_CACHE_KEY);
+      const cachedExpiryTime = wx.getStorageSync(GAMES_CACHE_EXPIRY_KEY);
+      
+      if (cachedGamesString && cachedExpiryTime) {
+        const now = new Date().getTime();
+        
+        // Check if cache is still valid
+        if (now < cachedExpiryTime) {
+          const cachedData = JSON.parse(cachedGamesString);
+          console.log('Found valid games cache from:', new Date(cachedData.timestamp));
+          
+          // Update state with cached data
+          const games = cachedData.games;
+          
+          this.setData({
+            games: games,
+            selectedGameIndex: games.length > 0 ? 0 : null,
+            selectedGame: games.length > 0 ? games[0] : null,
+            lastUpdated: cachedData.timestamp
+          });
+          
+          // Update global data as well
+          const app = getApp();
+          app.globalData.games = games;
+          
+          return true;
+        } else {
+          console.log('Games cache expired, will fetch new data');
+          // Clear expired cache
+          this.clearGamesCache();
+        }
+      }
+    } catch (error) {
+      console.error('Error reading games from cache:', error);
+      this.clearGamesCache();
+    }
+    
+    return false;
+  },
+  
+  // Save games to cache
+  saveGamesToCache: function(games) {
+    try {
+      const timestamp = new Date().getTime();
+      const cacheData = {
+        games: games,
+        timestamp: timestamp
+      };
+      
+      // Calculate expiry time
+      const expiryTime = timestamp + CACHE_DURATION_MS;
+      
+      // Save to storage
+      wx.setStorageSync(GAMES_CACHE_KEY, JSON.stringify(cacheData));
+      wx.setStorageSync(GAMES_CACHE_EXPIRY_KEY, expiryTime);
+      
+      console.log('Games list cached successfully. Expires:', new Date(expiryTime));
+      
+      // Update timestamp in UI
+      this.setData({
+        lastUpdated: timestamp
+      });
+    } catch (error) {
+      console.error('Error saving games to cache:', error);
+    }
+  },
+  
+  // Clear games cache
+  clearGamesCache: function() {
+    try {
+      wx.removeStorageSync(GAMES_CACHE_KEY);
+      wx.removeStorageSync(GAMES_CACHE_EXPIRY_KEY);
+      console.log('Games cache cleared');
+    } catch (error) {
+      console.error('Error clearing games cache:', error);
+    }
+  },
+  
+  // Format timestamp to readable format
+  formatLastUpdate: function(timestamp) {
+    if (!timestamp) return '';
+    
+    const date = new Date(timestamp);
+    const month = date.getMonth() + 1;
+    const day = date.getDate();
+    const hours = date.getHours().toString().padStart(2, '0');
+    const minutes = date.getMinutes().toString().padStart(2, '0');
+    
+    return `${month}月${day}日 ${hours}:${minutes}`;
+  },
+  
+  // Load games from cloud database - updated to save to cache
   loadGamesFromCloud: async function() {
     try {
       wx.showLoading({
@@ -65,6 +197,11 @@ Page({
       // If no games found, load sample games
       if (!cloudGames || cloudGames.length === 0) {
         console.log('No games found in cloud.');
+        this.setData({
+          games: [],
+          selectedGameIndex: null,
+          selectedGame: null
+        });
         return;
       }
       
@@ -76,6 +213,9 @@ Page({
         selectedGameIndex: cloudGames.length > 0 ? 0 : null,
         selectedGame: cloudGames.length > 0 ? cloudGames[0] : null
       });
+      
+      // Save to cache
+      this.saveGamesToCache(cloudGames);
       
       console.log('Updated game list from cloud in game-signup page:', this.data.games.length);
     } catch (error) {
@@ -109,6 +249,21 @@ Page({
     // Navigate to the game detail page
     wx.navigateTo({
       url: `/pages/game-detail/game-detail?id=${gameId}`
+    });
+  },
+
+  // Add pull-down refresh functionality
+  onPullDownRefresh: function() {
+    // Force refresh from cloud
+    this.loadGamesWithCache(true).then(() => {
+      wx.stopPullDownRefresh();
+      wx.showToast({
+        title: '活动已更新',
+        icon: 'success'
+      });
+    }).catch(err => {
+      wx.stopPullDownRefresh();
+      console.error('Error refreshing games:', err);
     });
   },
   
@@ -279,6 +434,12 @@ Page({
       
       // Store updated games array in global data
       app.globalData.games = updatedGames;
+      
+      // Update the cache with the new game list
+      this.saveGamesToCache(updatedGames);
+      
+      // Set the game modified flag to true to ensure other pages refresh
+      app.globalData.gameModified = true;
       
       wx.hideLoading();
       

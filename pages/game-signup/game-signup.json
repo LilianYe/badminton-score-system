@@ -1,4 +1,7 @@
 {
   "navigationBarTitleText": "报名比赛",
+  "enablePullDownRefresh": true,
+  "backgroundColor": "#F8F8F8",
+  "backgroundTextStyle": "dark",
   "usingComponents": {}
 }
