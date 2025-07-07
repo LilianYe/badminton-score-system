@@ -1,20 +1,127 @@
 const app = getApp();
 
+// Cache constants
+const CACHE_KEY = 'PLAYERS_RANKING_CACHE';
+const CACHE_EXPIRY_KEY = 'PLAYERS_RANKING_CACHE_EXPIRY';
+const CACHE_DURATION_MS = 12 * 60 * 60 * 1000; // 12 hours in milliseconds
+
 Page({
   data: {
     players: [],
     isLoading: false,
-    isEmpty: true
+    isEmpty: true,
+    lastUpdated: null,
   },
   
   onLoad: function() {
-    this.loadUserPerformance();
+    this.loadPlayersData();
   },
   
   onShow: function() {
-    this.loadUserPerformance();
+    // Only check for cached data without forcing a reload
+    this.loadPlayersData(false);
   },
   
+  // Load data from cache or fetch from database
+  async loadPlayersData(forceRefresh = false) {
+    try {
+      if (!forceRefresh) {
+        // Try to get cached data first
+        const cachedData = this.getCachedData();
+        if (cachedData) {
+          console.log('Using cached player rankings');
+          this.setData({
+            players: cachedData.players,
+            isEmpty: cachedData.players.length === 0,
+            lastUpdated: cachedData.timestamp,
+            isLoading: false
+          });
+          return;
+        }
+      }
+      
+      // No valid cache or force refresh, load from database
+      await this.loadUserPerformance();
+    } catch (error) {
+      console.error('Error loading players data:', error);
+      this.setData({ isLoading: false });
+    }
+  },
+  
+  // Get cached data if it exists and is not expired
+  getCachedData() {
+    try {
+      const cachedDataString = wx.getStorageSync(CACHE_KEY);
+      const cachedExpiryTime = wx.getStorageSync(CACHE_EXPIRY_KEY);
+      
+      if (cachedDataString && cachedExpiryTime) {
+        const now = new Date().getTime();
+        
+        // Check if cache is still valid
+        if (now < cachedExpiryTime) {
+          const cachedData = JSON.parse(cachedDataString);
+          console.log('Found valid cache from:', new Date(cachedData.timestamp));
+          return cachedData;
+        } else {
+          console.log('Cache expired, will fetch new data');
+          // Clear expired cache
+          this.clearCache();
+        }
+      }
+    } catch (error) {
+      console.error('Error reading from cache:', error);
+      this.clearCache();
+    }
+    
+    return null;
+  },
+  
+  // Save data to cache
+  saveToCache(players) {
+    try {
+      const cacheData = {
+        players: players,
+        timestamp: new Date().getTime()
+      };
+      
+      // Calculate expiry time
+      const expiryTime = new Date().getTime() + CACHE_DURATION_MS;
+      
+      // Save data and expiry time to storage
+      wx.setStorageSync(CACHE_KEY, JSON.stringify(cacheData));
+      wx.setStorageSync(CACHE_EXPIRY_KEY, expiryTime);
+      
+      console.log('Player rankings cached successfully. Expires:', new Date(expiryTime));
+    } catch (error) {
+      console.error('Error saving to cache:', error);
+    }
+  },
+  
+  // Clear the cache
+  clearCache() {
+    try {
+      wx.removeStorageSync(CACHE_KEY);
+      wx.removeStorageSync(CACHE_EXPIRY_KEY);
+      console.log('Player rankings cache cleared');
+    } catch (error) {
+      console.error('Error clearing cache:', error);
+    }
+  },
+  
+  // Format timestamp to human-readable date/time
+  formatLastUpdated(timestamp) {
+    if (!timestamp) return '';
+    
+    const date = new Date(timestamp);
+    const month = date.getMonth() + 1;
+    const day = date.getDate();
+    const hours = date.getHours().toString().padStart(2, '0');
+    const minutes = date.getMinutes().toString().padStart(2, '0');
+    
+    return `${month}月${day}日 ${hours}:${minutes}`;
+  },
+  
+  // Fetch player data from database
   async loadUserPerformance() {
     this.setData({ isLoading: true });
     const db = wx.cloud.database();
@@ -86,9 +193,14 @@ Page({
 
       console.log('First 3 processed players:', processedPlayers.slice(0, 3));
 
+      // Save to local cache
+      this.saveToCache(processedPlayers);
+      
+      const now = new Date().getTime();
       this.setData({
         players: processedPlayers,
         isEmpty: processedPlayers.length === 0,
+        lastUpdated: now,
         isLoading: false
       });
 
@@ -107,8 +219,13 @@ Page({
   },
     
   onPullDownRefresh() {
-    this.loadUserPerformance().then(() => {
+    // Force refresh when pulling down
+    this.loadPlayersData(true).then(() => {
       wx.stopPullDownRefresh();
+      wx.showToast({
+        title: '排行榜已更新',
+        icon: 'success'
+      });
     });
   }
 });
