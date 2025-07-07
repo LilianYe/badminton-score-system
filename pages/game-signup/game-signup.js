@@ -59,23 +59,30 @@ Page({
   
   // New function to manage cache and loading
   loadGamesWithCache: function(forceRefresh = false) {
-    try {
-      if (!forceRefresh) {
-        // Try to get cached games first
-        const cachedGames = this.getCachedGames();
-        if (cachedGames) {
-          console.log('Using cached games list');
-          return;
+    return new Promise((resolve, reject) => {
+      try {
+        if (!forceRefresh) {
+          // Try to get cached games first
+          const cachedGames = this.getCachedGames();
+          if (cachedGames) {
+            console.log('Using cached games list');
+            resolve();
+            return;
+          }
         }
+        
+        // No valid cache or force refresh, load from database
+        this.loadGamesFromCloud()
+          .then(resolve)
+          .catch(reject);
+      } catch (error) {
+        console.error('Error in loadGamesWithCache:', error);
+        // If there's an error with cache, fall back to cloud loading
+        this.loadGamesFromCloud()
+          .then(resolve)
+          .catch(reject);
       }
-      
-      // No valid cache or force refresh, load from database
-      this.loadGamesFromCloud();
-    } catch (error) {
-      console.error('Error in loadGamesWithCache:', error);
-      // If there's an error with cache, fall back to cloud loading
-      this.loadGamesFromCloud();
-    }
+    });
   },
   
   // Get cached games if available and valid
@@ -172,7 +179,7 @@ Page({
     return `${month}月${day}日 ${hours}:${minutes}`;
   },
   
-  // Load games from cloud database - updated to save to cache
+  // Load games from cloud database - updated to save to cache and return a Promise
   loadGamesFromCloud: async function() {
     try {
       wx.showLoading({
@@ -224,7 +231,7 @@ Page({
         title: '加载活动失败',
         icon: 'none'
       });
-      
+      throw error; // Re-throw the error for promise handling
     } finally {
       wx.hideLoading();
     }
@@ -252,19 +259,26 @@ Page({
     });
   },
 
-  // Add pull-down refresh functionality
+  // Pull-down refresh function - improved with proper Promise handling
   onPullDownRefresh: function() {
     // Force refresh from cloud
-    this.loadGamesWithCache(true).then(() => {
-      wx.stopPullDownRefresh();
-      wx.showToast({
-        title: '活动已更新',
-        icon: 'success'
+    this.loadGamesWithCache(true)
+      .then(() => {
+        console.log('Pull-down refresh completed');
+        wx.stopPullDownRefresh();
+        wx.showToast({
+          title: '活动已更新',
+          icon: 'success'
+        });
+      })
+      .catch(err => {
+        console.error('Error during pull-down refresh:', err);
+        wx.stopPullDownRefresh();
+        wx.showToast({
+          title: '刷新失败',
+          icon: 'none'
+        });
       });
-    }).catch(err => {
-      wx.stopPullDownRefresh();
-      console.error('Error refreshing games:', err);
-    });
   },
   
   // New game creation
