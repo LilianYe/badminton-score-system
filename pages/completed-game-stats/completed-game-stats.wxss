@@ -1,0 +1,361 @@
+/* filepath: c:\Users\qiaominye\WeChatProjects\badminton-score-system\pages\completed-game-stats\completed-game-stats.wxss */
+.container {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+}
+
+/* Loading State */
+.loading-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  background-color: white;
+}
+
+.loading-text {
+  font-size: 30rpx;
+  color: #666;
+}
+
+/* Login Prompt */
+.login-prompt {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  padding: 40rpx;
+  background-color: white;
+}
+
+.login-text {
+  font-size: 32rpx;
+  color: #666;
+  margin-bottom: 40rpx;
+  text-align: center;
+}
+
+.login-btn {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  padding: 20rpx 40rpx;
+  border-radius: 25rpx;
+  font-size: 30rpx;
+  box-shadow: 0 8rpx 16rpx rgba(102, 126, 234, 0.3);
+}
+
+/* Empty State */
+.empty-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  background-color: white;
+  padding: 40rpx;
+}
+
+.empty-text {
+  font-size: 32rpx;
+  color: #666;
+  text-align: center;
+}
+
+/* Stats Header */
+.stats-header {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 40rpx 30rpx;
+  margin-bottom: 20rpx;
+  color: white;
+}
+
+.game-basic-info {
+  margin-bottom: 40rpx;
+  text-align: center;
+}
+
+.game-title {
+  font-size: 40rpx;
+  font-weight: bold;
+  color: white;
+  margin-bottom: 16rpx;
+}
+
+.game-meta {
+  display: flex;
+  justify-content: center;
+  gap: 20rpx;
+}
+
+.game-date,
+.game-location {
+  font-size: 26rpx;
+  color: rgba(255, 255, 255, 0.9);
+  background: rgba(255, 255, 255, 0.1);
+  padding: 8rpx 16rpx;
+  border-radius: 16rpx;
+}
+
+/* Overview Cards */
+.overview-cards {
+  display: flex;
+  justify-content: center;
+  gap: 15rpx;
+}
+
+.overview-card {
+  flex: 0 0 auto;
+  min-width: 120rpx;
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 20rpx;
+  padding: 16rpx 12rpx;
+  text-align: center;
+  box-shadow: 0 8rpx 32rpx rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(10rpx);
+}
+
+.stat-number {
+  font-size: 36rpx;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 8rpx;
+}
+
+.stat-info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.stat-label {
+  font-size: 24rpx;
+  color: #666;
+}
+
+/* Players Section */
+.players-section {
+  margin: 0 0rpx 0rpx;
+}
+
+.players-container {
+  background: white;
+  border-radius: 24rpx;
+  padding: 20rpx;
+  box-shadow: 0 12rpx 48rpx rgba(0, 0, 0, 0.1);
+}
+
+.section-title {
+  text-align: center;
+  margin-bottom: 30rpx;
+}
+
+.title-text {
+  font-size: 32rpx;
+  font-weight: bold;
+  color: #333;
+  display: block;
+  margin-bottom: 8rpx;
+}
+
+.title-subtitle {
+  font-size: 24rpx;
+  color: #999;
+}
+
+.players-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+}
+
+/* Player Card */
+.player-card {
+  background: #f8f9fa;
+  border-radius: 16rpx;
+  padding: 20rpx;
+  border-left: 4rpx solid #e9ecef;
+  transition: all 0.3s ease;
+}
+
+.player-card.top-player {
+  background: linear-gradient(135deg, #fff8e1 0%, #ffecb3 50%, #fff8e1 100%);
+  border-left: 4rpx solid #ffd700;
+  box-shadow: 0 4rpx 16rpx rgba(255, 215, 0, 0.2);
+}
+
+.player-card:first-child {
+  border-left: 4rpx solid #ffd700;
+  background: linear-gradient(135deg, #fff8e1 0%, #ffecb3 100%);
+}
+
+.player-card:nth-child(2) {
+  border-left: 4rpx solid #c0c0c0;
+  background: linear-gradient(135deg, #f5f5f5 0%, #e0e0e0 100%);
+}
+
+.player-card:nth-child(3) {
+  border-left: 4rpx solid #cd7f32;
+  background: linear-gradient(135deg, #fdf2e1 0%, #f4e4c1 100%);
+}
+
+/* Player Info Row */
+.player-info-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16rpx;
+}
+
+.player-left {
+  display: flex;
+  align-items: center;
+  flex: 1;
+}
+
+.player-rank {
+  width: 32rpx;
+  height: 32rpx;
+  background: #667eea;
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20rpx;
+  font-weight: bold;
+  margin-right: 16rpx;
+  flex-shrink: 0;
+}
+
+.player-card:first-child .player-rank {
+  background: #ffd700;
+  color: #333;
+}
+
+.player-card:nth-child(2) .player-rank {
+  background: #c0c0c0;
+  color: #333;
+}
+
+.player-card:nth-child(3) .player-rank {
+  background: #cd7f32;
+  color: white;
+}
+
+.player-avatar {
+  width: 60rpx;
+  height: 60rpx;
+  border-radius: 50%;
+  margin-right: 16rpx;
+  overflow: hidden;
+  background-color: #e9ecef;
+  flex-shrink: 0;
+  box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.1);
+}
+
+.avatar-image {
+  width: 100%;
+  height: 100%;
+}
+
+.player-name-section {
+  flex: 1;
+}
+
+.player-name {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #333;
+  display: block;
+  margin-bottom: 4rpx;
+}
+
+.player-winrate {
+  font-size: 24rpx;
+  color: #667eea;
+  font-weight: 500;
+}
+
+.player-right {
+  display: flex;
+  align-items: center;
+}
+
+.elo-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  border-radius: 20rpx;
+  padding: 6rpx 16rpx;
+  color: white;
+}
+
+.elo-section.positive {
+  background: linear-gradient(135deg, #56ab2f 0%, #a8e6cf 100%);
+}
+
+.elo-section.negative {
+  background: linear-gradient(135deg, #ff416c 0%, #ff4b2b 100%);
+}
+
+.elo-label {
+  font-size: 28rpx;
+  font-weight: 500;
+  color: white;
+  margin-bottom: -30rpx;
+}
+
+.elo-change {
+  font-size: 28rpx;
+  font-weight: bold;
+  color: white;
+}
+
+/* Stats Row */
+.stats-row {
+  display: flex;
+  justify-content: space-between;
+  padding-top: 16rpx;
+  border-top: 1rpx solid rgba(0, 0, 0, 0.05);
+}
+
+.stat-item {
+  flex: 1;
+  text-align: center;
+}
+
+.stat-item.elo-item {
+  opacity: 0.5;
+}
+
+.stat-value {
+  font-size: 24rpx;
+  font-weight: bold;
+  color: #333;
+  display: block;
+  margin-bottom: 4rpx;
+}
+
+.stat-label {
+  font-size: 20rpx;
+  color: #999;
+}
+
+/* No Players State */
+.no-players {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 80rpx 20rpx;
+  background: white;
+  border-radius: 24rpx;
+  box-shadow: 0 12rpx 48rpx rgba(0, 0, 0, 0.1);
+}
+
+.no-players-text {
+  font-size: 28rpx;
+  color: #666;
+  text-align: center;
+}

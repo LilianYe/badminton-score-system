@@ -7,7 +7,9 @@
     "pages/players/players",
     "pages/user-profile/user-profile",
     "pages/my-match/my-match",
-    "pages/my-profile/my-profile"
+    "pages/my-profile/my-profile",
+    "pages/completed-games/completed-games",
+    "pages/completed-game-stats/completed-game-stats"
   ],
   "window": {
     "navigationBarTitleText": "Badminton Score System",
@@ -27,6 +29,12 @@
         "selectedIconPath": "assets/icons/game-active.png"
       },
       {
+        "pagePath": "pages/completed-games/completed-games",
+        "text": "历史",
+        "iconPath": "assets/icons/history.png",
+        "selectedIconPath": "assets/icons/history-active.png"
+      },
+      {
         "pagePath": "pages/players/players",
         "text": "排名",
         "iconPath": "assets/icons/ranking.png",
@@ -42,8 +50,6 @@
   },
   "networkTimeout": {
     "request": 60000,
-    "connectSocket": 60000,
-    "uploadFile": 60000,
     "downloadFile": 60000
   },
   "debug": true

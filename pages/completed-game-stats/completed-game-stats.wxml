@@ -1,0 +1,114 @@
+<!-- filepath: c:\Users\qiaominye\WeChatProjects\badminton-score-system\pages\completed-game-stats\completed-game-stats.wxml -->
+<view class="container">
+  <!-- Loading State -->
+  <view wx:if="{{isLoading}}" class="loading-container">
+    <text class="loading-text">加载统计中...</text>
+  </view>
+
+  <!-- Login Prompt -->
+  <view wx:elif="{{needsLogin}}" class="login-prompt">
+    <text class="login-text">请先登录查看活动统计</text>
+    <button class="login-btn" bindtap="navigateToLogin">前往登录</button>
+  </view>
+
+  <!-- Empty State -->
+  <view wx:elif="{{isEmpty}}" class="empty-container">
+    <text class="empty-text">暂无统计数据</text>
+  </view>
+
+  <!-- Main Content -->
+  <view wx:else>
+    <!-- Game Header -->
+    <view class="stats-header">
+      <view class="game-basic-info">
+        <text class="game-title">{{gameInfo.title}}</text>
+        <view class="game-meta">
+          <text class="game-date">{{gameInfo.formattedDate}}</text>
+          <text class="game-location">{{gameInfo.location}}</text>
+        </view>
+      </view>
+      
+      <!-- Overview Cards -->
+      <view class="overview-cards">
+        <view class="overview-card">
+          <view class="stat-number">{{totalMatches}}</view>
+          <view class="stat-info">
+            <text class="stat-label">总场次</text>
+          </view>
+        </view>
+        
+        <view class="overview-card">
+          <view class="stat-number">{{totalPlayers}}</view>
+          <view class="stat-info">
+            <text class="stat-label">参与球员</text>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <!-- Players Section -->
+    <view class="players-section">
+      <view wx:if="{{playerStats.length > 0}}" class="players-container">
+        <view class="section-title">
+          <text class="title-text">球员统计</text>
+          <text class="title-subtitle">按ELO分变化排序</text>
+        </view>
+        
+        <view class="players-list">
+          <view wx:for="{{playerStats}}" wx:for-item="player" wx:key="name" wx:for-index="index"
+                class="player-card {{index < 3 ? 'top-player' : ''}}">
+            
+            <!-- Player Info Row -->
+            <view class="player-info-row">
+              <view class="player-left">
+                <view class="player-rank">{{index + 1}}</view>
+                <view class="player-avatar">
+                  <image 
+                    class="avatar-image" 
+                    src="{{player.avatar}}" 
+                    mode="aspectFill"
+                    data-player-name="{{player.name}}"
+                    binderror="onAvatarError"
+                  ></image>
+                </view>
+                <view class="player-name-section">
+                  <text class="player-name">{{player.name}}</text>
+                  <text class="player-winrate">{{player.winRate}}% 胜率</text>
+                </view>
+              </view>
+              
+              <view class="player-right">
+                <view class="elo-section {{player.eloChange >= 0 ? 'positive' : 'negative'}}">
+                  <text class="elo-label">ELO</text>
+                  <text class="elo-change">
+                    {{player.eloChange >= 0 ? '+' : ''}}{{player.eloChange}}
+                  </text>
+                </view>
+              </view>
+            </view>
+            
+            <!-- Stats Row -->
+            <view class="stats-row">
+              <view class="stat-item">
+                <text class="stat-value">{{player.matches}}</text>
+                <text class="stat-label">场次</text>
+              </view>
+              <view class="stat-item">
+                <text class="stat-value">{{player.wins}}</text>
+                <text class="stat-label">胜场</text>
+              </view>
+              <view class="stat-item">
+                <text class="stat-value">{{player.losses}}</text>
+                <text class="stat-label">负场</text>
+              </view>
+            </view>
+          </view>
+        </view>
+      </view>
+      
+      <view wx:else class="no-players">
+        <text class="no-players-text">暂无球员统计数据</text>
+      </view>
+    </view>
+  </view>
+</view>

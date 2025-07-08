@@ -1,0 +1,67 @@
+<view class="container">
+  <!-- Login prompt -->
+  <view wx:if="{{needsLogin}}" class="login-prompt">
+    <view class="login-icon">🏸</view>
+    <text class="login-text">请先登录查看历史比赛</text>
+    <button class="login-button" bindtap="navigateToLogin">立即登录</button>
+  </view>
+
+  <!-- Main content -->
+  <view wx:elif="{{!needsLogin}}" class="main-content">
+    <!-- Header Section -->
+    <view class="header-section">
+      <view class="header-title">已结束活动</view>
+    </view>
+
+    <!-- Content Section -->
+    <view class="content-section">
+      <!-- Loading state -->
+      <view wx:if="{{isLoading}}" class="loading-section">
+        <text class="loading-text">加载中...</text>
+      </view>
+
+      <!-- Empty state -->
+      <view wx:elif="{{isEmpty}}" class="empty-container">
+        <image src="/assets/icons/game.png" mode="aspectFit"></image>
+        <text class="empty-state-text">暂无已结束的活动</text>
+        <text class="empty-subtext">结束的活动会显示在这里</text>
+      </view>
+
+      <!-- Completed games list -->
+      <view wx:else>
+        <scroll-view scroll-y="true" class="game-list">
+          <view 
+            class="game-card {{item.isCurrentUserParticipated ? 'user-participated' : ''}}" 
+            wx:for="{{completedGames}}" 
+            wx:key="id" 
+            bindtap="onGameTap" 
+            data-game-id="{{item.id}}"
+            hover-class="game-card-hover"
+          >
+            <view class="game-header">
+              <view class="game-title">{{item.title || '比赛' + (index + 1)}}</view>
+            </view>
+            
+            <view class="game-info-row">
+              <view class="game-info-icon">日</view>
+              <view class="game-info-text">{{item.formattedDate}}</view>
+            </view>
+            
+            <view class="game-info-row">
+              <view class="game-info-icon">地</view>
+              <view class="game-info-text">{{item.location || '未设置地点'}}</view>
+            </view>
+            
+            <view class="game-footer">
+              <view class="participation-status">
+                <text wx:if="{{item.isCurrentUserParticipated}}" class="participated-text">✓ 您参与了此活动</text>
+                <text wx:else class="not-participated-text">查看详细统计</text>
+              </view>
+              <view class="view-stats-arrow">></view>
+            </view>
+          </view>
+        </scroll-view>
+      </view>
+    </view>
+  </view>
+</view>
