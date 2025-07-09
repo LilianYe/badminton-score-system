@@ -20,133 +20,199 @@ const global_expected_wins = {};
  */
 function backtrackRestScheduleVariable(players, restSchedule, restCounts, currentRound, totalRounds, restPerRound, targetRestCount, playerConsecutiveActive, maxConsecutiveRounds, ignoreGender) {
   if (currentRound === totalRounds) return true;
+  
   const restCountNeeded = restPerRound[currentRound];
   const roundsLeft = totalRounds - currentRound;
 
   // 1. Players who must rest due to consecutive actives
   const mustRestConsecutive = players.filter(p => (playerConsecutiveActive[p.name] || 0) >= maxConsecutiveRounds);
   
-  // 2. Players who must rest to meet target rest count
+  // 2. Calculate rest needed for each player
   const restNeeded = {};
-  // Update to use player-specific target rest counts from dictionary
   players.forEach(p => restNeeded[p.name] = targetRestCount[p.name] - restCounts[p.name]);
   
+  // 3. Players who must rest to meet target rest count (critical timing)
   const mustRestCount = players.filter(p => restNeeded[p.name] > 0 && restNeeded[p.name] > roundsLeft - 1);
   const mustRest = Array.from(new Set([...mustRestConsecutive, ...mustRestCount]));
   
   if (mustRest.length > restCountNeeded) {
     console.log(`[RestSchedule][Round ${currentRound}] [FAIL] Too many must-rest players for available rest slots.`);
     return false;
-  }  
-  // Candidates for resting  
-  // Update to use player-specific target rest counts
-  const validCandidates = players.filter(p => restCounts[p.name] < targetRestCount[p.name] && !mustRest.includes(p));
-  
-  const femaleCandidates = validCandidates.filter(p => p.gender === 'female').sort((a, b) => (playerConsecutiveActive[b.name] || 0) - (playerConsecutiveActive[a.name] || 0));
-  const maleCandidates = validCandidates.filter(p => p.gender === 'male').sort((a, b) => (playerConsecutiveActive[b.name] || 0) - (playerConsecutiveActive[a.name] || 0));
-  const mustRestFemales = mustRest.filter(p => p.gender === 'female');
+  }
 
-  // Gender balance - only apply if ignoreGender is false
+  // 4. Available rest slots after accommodating must-rest players
   const restSlotsRemaining = restCountNeeded - mustRest.length;
-  let neededFemalesToRest = 0;
   
-  if (!ignoreGender) {
-    const currentFemaleCount = mustRestFemales.length;
-    const totalFemales = players.filter(p => p.gender === 'female').length;
-    const activeFemales = totalFemales - currentFemaleCount;
-    neededFemalesToRest = activeFemales % 2;
-  }
-
-  // Generate combinations
-  let combinationsToTry = [];
-  function getCombinations(arr, k) {
-    if (k === 0) return [[]];
-    if (arr.length < k) return [];
-    if (arr.length === k) return [arr.slice()];
-    let result = [];
-    for (let i = 0; i <= arr.length - k; i++) {
-      let head = arr[i];
-      let tailCombos = getCombinations(arr.slice(i + 1), k - 1);
-      tailCombos.forEach(tail => result.push([head, ...tail]));
-    }
-    return result;
-  }
-
-  // When ignoring gender, we can create any combination without gender restrictions
-  if (ignoreGender) {
-    // Combine all candidates regardless of gender
-    const allCandidates = [...femaleCandidates, ...maleCandidates];
-    const combos = getCombinations(allCandidates, Math.min(restSlotsRemaining, allCandidates.length));
-    combinationsToTry = combos;
-  } else {
-    // Use the existing gender-balanced logic
-    if (neededFemalesToRest === 1) {
-      for (let offset = 0; offset <= Math.floor((femaleCandidates.length + 1) / 2); offset++) {
-        let femalesToAdd = 1 + offset * 2;
-        if (femalesToAdd > restSlotsRemaining) continue;
-        let malesToAdd = restSlotsRemaining - femalesToAdd;
-        if (malesToAdd > maleCandidates.length) continue;
-        let femaleCombos = getCombinations(femaleCandidates, Math.min(femalesToAdd, femaleCandidates.length));
-        let maleCombos = getCombinations(maleCandidates, Math.min(malesToAdd, maleCandidates.length));
-        femaleCombos.forEach(fCombo => {
-          maleCombos.forEach(mCombo => {
-            combinationsToTry.push([...fCombo, ...mCombo]);
-          });
-        });
-      }
-    } else {
-      for (let offset = 0; offset <= Math.floor(femaleCandidates.length / 2); offset++) {
-        let femalesToAdd = offset * 2;
-        if (femalesToAdd > restSlotsRemaining) continue;
-        let malesToAdd = restSlotsRemaining - femalesToAdd;
-        if (malesToAdd > maleCandidates.length) continue;
-        let femaleCombos = getCombinations(femaleCandidates, Math.min(femalesToAdd, femaleCandidates.length));
-        let maleCombos = getCombinations(maleCandidates, Math.min(malesToAdd, maleCandidates.length));
-        femaleCombos.forEach(fCombo => {
-          maleCombos.forEach(mCombo => {
-            combinationsToTry.push([...fCombo, ...mCombo]);
-          });
-        });
-      }
-    }
-  }
-  
-  if (combinationsToTry.length > 1) {
-    for (let i = combinationsToTry.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [combinationsToTry[i], combinationsToTry[j]] = [combinationsToTry[j], combinationsToTry[i]];
-    }
-  }
-
-  for (let comboIdx = 0; comboIdx < combinationsToTry.length; comboIdx++) {
-    let combo = combinationsToTry[comboIdx];    
-    // Copy consecutive active state
+  if (restSlotsRemaining === 0) {
+    // No additional players needed, just use must-rest players
+    const restThisRound = [...mustRest];
+    
+    // Update state
     let playerConsecutiveActiveCopy = { ...playerConsecutiveActive };
-    // Add mustRest and combo to restSchedule
-    let restThisRound = [...mustRest, ...combo];
     restThisRound.forEach(player => {
       restSchedule[currentRound].push(player);
       restCounts[player.name]++;
       playerConsecutiveActiveCopy[player.name] = 0;
     });
-    // Update consecutive actives for others
+    
+    // Update consecutive actives for non-resting players
     players.forEach(player => {
       if (!restThisRound.includes(player)) {
         playerConsecutiveActiveCopy[player.name] = (playerConsecutiveActiveCopy[player.name] || 0) + 1;
       }
     });
+    
     // Recurse
     if (backtrackRestScheduleVariable(players, restSchedule, restCounts, currentRound + 1, totalRounds, restPerRound, targetRestCount, playerConsecutiveActiveCopy, maxConsecutiveRounds, ignoreGender)) {
       return true;
     }
+    
     // Backtrack
     restThisRound.forEach(player => {
       restSchedule[currentRound].pop();
       restCounts[player.name]--;
     });
+    
+    return false;
   }
-  // If no valid combination found
-  console.log(`[RestSchedule][Round ${currentRound}] [FAIL] No valid combination found.`);
+
+  // 5. Find candidates for remaining rest slots (excluding must-rest players)
+  const candidates = players.filter(p => 
+    restCounts[p.name] < targetRestCount[p.name] && 
+    !mustRest.includes(p)
+  );
+
+  if (candidates.length === 0) {
+    console.log(`[RestSchedule][Round ${currentRound}] [FAIL] No candidates available for remaining rest slots.`);
+    return false;
+  }
+
+  // 6. Sort candidates by rest needed (descending), then by consecutive active rounds (descending)
+  candidates.sort((a, b) => {
+    const restNeededDiff = restNeeded[b.name] - restNeeded[a.name];
+    if (restNeededDiff !== 0) return restNeededDiff;
+    
+    // If rest needed is the same, prioritize players with more consecutive active rounds
+    return (playerConsecutiveActive[b.name] || 0) - (playerConsecutiveActive[a.name] || 0);
+  });
+
+  // 7. Group candidates by rest needed value
+  const restNeededGroups = {};
+  candidates.forEach(player => {
+    const needed = restNeeded[player.name];
+    if (!restNeededGroups[needed]) {
+      restNeededGroups[needed] = [];
+    }
+    restNeededGroups[needed].push(player);
+  });
+
+  // 8. Get unique rest needed values in descending order
+  const restNeededLevels = Object.keys(restNeededGroups)
+    .map(Number)
+    .sort((a, b) => b - a);
+
+  // 9. Select players starting from highest rest need
+  let selectedCandidates = [];
+  
+  for (const restLevel of restNeededLevels) {
+    const playersAtLevel = restNeededGroups[restLevel];
+    const spotsLeft = restSlotsRemaining - selectedCandidates.length;
+    
+    if (spotsLeft <= 0) break;
+    
+    if (playersAtLevel.length <= spotsLeft) {
+      // Take all players at this level
+      selectedCandidates.push(...playersAtLevel);
+    } else {
+      // Randomly select from players at this level
+      const shuffled = [...playersAtLevel];
+      for (let i = shuffled.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+      }
+      selectedCandidates.push(...shuffled.slice(0, spotsLeft));
+      break;
+    }
+  }
+
+  // 10. Apply gender balance constraints if not ignoring gender
+  if (!ignoreGender && selectedCandidates.length > 0) {
+    const mustRestFemales = mustRest.filter(p => p.gender === 'female');
+    const selectedFemales = selectedCandidates.filter(p => p.gender === 'female');
+    const totalRestingFemales = mustRestFemales.length + selectedFemales.length;
+    
+    const totalFemales = players.filter(p => p.gender === 'female').length;
+    const activeFemales = totalFemales - totalRestingFemales;
+    
+    // Check if we need to adjust for gender balance (active females should be even)
+    if (activeFemales % 2 !== 0) {
+      // We need one more female to rest or one less
+      const femaleCandidates = selectedCandidates.filter(p => p.gender === 'female');
+      const maleCandidates = selectedCandidates.filter(p => p.gender === 'male');
+      
+      if (activeFemales > 0 && femaleCandidates.length < selectedCandidates.length) {
+        // Try to add one more female if possible
+        const availableFemales = candidates.filter(p => 
+          p.gender === 'female' && 
+          !selectedCandidates.includes(p) &&
+          !mustRest.includes(p)
+        );
+        
+        if (availableFemales.length > 0 && selectedCandidates.length < restSlotsRemaining) {
+          // Remove one male with lowest rest need and add one female with highest rest need
+          const lowestRestMale = maleCandidates
+            .sort((a, b) => restNeeded[a.name] - restNeeded[b.name])[0];
+          
+          if (lowestRestMale) {
+            const highestRestFemale = availableFemales
+              .sort((a, b) => restNeeded[b.name] - restNeeded[a.name])[0];
+            
+            const maleIndex = selectedCandidates.indexOf(lowestRestMale);
+            selectedCandidates[maleIndex] = highestRestFemale;
+          }
+        } else if (femaleCandidates.length > 0) {
+          // Remove one female to make active females even
+          const lowestRestFemale = femaleCandidates
+            .sort((a, b) => restNeeded[a.name] - restNeeded[b.name])[0];
+          
+          selectedCandidates = selectedCandidates.filter(p => p !== lowestRestFemale);
+        }
+      }
+    }
+  }
+
+  // 11. Try the selected combination
+  const restThisRound = [...mustRest, ...selectedCandidates];
+  
+  // Copy consecutive active state
+  let playerConsecutiveActiveCopy = { ...playerConsecutiveActive };
+  
+  // Update state
+  restThisRound.forEach(player => {
+    restSchedule[currentRound].push(player);
+    restCounts[player.name]++;
+    playerConsecutiveActiveCopy[player.name] = 0;
+  });
+  
+  // Update consecutive actives for non-resting players
+  players.forEach(player => {
+    if (!restThisRound.includes(player)) {
+      playerConsecutiveActiveCopy[player.name] = (playerConsecutiveActiveCopy[player.name] || 0) + 1;
+    }
+  });
+  
+  // Recurse
+  if (backtrackRestScheduleVariable(players, restSchedule, restCounts, currentRound + 1, totalRounds, restPerRound, targetRestCount, playerConsecutiveActiveCopy, maxConsecutiveRounds, ignoreGender)) {
+    return true;
+  }
+  
+  // Backtrack
+  restThisRound.forEach(player => {
+    restSchedule[currentRound].pop();
+    restCounts[player.name]--;
+  });
+
+  console.log(`[RestSchedule][Round ${currentRound}] [FAIL] Selected combination did not lead to valid solution.`);
   return false;
 }
 

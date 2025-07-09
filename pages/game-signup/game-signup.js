@@ -1,7 +1,7 @@
 // Cache constants for games list
 const GAMES_CACHE_KEY = 'GAMES_LIST_CACHE';
 const GAMES_CACHE_EXPIRY_KEY = 'GAMES_LIST_CACHE_EXPIRY';
-const CACHE_DURATION_MS = 5 * 60 * 1000; // 5 minutes in milliseconds (shorter than other caches since game data changes more frequently)
+const CACHE_DURATION_MS = 60 * 60 * 1000; // 60 minutes in milliseconds (shorter than other caches since game data changes more frequently)
 
 Page({  
   data: {

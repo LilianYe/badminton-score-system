@@ -1,7 +1,7 @@
 // Cache constants for game stats
 const GAME_STATS_CACHE_KEY = 'GAME_STATS_CACHE';
 const GAME_STATS_CACHE_EXPIRY_KEY = 'GAME_STATS_CACHE_EXPIRY';
-const CACHE_DURATION_MS = 15 * 60 * 1000; // 15 minutes in milliseconds (longer cache since game stats rarely change)
+const CACHE_DURATION_MS = 12 * 60 * 60 * 1000; // 12 hours in milliseconds (longer cache since game stats rarely change)
 
 const app = getApp();
 const UserService = require('../../utils/user-service.js');

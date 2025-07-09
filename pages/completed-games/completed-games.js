@@ -1,7 +1,7 @@
 // Cache constants for completed games list
 const COMPLETED_GAMES_CACHE_KEY = 'COMPLETED_GAMES_CACHE';
 const COMPLETED_GAMES_CACHE_EXPIRY_KEY = 'COMPLETED_GAMES_CACHE_EXPIRY';
-const CACHE_DURATION_MS = 10 * 60 * 1000; // 10 minutes in milliseconds (longer than active games since completed games rarely change)
+const CACHE_DURATION_MS = 12 * 60 * 60 * 1000; // 12 hours in milliseconds (longer than active games since completed games rarely change)
 
 const app = getApp();
 const UserService = require('../../utils/user-service.js');
