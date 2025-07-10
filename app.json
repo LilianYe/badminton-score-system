@@ -14,7 +14,8 @@
   "window": {
     "navigationBarTitleText": "Badminton Score System",
     "navigationBarBackgroundColor": "#ffffff",
-    "navigationBarTextStyle": "black"
+    "navigationBarTextStyle": "black",
+    "enablePullDownRefresh": true
   },
   "tabBar": {
     "color": "#999999",

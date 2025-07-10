@@ -1,7 +1,6 @@
 // Cache constants for game stats
 const GAME_STATS_CACHE_KEY = 'GAME_STATS_CACHE';
 const GAME_STATS_CACHE_EXPIRY_KEY = 'GAME_STATS_CACHE_EXPIRY';
-const CACHE_DURATION_MS = 12 * 60 * 60 * 1000; // 12 hours in milliseconds (longer cache since game stats rarely change)
 
 const app = getApp();
 const UserService = require('../../utils/user-service.js');
@@ -93,7 +92,7 @@ Page({
     if (!forceRefresh) {
       const cachedData = this.getCachedGameStats();
       if (cachedData) {
-        console.log('Loading game stats from cache');
+        console.log('Loading game stats from cache (never expires until manual refresh)');
         this.setData({
           ...cachedData,
           isLoading: false,
@@ -107,17 +106,15 @@ Page({
     await this.loadGameStats();
   },
 
-  // Get cached game stats if available and not expired
+  // Get cached game stats if available (no expiry check)
   getCachedGameStats() {
     try {
       const cacheKey = `${GAME_STATS_CACHE_KEY}_${this.data.gameId}`;
-      const expiryKey = `${GAME_STATS_CACHE_EXPIRY_KEY}_${this.data.gameId}`;
       
       const cachedData = wx.getStorageSync(cacheKey);
-      const cacheExpiry = wx.getStorageSync(expiryKey);
       
-      if (cachedData && cacheExpiry && Date.now() < cacheExpiry) {
-        console.log('Game stats cache hit');
+      if (cachedData) {
+        console.log('Game stats cache hit - using permanent cache');
         return cachedData;
       }
     } catch (error) {
@@ -126,16 +123,13 @@ Page({
     return null;
   },
 
-  // Cache game stats data
+  // Cache game stats data (no expiry time)
   cacheGameStats(data) {
     try {
       const cacheKey = `${GAME_STATS_CACHE_KEY}_${this.data.gameId}`;
-      const expiryKey = `${GAME_STATS_CACHE_EXPIRY_KEY}_${this.data.gameId}`;
-      const expiryTime = Date.now() + CACHE_DURATION_MS;
       
       wx.setStorageSync(cacheKey, data);
-      wx.setStorageSync(expiryKey, expiryTime);
-      console.log('Game stats cached successfully');
+      console.log('Game stats cached successfully (permanent until manual refresh)');
     } catch (error) {
       console.error('Error caching game stats:', error);
     }
@@ -145,10 +139,8 @@ Page({
   clearGameStatsCache() {
     try {
       const cacheKey = `${GAME_STATS_CACHE_KEY}_${this.data.gameId}`;
-      const expiryKey = `${GAME_STATS_CACHE_EXPIRY_KEY}_${this.data.gameId}`;
       
       wx.removeStorageSync(cacheKey);
-      wx.removeStorageSync(expiryKey);
       console.log('Game stats cache cleared');
     } catch (error) {
       console.error('Error clearing game stats cache:', error);
@@ -403,12 +395,61 @@ Page({
     }
   },
 
-  // Refresh data
+  // Refresh data - this is the only way to invalidate cache
   onPullDownRefresh: function() {
-    console.log('User requested refresh');
+    console.log('User requested refresh - clearing cache and reloading');
     this.clearGameStatsCache();
     this.checkUserAndLoadData().finally(() => {
       wx.stopPullDownRefresh();
+      wx.showToast({
+        title: '数据已更新',
+        icon: 'success'
+      });
     });
+  },
+
+  // Enable sharing for this page
+  onShareAppMessage: function(res) {
+    const { gameInfo, playerStats } = this.data;
+    
+    if (res.from === 'button') {
+      // Shared from a button
+      console.log('Shared from button:', res.target);
+    }
+    
+    // Create dynamic share content based on game and top performer
+    let shareTitle = '查看羽毛球比赛统计';
+    if (gameInfo && playerStats.length > 0) {
+      const topPlayer = playerStats[0];
+      const eloChange = topPlayer.eloChange;
+      const eloText = eloChange > 0 ? `+${eloChange}` : eloChange.toString();
+      shareTitle = `${gameInfo.title} - ${topPlayer.name}表现最佳(ELO${eloText})`;
+    } else if (gameInfo) {
+      shareTitle = `${gameInfo.title} - 比赛统计`;
+    }
+    
+    return {
+      title: shareTitle,
+      path: `/pages/completed-game-stats/completed-game-stats?gameId=${this.data.gameId}`,
+      imageUrl: '' // You can add a custom share image here
+    };
+  },
+
+  // Enable sharing to moments
+  onShareTimeline: function() {
+    const { gameInfo, playerStats } = this.data;
+    
+    let shareTitle = '羽毛球比赛统计';
+    if (gameInfo && playerStats.length > 0) {
+      const topPlayer = playerStats[0];
+      shareTitle = `${gameInfo.title} - ${topPlayer.name}表现最佳`;
+    } else if (gameInfo) {
+      shareTitle = `${gameInfo.title} - 比赛统计`;
+    }
+    
+    return {
+      title: shareTitle,
+      imageUrl: ''
+    };
   }
 });

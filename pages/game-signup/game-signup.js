@@ -476,5 +476,31 @@ Page({
         icon: 'none'
       });
     }
+  },
+
+  // Enable sharing for this page
+  onShareAppMessage: function(res) {
+    const currentGame = this.data.selectedGame;
+    
+    if (res.from === 'button') {
+      // Shared from a button
+      console.log('Shared from button:', res.target);
+    }
+    
+    return {
+      title: currentGame ? `邀请你参加羽毛球活动：${currentGame.title}` : '一起来打羽毛球吧！',
+      path: '/pages/game-signup/game-signup',
+      imageUrl: '' // You can add a custom share image here
+    };
+  },
+
+  // Enable sharing to moments (if you want to support it)
+  onShareTimeline: function() {
+    const currentGame = this.data.selectedGame;
+    
+    return {
+      title: currentGame ? `羽毛球活动：${currentGame.title}` : '羽毛球比赛系统',
+      imageUrl: '' // You can add a custom share image here
+    };
   }
 });

@@ -344,14 +344,6 @@ Page({  data: {
     }
   },
   
-  // Share game
-  shareGame: function() {
-    wx.showToast({
-      title: '分享功能开发中',
-      icon: 'none'
-    });
-  },
-  
   // Navigate to match generation or view existing matches
   navigateToGenerate: function() {
     console.log('navigateToGenerate function called, hasGeneratedMatches:', this.data.hasGeneratedMatches);
@@ -734,4 +726,38 @@ Page({  data: {
       });
     }
   },
+
+  // Enable sharing for this page
+  onShareAppMessage: function(res) {
+    const { game } = this.data;
+    
+    if (res.from === 'button') {
+      // Shared from a button
+      console.log('Shared from button:', res.target);
+    }
+    
+    if (game) {
+      return {
+        title: `邀请你参加羽毛球活动：${game.title}`,
+        path: `/pages/game-detail/game-detail?id=${game.id}`,
+        imageUrl: '' // You can add a custom share image here
+      };
+    }
+    
+    return {
+      title: '一起来打羽毛球吧！',
+      path: '/pages/game-signup/game-signup',
+      imageUrl: ''
+    };
+  },
+
+  // Enable sharing to moments
+  onShareTimeline: function() {
+    const { game } = this.data;
+    
+    return {
+      title: game ? `羽毛球活动：${game.title}` : '羽毛球比赛系统',
+      imageUrl: ''
+    };
+  }
 });

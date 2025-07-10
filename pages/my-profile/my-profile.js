@@ -4,9 +4,7 @@ const MatchService = require('../../utils/match-service.js');
 
 // Cache constants for user stats
 const USER_STATS_CACHE_KEY = 'USER_STATS_CACHE';
-const USER_STATS_CACHE_EXPIRY_KEY = 'USER_STATS_CACHE_EXPIRY';
 const USER_STATS_CACHE_USER_KEY = 'USER_STATS_CACHE_USER';
-const CACHE_DURATION_MS = 12 * 60 * 60 * 1000; // 12 hours in milliseconds
 
 Page({
     data: {
@@ -113,7 +111,7 @@ Page({
             if (!forceRefresh) {
                 const cachedStats = this.getCachedUserStats(nickname);
                 if (cachedStats) {
-                    console.log('Using cached user stats');
+                    console.log('Using cached user stats (never expires until manual refresh)');
                     return;
                 }
             }
@@ -126,38 +124,28 @@ Page({
         }
     },
     
-    // Get cached user stats if available and valid
+    // Get cached user stats if available (no expiry check)
     getCachedUserStats(nickname) {
         try {
             const cachedUser = wx.getStorageSync(USER_STATS_CACHE_USER_KEY);
             const cachedStatsString = wx.getStorageSync(USER_STATS_CACHE_KEY);
-            const cachedExpiryTime = wx.getStorageSync(USER_STATS_CACHE_EXPIRY_KEY);
             
-            // Verify cache is for current user and is not expired
-            if (cachedUser === nickname && cachedStatsString && cachedExpiryTime) {
-                const now = new Date().getTime();
+            // Verify cache is for current user
+            if (cachedUser === nickname && cachedStatsString) {
+                const cachedData = JSON.parse(cachedStatsString);
+                console.log('Found user stats cache from:', new Date(cachedData.timestamp), '(permanent until manual refresh)');
                 
-                // Check if cache is still valid
-                if (now < cachedExpiryTime) {
-                    const cachedData = JSON.parse(cachedStatsString);
-                    console.log('Found valid user stats cache from:', new Date(cachedData.timestamp));
-                    
-                    // Update state with cached data
-                    const stats = cachedData.stats;
-                    let sameGenderTitle = cachedData.sameGenderTitle;
-                    
-                    this.setData({
-                        userStats: stats,
-                        sameGenderTitle,
-                        lastStatsUpdate: cachedData.timestamp
-                    });
-                    
-                    return true;
-                } else {
-                    console.log('User stats cache expired, will fetch new data');
-                    // Clear expired cache
-                    this.clearUserStatsCache();
-                }
+                // Update state with cached data
+                const stats = cachedData.stats;
+                let sameGenderTitle = cachedData.sameGenderTitle;
+                
+                this.setData({
+                    userStats: stats,
+                    sameGenderTitle,
+                    lastStatsUpdate: cachedData.timestamp
+                });
+                
+                return true;
             }
         } catch (error) {
             console.error('Error reading user stats from cache:', error);
@@ -167,7 +155,7 @@ Page({
         return false;
     },
     
-    // Save user stats to cache
+    // Save user stats to cache (no expiry time)
     saveUserStatsToCache(nickname, stats, sameGenderTitle) {
         try {
             const timestamp = new Date().getTime();
@@ -177,15 +165,11 @@ Page({
                 timestamp: timestamp
             };
             
-            // Calculate expiry time
-            const expiryTime = timestamp + CACHE_DURATION_MS;
-            
-            // Save to storage
+            // Save to storage (no expiry time)
             wx.setStorageSync(USER_STATS_CACHE_USER_KEY, nickname);
             wx.setStorageSync(USER_STATS_CACHE_KEY, JSON.stringify(cacheData));
-            wx.setStorageSync(USER_STATS_CACHE_EXPIRY_KEY, expiryTime);
             
-            console.log('User stats cached successfully. Expires:', new Date(expiryTime));
+            console.log('User stats cached successfully (permanent until manual refresh)');
             
             // Update timestamp in UI
             this.setData({
@@ -200,7 +184,6 @@ Page({
     clearUserStatsCache() {
         try {
             wx.removeStorageSync(USER_STATS_CACHE_KEY);
-            wx.removeStorageSync(USER_STATS_CACHE_EXPIRY_KEY);
             wx.removeStorageSync(USER_STATS_CACHE_USER_KEY);
             console.log('User stats cache cleared');
         } catch (error) {
@@ -548,8 +531,13 @@ Page({
         }
     },
 
+    // Pull to refresh - this is the only way to invalidate cache
     onPullDownRefresh() {
         if (this.data.currentUser) {
+            console.log('User requested refresh - clearing stats cache and reloading');
+            // Clear stats cache before forcing refresh
+            this.clearUserStatsCache();
+            
             Promise.all([
                 this.loadMatches(this.data.currentUser.Name),
                 this.loadUserStatsWithCache(this.data.currentUser.Name, true) // Force refresh stats
@@ -571,5 +559,48 @@ Page({
 
     toggleMatches: function() {
         this.setData({ showMatches: !this.data.showMatches });
+    },
+
+    // Enable sharing for this page
+    onShareAppMessage: function(res) {
+        const { currentUser, userStats } = this.data;
+        
+        if (res.from === 'button') {
+            console.log('Shared from button:', res.target);
+        }
+        
+        // Create dynamic share content based on user stats
+        let shareTitle = '查看我的羽毛球比赛记录';
+        if (currentUser && userStats) {
+            const elo = userStats.ELO || 1500;
+            const winRate = userStats.winRateDisplay || '0.0';
+            shareTitle = `${currentUser.Name}的羽毛球战绩 - ELO:${elo} 胜率:${winRate}%`;
+        } else if (currentUser) {
+            shareTitle = `${currentUser.Name}的羽毛球比赛记录`;
+        }
+        
+        return {
+            title: shareTitle,
+            path: '/pages/my-profile/my-profile',
+            imageUrl: ''
+        };
+    },
+
+    // Enable sharing to moments
+    onShareTimeline: function() {
+        const { currentUser, userStats } = this.data;
+        
+        let shareTitle = '我的羽毛球比赛记录';
+        if (currentUser && userStats) {
+            const elo = userStats.ELO || 1500;
+            shareTitle = `我的羽毛球战绩 - ELO:${elo}`;
+        } else if (currentUser) {
+            shareTitle = `${currentUser.Name}的羽毛球记录`;
+        }
+        
+        return {
+            title: shareTitle,
+            imageUrl: ''
+        };
     }
 });

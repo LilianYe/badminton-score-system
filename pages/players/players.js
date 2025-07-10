@@ -2,8 +2,6 @@ const app = getApp();
 
 // Cache constants
 const CACHE_KEY = 'PLAYERS_RANKING_CACHE';
-const CACHE_EXPIRY_KEY = 'PLAYERS_RANKING_CACHE_EXPIRY';
-const CACHE_DURATION_MS = 12 * 60 * 60 * 1000; // 12 hours in milliseconds
 
 Page({
   data: {
@@ -29,7 +27,7 @@ Page({
         // Try to get cached data first
         const cachedData = this.getCachedData();
         if (cachedData) {
-          console.log('Using cached player rankings');
+          console.log('Using cached player rankings (never expires until manual refresh)');
           this.setData({
             players: cachedData.players,
             isEmpty: cachedData.players.length === 0,
@@ -48,25 +46,15 @@ Page({
     }
   },
   
-  // Get cached data if it exists and is not expired
+  // Get cached data if it exists (no expiry check)
   getCachedData() {
     try {
       const cachedDataString = wx.getStorageSync(CACHE_KEY);
-      const cachedExpiryTime = wx.getStorageSync(CACHE_EXPIRY_KEY);
       
-      if (cachedDataString && cachedExpiryTime) {
-        const now = new Date().getTime();
-        
-        // Check if cache is still valid
-        if (now < cachedExpiryTime) {
-          const cachedData = JSON.parse(cachedDataString);
-          console.log('Found valid cache from:', new Date(cachedData.timestamp));
-          return cachedData;
-        } else {
-          console.log('Cache expired, will fetch new data');
-          // Clear expired cache
-          this.clearCache();
-        }
+      if (cachedDataString) {
+        const cachedData = JSON.parse(cachedDataString);
+        console.log('Found player rankings cache from:', new Date(cachedData.timestamp), '(permanent until manual refresh)');
+        return cachedData;
       }
     } catch (error) {
       console.error('Error reading from cache:', error);
@@ -76,7 +64,7 @@ Page({
     return null;
   },
   
-  // Save data to cache
+  // Save data to cache (no expiry time)
   saveToCache(players) {
     try {
       const cacheData = {
@@ -84,14 +72,10 @@ Page({
         timestamp: new Date().getTime()
       };
       
-      // Calculate expiry time
-      const expiryTime = new Date().getTime() + CACHE_DURATION_MS;
-      
-      // Save data and expiry time to storage
+      // Save data to storage (no expiry time)
       wx.setStorageSync(CACHE_KEY, JSON.stringify(cacheData));
-      wx.setStorageSync(CACHE_EXPIRY_KEY, expiryTime);
       
-      console.log('Player rankings cached successfully. Expires:', new Date(expiryTime));
+      console.log('Player rankings cached successfully (permanent until manual refresh)');
     } catch (error) {
       console.error('Error saving to cache:', error);
     }
@@ -101,7 +85,6 @@ Page({
   clearCache() {
     try {
       wx.removeStorageSync(CACHE_KEY);
-      wx.removeStorageSync(CACHE_EXPIRY_KEY);
       console.log('Player rankings cache cleared');
     } catch (error) {
       console.error('Error clearing cache:', error);
@@ -218,7 +201,12 @@ Page({
     }
   },
     
+  // Pull to refresh - this is the only way to invalidate cache
   onPullDownRefresh() {
+    console.log('User requested refresh - clearing cache and reloading');
+    // Clear cache before forcing refresh
+    this.clearCache();
+    
     // Force refresh when pulling down
     this.loadPlayersData(true).then(() => {
       wx.stopPullDownRefresh();
@@ -227,5 +215,43 @@ Page({
         icon: 'success'
       });
     });
+  },
+
+  // Enable sharing for this page
+  onShareAppMessage: function(res) {
+    const { players } = this.data;
+    
+    if (res.from === 'button') {
+      // Shared from a button
+      console.log('Shared from button:', res.target);
+    }
+    
+    // Create a dynamic share message based on the top players
+    let shareTitle = '羽毛球排行榜';
+    if (players.length > 0) {
+      const topPlayer = players[0];
+      shareTitle = `${topPlayer.Name}目前排名第一！查看完整羽毛球排行榜`;
+    }
+    
+    return {
+      title: shareTitle,
+      path: '/pages/players/players',
+      imageUrl: '' // You can add a custom share image here
+    };
+  },
+
+  // Enable sharing to moments
+  onShareTimeline: function() {
+    const { players } = this.data;
+    
+    let shareTitle = '羽毛球排行榜';
+    if (players.length > 0) {
+      shareTitle = `羽毛球排行榜 - ${players[0].Name}排名第一`;
+    }
+    
+    return {
+      title: shareTitle,
+      imageUrl: '' // You can add a custom share image here
+    };
   }
 });

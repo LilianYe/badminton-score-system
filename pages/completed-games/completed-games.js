@@ -1,8 +1,5 @@
 // Cache constants for completed games list
 const COMPLETED_GAMES_CACHE_KEY = 'COMPLETED_GAMES_CACHE';
-const COMPLETED_GAMES_CACHE_EXPIRY_KEY = 'COMPLETED_GAMES_CACHE_EXPIRY';
-const CACHE_DURATION_MS = 12 * 60 * 60 * 1000; // 12 hours in milliseconds (longer than active games since completed games rarely change)
-
 const app = getApp();
 const UserService = require('../../utils/user-service.js');
 const CloudDBService = require('../../utils/cloud-db.js');
@@ -80,7 +77,7 @@ Page({
           // Try to get cached games first
           const cachedGames = this.getCachedCompletedGames();
           if (cachedGames) {
-            console.log('Using cached completed games list');
+            console.log('Using cached completed games list (never expires until manual refresh)');
             resolve();
             return;
           }
@@ -100,37 +97,27 @@ Page({
     });
   },
 
-  // Get cached completed games if available and valid
+  // Get cached completed games if available (no expiry check)
   getCachedCompletedGames: function() {
     try {
       const cachedGamesString = wx.getStorageSync(COMPLETED_GAMES_CACHE_KEY);
-      const cachedExpiryTime = wx.getStorageSync(COMPLETED_GAMES_CACHE_EXPIRY_KEY);
       
-      if (cachedGamesString && cachedExpiryTime) {
-        const now = new Date().getTime();
+      if (cachedGamesString) {
+        const cachedData = JSON.parse(cachedGamesString);
+        console.log('Found completed games cache from:', new Date(cachedData.timestamp), '(permanent until manual refresh)');
         
-        // Check if cache is still valid
-        if (now < cachedExpiryTime) {
-          const cachedData = JSON.parse(cachedGamesString);
-          console.log('Found valid completed games cache from:', new Date(cachedData.timestamp));
-          
-          // Update state with cached data
-          const completedGames = cachedData.completedGames;
-          
-          this.setData({
-            completedGames: completedGames,
-            totalGames: completedGames.length,
-            isEmpty: completedGames.length === 0,
-            lastUpdated: cachedData.timestamp,
-            isLoading: false
-          });
-          
-          return true;
-        } else {
-          console.log('Completed games cache expired, will fetch new data');
-          // Clear expired cache
-          this.clearCompletedGamesCache();
-        }
+        // Update state with cached data
+        const completedGames = cachedData.completedGames;
+        
+        this.setData({
+          completedGames: completedGames,
+          totalGames: completedGames.length,
+          isEmpty: completedGames.length === 0,
+          lastUpdated: cachedData.timestamp,
+          isLoading: false
+        });
+        
+        return true;
       }
     } catch (error) {
       console.error('Error reading completed games from cache:', error);
@@ -140,7 +127,7 @@ Page({
     return false;
   },
 
-  // Save completed games to cache
+  // Save completed games to cache (no expiry time)
   saveCompletedGamesToCache: function(completedGames) {
     try {
       const timestamp = new Date().getTime();
@@ -149,14 +136,10 @@ Page({
         timestamp: timestamp
       };
       
-      // Calculate expiry time
-      const expiryTime = timestamp + CACHE_DURATION_MS;
-      
-      // Save to storage
+      // Save to storage (no expiry time)
       wx.setStorageSync(COMPLETED_GAMES_CACHE_KEY, JSON.stringify(cacheData));
-      wx.setStorageSync(COMPLETED_GAMES_CACHE_EXPIRY_KEY, expiryTime);
       
-      console.log('Completed games cached successfully. Expires:', new Date(expiryTime));
+      console.log('Completed games cached successfully (permanent until manual refresh)');
       
       // Update timestamp in UI
       this.setData({
@@ -171,7 +154,6 @@ Page({
   clearCompletedGamesCache: function() {
     try {
       wx.removeStorageSync(COMPLETED_GAMES_CACHE_KEY);
-      wx.removeStorageSync(COMPLETED_GAMES_CACHE_EXPIRY_KEY);
       console.log('Completed games cache cleared');
     } catch (error) {
       console.error('Error clearing completed games cache:', error);
@@ -290,8 +272,12 @@ Page({
     return `${year}-${month}-${day}`;
   },
 
-  // Pull to refresh - improved with proper Promise handling
+  // Pull to refresh - this is the only way to invalidate cache
   onPullDownRefresh: function() {
+    console.log('User requested refresh - clearing cache and reloading');
+    // Clear cache before forcing refresh
+    this.clearCompletedGamesCache();
+    
     // Force refresh from cloud
     this.loadCompletedGamesWithCache(true)
       .then(() => {
@@ -341,5 +327,41 @@ Page({
         icon: 'none'
       });
     }
+  },
+
+  // Enable sharing for this page
+  onShareAppMessage: function(res) {
+    const { completedGames } = this.data;
+    
+    if (res.from === 'button') {
+      console.log('Shared from button:', res.target);
+    }
+    
+    // Create dynamic share content based on completed games
+    let shareTitle = '查看羽毛球比赛历史记录';
+    if (completedGames.length > 0) {
+      shareTitle = `已完成${completedGames.length}场羽毛球比赛 - 查看历史记录`;
+    }
+    
+    return {
+      title: shareTitle,
+      path: '/pages/completed-games/completed-games',
+      imageUrl: ''
+    };
+  },
+
+  // Enable sharing to moments
+  onShareTimeline: function() {
+    const { completedGames } = this.data;
+    
+    let shareTitle = '羽毛球比赛系统 - 历史记录';
+    if (completedGames.length > 0) {
+      shareTitle = `羽毛球比赛历史 - 已完成${completedGames.length}场比赛`;
+    }
+    
+    return {
+      title: shareTitle,
+      imageUrl: ''
+    };
   }
 });
