@@ -1,0 +1,350 @@
+/* pages/help/help.wxss */
+.tutorial-container {
+  background-color: #f5f5f5;
+  min-height: 100vh;
+  padding-bottom: 40rpx;
+}
+
+/* Header */
+.tutorial-header {
+  background: linear-gradient(135deg, #007AFF 0%, #5856D6 100%);
+  padding: 60rpx 40rpx 40rpx;
+  text-align: center;
+  color: white;
+}
+
+.header-icon {
+  font-size: 80rpx;
+  margin-bottom: 20rpx;
+}
+
+.header-title {
+  font-size: 48rpx;
+  font-weight: bold;
+  margin-bottom: 10rpx;
+}
+
+.header-subtitle {
+  font-size: 28rpx;
+  opacity: 0.9;
+  margin-bottom: 30rpx;
+}
+
+.start-btn {
+  background: white;
+  color: #007AFF;
+  border: none;
+  border-radius: 50rpx;
+  padding: 20rpx 40rpx;
+  font-size: 28rpx;
+  font-weight: bold;
+  box-shadow: 0 8rpx 20rpx rgba(0,0,0,0.1);
+}
+
+/* Progress Section */
+.progress-section {
+  background: white;
+  margin: 20rpx;
+  border-radius: 20rpx;
+  padding: 30rpx;
+  box-shadow: 0 4rpx 20rpx rgba(0,0,0,0.1);
+}
+
+.progress-title {
+  font-size: 28rpx;
+  color: #333;
+  margin-bottom: 20rpx;
+  text-align: center;
+}
+
+.progress-bar {
+  width: 100%;
+  height: 8rpx;
+  background: #f0f0f0;
+  border-radius: 4rpx;
+  overflow: hidden;
+  margin-bottom: 15rpx;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #007AFF 0%, #5856D6 100%);
+  border-radius: 4rpx;
+  transition: width 0.3s ease;
+}
+
+.progress-text {
+  font-size: 24rpx;
+  color: #666;
+  text-align: center;
+}
+
+/* Steps Container */
+.steps-container {
+  margin: 20rpx;
+}
+
+.step-card {
+  background: white;
+  border-radius: 20rpx;
+  margin-bottom: 20rpx;
+  overflow: hidden;
+  box-shadow: 0 4rpx 20rpx rgba(0,0,0,0.1);
+  transition: all 0.3s ease;
+  opacity: 0.7;
+}
+
+.step-card.active {
+  opacity: 1;
+  transform: scale(1.02);
+  box-shadow: 0 8rpx 30rpx rgba(0, 122, 255, 0.2);
+  border: 2rpx solid #007AFF;
+}
+
+.step-header {
+  background: linear-gradient(90deg, #007AFF 0%, #5856D6 100%);
+  padding: 30rpx;
+  display: flex;
+  align-items: center;
+}
+
+.step-number {
+  width: 60rpx;
+  height: 60rpx;
+  background: white;
+  color: #007AFF;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28rpx;
+  font-weight: bold;
+  margin-right: 20rpx;
+}
+
+.step-info {
+  flex: 1;
+}
+
+.step-title {
+  font-size: 32rpx;
+  font-weight: bold;
+  color: white;
+  margin-bottom: 5rpx;
+}
+
+.step-subtitle {
+  font-size: 24rpx;
+  color: rgba(255,255,255,0.8);
+}
+
+.step-content {
+  padding: 30rpx;
+}
+
+.content-line {
+  font-size: 28rpx;
+  line-height: 1.6;
+  color: #333;
+  margin-bottom: 16rpx;
+}
+
+.step-tip {
+  background: #f8f9fa;
+  padding: 20rpx 30rpx;
+  border-left: 4rpx solid #007AFF;
+}
+
+.tip-text {
+  font-size: 26rpx;
+  color: #666;
+  line-height: 1.5;
+}
+
+.step-action {
+  padding: 20rpx 30rpx;
+  background: #e3f2fd;
+}
+
+.action-text {
+  font-size: 26rpx;
+  color: #007AFF;
+  font-weight: bold;
+}
+
+.step-navigation {
+  padding: 20rpx 30rpx;
+  display: flex;
+  gap: 20rpx;
+  justify-content: flex-end;
+  background: #fafafa;
+}
+
+.nav-btn {
+  padding: 15rpx 30rpx;
+  border-radius: 25rpx;
+  border: none;
+  font-size: 26rpx;
+  min-width: 120rpx;
+}
+
+.nav-btn.prev {
+  background: #f0f0f0;
+  color: #666;
+}
+
+.nav-btn.next {
+  background: #007AFF;
+  color: white;
+}
+
+.nav-btn.complete {
+  background: #52c41a;
+  color: white;
+}
+
+/* Quick Tips Section */
+.quick-tips-section {
+  background: white;
+  margin: 20rpx;
+  border-radius: 20rpx;
+  padding: 30rpx;
+  box-shadow: 0 4rpx 20rpx rgba(0,0,0,0.1);
+}
+
+.section-title {
+  display: flex;
+  align-items: center;
+  margin-bottom: 30rpx;
+}
+
+.title-icon {
+  font-size: 36rpx;
+  margin-right: 15rpx;
+}
+
+.title-text {
+  font-size: 32rpx;
+  font-weight: bold;
+  color: #333;
+}
+
+.tips-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20rpx;
+}
+
+.tip-item {
+  background: #f8f9fa;
+  padding: 20rpx;
+  border-radius: 16rpx;
+  text-align: center;
+}
+
+.tip-icon {
+  font-size: 40rpx;
+  margin-bottom: 10rpx;
+}
+
+.tip-title {
+  font-size: 26rpx;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 5rpx;
+}
+
+.tip-desc {
+  font-size: 22rpx;
+  color: #666;
+}
+
+/* FAQ Section */
+.faq-section {
+  background: white;
+  margin: 20rpx;
+  border-radius: 20rpx;
+  padding: 30rpx;
+  box-shadow: 0 4rpx 20rpx rgba(0,0,0,0.1);
+}
+
+.faq-list {
+  margin-top: 20rpx;
+}
+
+.faq-item {
+  margin-bottom: 30rpx;
+  padding-bottom: 20rpx;
+  border-bottom: 1rpx solid #f0f0f0;
+}
+
+.faq-item:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+}
+
+.faq-question {
+  font-size: 28rpx;
+  font-weight: bold;
+  color: #007AFF;
+  margin-bottom: 10rpx;
+}
+
+.faq-answer {
+  font-size: 26rpx;
+  color: #666;
+  line-height: 1.5;
+}
+
+/* Footer */
+.tutorial-footer {
+  background: white;
+  margin: 20rpx;
+  border-radius: 20rpx;
+  padding: 40rpx;
+  box-shadow: 0 4rpx 20rpx rgba(0,0,0,0.1);
+}
+
+.footer-content {
+  text-align: center;
+}
+
+.app-info {
+  margin-bottom: 30rpx;
+}
+
+.app-version {
+  font-size: 24rpx;
+  color: #999;
+  margin-bottom: 8rpx;
+}
+
+.copyright {
+  font-size: 24rpx;
+  color: #999;
+}
+
+.contact-section {
+  border-top: 1rpx solid #eee;
+  padding-top: 30rpx;
+}
+
+.contact-title {
+  font-size: 28rpx;
+  color: #333;
+  margin-bottom: 20rpx;
+}
+
+.contact-btn {
+  background: linear-gradient(90deg, #007AFF 0%, #5856D6 100%);
+  color: white;
+  border: none;
+  border-radius: 50rpx;
+  padding: 20rpx 40rpx;
+  font-size: 28rpx;
+  box-shadow: 0 8rpx 20rpx rgba(0, 122, 255, 0.3);
+}
+
+.contact-btn:active {
+  transform: scale(0.95);
+}

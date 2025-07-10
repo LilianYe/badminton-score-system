@@ -1,9 +1,16 @@
 <view class="container">
   <!-- Header Section -->
   <view class="header-section">
-    <view class="header-title">活动列表</view>
-    <view class="header-action" bindtap="showAddGameModal">
-      <text class="add-game-btn">+ 新建活动</text>
+    <view class="header-left">
+      <view class="header-title">活动列表</view>
+    </view>
+    <view class="header-right">
+      <view class="header-action help-btn" bindtap="navigateToHelp">
+        <text class="help-text">使用指南</text>
+      </view>
+      <view class="header-action" bindtap="showAddGameModal">
+        <text class="add-game-btn">+ 新建活动</text>
+      </view>
     </view>
   </view>
   
@@ -12,6 +19,9 @@
     <view wx:if="{{games.length === 0}}" class="empty-container">
       <image src="/assets/icons/game.png" mode="aspectFit"></image>
       <text class="empty-state-text">暂无活动，点击右上角创建新活动</text>
+      <view class="help-tip" bindtap="navigateToHelp">
+        <text class="help-tip-text">📖 查看使用指南</text>
+      </view>
     </view>
     
     <scroll-view wx:else scroll-y="true" class="game-list">

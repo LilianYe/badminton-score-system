@@ -304,7 +304,14 @@ Page({
   hideAddGameModal: function() {
     this.setData({ showAddGameModal: false });
   },
-  
+
+  // Navigate to help page
+  navigateToHelp: function() {
+    wx.navigateTo({
+      url: '/pages/help/help'
+    });
+  },
+
   onNewGameInput: function(e) {
     const field = e.currentTarget.dataset.field;
     const value = e.detail.value;

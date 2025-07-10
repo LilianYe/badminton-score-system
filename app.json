@@ -9,13 +9,13 @@
     "pages/my-match/my-match",
     "pages/my-profile/my-profile",
     "pages/completed-games/completed-games",
-    "pages/completed-game-stats/completed-game-stats"
+    "pages/completed-game-stats/completed-game-stats",
+    "pages/help/help"
   ],
   "window": {
     "navigationBarTitleText": "Badminton Score System",
     "navigationBarBackgroundColor": "#ffffff",
-    "navigationBarTextStyle": "black",
-    "enablePullDownRefresh": true
+    "navigationBarTextStyle": "black"
   },
   "tabBar": {
     "color": "#999999",

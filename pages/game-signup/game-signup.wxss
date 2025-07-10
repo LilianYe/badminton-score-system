@@ -7,7 +7,7 @@ page {
   min-height: 100vh;
 }
 
-/* Header Section (similar to profile-section in my-profile) */
+/* Header Section (updated to support multiple actions) */
 .header-section {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   padding: 40rpx 30rpx;
@@ -17,16 +17,44 @@ page {
   color: white;
 }
 
+.header-left {
+  flex: 1;
+}
+
 .header-title {
   font-size: 36rpx;
   font-weight: bold;
   color: white;
 }
 
+.header-right {
+  display: flex;
+  gap: 15rpx;
+  align-items: center;
+}
+
 .header-action {
   background-color: rgba(255, 255, 255, 0.2);
   border-radius: 30rpx;
   padding: 10rpx 20rpx;
+  transition: all 0.3s ease;
+}
+
+.header-action:active {
+  background-color: rgba(255, 255, 255, 0.3);
+  transform: scale(0.95);
+}
+
+.help-btn {
+  padding: 12rpx 20rpx;
+  border-radius: 30rpx;
+  min-width: auto;
+  text-align: center;
+}
+
+.help-text {
+  font-size: 24rpx;
+  color: white;
 }
 
 .add-game-btn {
@@ -81,8 +109,10 @@ page {
 .empty-container {
   display: flex;
   flex-direction: column;
-  justify-content: center;
   align-items: center;
+  justify-content: center;
+  padding: 120rpx 60rpx;
+  text-align: center;
   height: 60vh;
   color: #888;
   font-size: 28rpx;
@@ -92,12 +122,31 @@ page {
   width: 120rpx;
   height: 120rpx;
   opacity: 0.5;
-  margin-bottom: 24rpx;
+  margin-bottom: 30rpx;
 }
 
 .empty-state-text {
   font-size: 28rpx;
   color: #999;
+  margin-bottom: 40rpx;
+}
+
+.help-tip {
+  background: linear-gradient(90deg, #007AFF 0%, #5856D6 100%);
+  color: white;
+  padding: 20rpx 40rpx;
+  border-radius: 50rpx;
+  font-size: 26rpx;
+  box-shadow: 0 8rpx 20rpx rgba(0, 122, 255, 0.3);
+  transition: all 0.3s ease;
+}
+
+.help-tip:active {
+  transform: scale(0.95);
+}
+
+.help-tip-text {
+  color: white;
 }
 
 /* Game Card (styled more like the match-card in my-profile) */

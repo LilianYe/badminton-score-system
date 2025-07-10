@@ -756,7 +756,7 @@ Page({  data: {
     const { game } = this.data;
     
     return {
-      title: game ? `羽毛球活动：${game.title}` : '羽毛球比赛系统',
+      title: game ? `羽毛球活动：${game.title}` : '羽毛球天梯助手',
       imageUrl: ''
     };
   }

@@ -1,0 +1,96 @@
+<!--pages/help/help.wxml-->
+<view class="tutorial-container">
+  <!-- Header -->
+  <view class="tutorial-header">
+    <view class="header-icon">🏸</view>
+    <view class="header-title">羽毛球天梯助手</view>
+    <view class="header-subtitle">从新手到高手的完整教程</view>
+    <button class="start-btn" bindtap="startTutorial">开始教程</button>
+  </view>
+
+  <!-- Progress Indicator -->
+  <view class="progress-section">
+    <view class="progress-title">教程进度</view>
+    <view class="progress-bar">
+      <view class="progress-fill" style="width: {{(currentStep + 1) / totalSteps * 100}}%"></view>
+    </view>
+    <view class="progress-text">第 {{currentStep + 1}} 步，共 {{totalSteps}} 步</view>
+  </view>
+
+  <!-- Tutorial Steps -->
+  <view class="steps-container">
+    <view wx:for="{{steps}}" wx:key="id" id="{{item.id}}" class="step-card {{currentStep === index ? 'active' : ''}}">
+      <view class="step-header">
+        <view class="step-number">{{item.stepNumber}}</view>
+        <view class="step-info">
+          <view class="step-title">{{item.title}}</view>
+          <view class="step-subtitle">{{item.subtitle}}</view>
+        </view>
+      </view>
+      
+      <view class="step-content">
+        <view wx:for="{{item.content}}" wx:for-item="line" wx:key="index" class="content-line">
+          {{line}}
+        </view>
+      </view>
+      
+      <view class="step-tip">
+        <view class="tip-text">{{item.tip}}</view>
+      </view>
+      
+      <view class="step-action">
+        <view class="action-text">✅ {{item.action}}</view>
+      </view>
+      
+      <!-- Navigation buttons for current step -->
+      <view wx:if="{{currentStep === index}}" class="step-navigation">
+        <button wx:if="{{index > 0}}" class="nav-btn prev" bindtap="prevStep">上一步</button>
+        <button wx:if="{{index < totalSteps - 1}}" class="nav-btn next" bindtap="nextStep">下一步</button>
+        <button wx:if="{{index === totalSteps - 1}}" class="nav-btn complete" bindtap="scrollToSection" data-section="quick-tips">完成教程</button>
+      </view>
+    </view>
+  </view>
+
+  <!-- Quick Tips -->
+  <view id="quick-tips" class="quick-tips-section">
+    <view class="section-title">
+      <view class="title-icon">💡</view>
+      <view class="title-text">实用技巧</view>
+    </view>
+    <view class="tips-grid">
+      <view wx:for="{{quickTips}}" wx:key="title" class="tip-item">
+        <view class="tip-icon">{{item.icon}}</view>
+        <view class="tip-title">{{item.title}}</view>
+        <view class="tip-desc">{{item.desc}}</view>
+      </view>
+    </view>
+  </view>
+
+  <!-- FAQ Section -->
+  <view id="faq" class="faq-section">
+    <view class="section-title">
+      <view class="title-icon">❓</view>
+      <view class="title-text">常见问题</view>
+    </view>
+    <view class="faq-list">
+      <view wx:for="{{faq}}" wx:key="question" class="faq-item">
+        <view class="faq-question">Q: {{item.question}}</view>
+        <view class="faq-answer">A: {{item.answer}}</view>
+      </view>
+    </view>
+  </view>
+
+  <!-- Footer -->
+  <view class="tutorial-footer">
+    <view class="footer-content">
+      <view class="app-info">
+        <view class="app-version">版本 1.0.0</view>
+        <view class="copyright">© 2025 羽毛球天梯助手</view>
+      </view>
+      <view class="contact-section">
+        <view class="contact-title">需要帮助？</view>
+        <button class="contact-btn" bindtap="copyContact">联系开发者</button>
+      </view>
+    </view>
+  </view>
+</view>
